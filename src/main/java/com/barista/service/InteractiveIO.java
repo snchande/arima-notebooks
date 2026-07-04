@@ -24,11 +24,24 @@ public final class InteractiveIO {
 
     private final Consumer<String> inputRequester;
     private final Consumer<Runnable> cancellerBinder;
+    private final Consumer<String> outputStreamer;
 
     public InteractiveIO(Consumer<String> inputRequester,
                          Consumer<Runnable> cancellerBinder) {
+        this(inputRequester, cancellerBinder, null);
+    }
+
+    public InteractiveIO(Consumer<String> inputRequester,
+                         Consumer<Runnable> cancellerBinder,
+                         Consumer<String> outputStreamer) {
         this.inputRequester  = inputRequester;
         this.cancellerBinder = cancellerBinder;
+        this.outputStreamer  = outputStreamer;
+    }
+
+    /** Stream a chunk of program output to the browser as it is produced (live progress). */
+    public void streamOutput(String chunk) {
+        if (outputStreamer != null && chunk != null && !chunk.isEmpty()) outputStreamer.accept(chunk);
     }
 
     /**

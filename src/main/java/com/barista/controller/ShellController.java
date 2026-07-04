@@ -463,7 +463,9 @@ public class ShellController {
         InteractiveIO io = new InteractiveIO(
                 bufferedText -> messagingTemplate.convertAndSend(topic, Map.of(
                         "type", "input_needed", "cellId", fCellId, "text", bufferedText)),
-                canceller -> cancellers.put(sessionId, canceller));
+                canceller -> cancellers.put(sessionId, canceller),
+                chunk -> messagingTemplate.convertAndSend(topic, Map.of(
+                        "type", "partial_output", "cellId", fCellId, "text", chunk)));
 
         InteractiveProcessRunner.bind(io);
         try {

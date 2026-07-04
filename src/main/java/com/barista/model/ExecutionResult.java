@@ -57,6 +57,23 @@ public class ExecutionResult {
     // Builder pattern
     public static Builder builder() { return new Builder(); }
 
+    /**
+     * Build a result for a cell stopped by a runaway guard (output-line cap or time budget),
+     * shared by every execution service so the "stopped" experience is identical across languages.
+     * {@code status} is "OUTPUT_LIMIT" or "TIMEOUT"; {@code output} is whatever was printed so far.
+     */
+    public static ExecutionResult stopped(String sessionId, String cellId, String output,
+                                          String status, String message, long startMs) {
+        return builder()
+                .sessionId(sessionId).cellId(cellId)
+                .output(output == null ? "" : output)
+                .error(message)
+                .status(status).success(false)
+                .executionTimeMs(System.currentTimeMillis() - startMs)
+                .executionCount(0)
+                .build();
+    }
+
     public static class Builder {
         private final ExecutionResult r = new ExecutionResult();
         public Builder sessionId(String v)      { r.sessionId = v; return this; }

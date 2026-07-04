@@ -120,10 +120,13 @@ public class NodeJsExecutionService {
             // shared runner; non-interactive callers (pipelines/MCP) get plain batch capture.
             InteractiveProcessRunner.ProcRun run = runner.run(pb);
 
+            if (run.truncated()) {
+                return ExecutionResult.stopped(sessionId, cellId, run.stdout(), "OUTPUT_LIMIT",
+                    "Output exceeded the line limit and was stopped (possible runaway loop).", start);
+            }
             if (run.timedOut()) {
-                return err(sessionId, cellId,
-                    "Execution timed out after " + TIMEOUT_SECONDS
-                    + " seconds (possible never-ending loop) and was stopped.", start);
+                return ExecutionResult.stopped(sessionId, cellId, run.stdout(), "TIMEOUT",
+                    "Execution exceeded the time limit and was stopped (possible never-ending loop).", start);
             }
 
             long elapsed  = System.currentTimeMillis() - start;
