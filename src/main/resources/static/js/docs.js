@@ -13,7 +13,7 @@ const DocsPanel = (() => {
 usage: `
 # Arima Notebooks — User Guide
 
-Arima is a multi-language interactive notebook environment. Write and run code across **seven languages** — JShell, Java, JavaScript, **TypeScript**, C#, F#, and C++ — in cells that live alongside Markdown documentation. Organise work with named Workflows, get AI assistance from Claude, GitHub Copilot, or Gemini, and expose everything as an API.
+Arima is a multi-language interactive notebook environment. Write and run code across **seven languages** — JShell, Java, JavaScript, **TypeScript**, C#, F#, and C++ — in cells that live alongside Markdown documentation. Organise work with named Workflows, get AI assistance from Claude, GitHub Copilot, or Antigravity, and expose everything as an API.
 
 ---
 
@@ -313,7 +313,7 @@ Open with **Ctrl+\\** or the **AI** button.
 - **Generate notebook** — click ★, describe your goal, get a full multi-cell notebook
 - **Explain / Fix** — right-click on a cell or use the 🤖 button to explain or fix errors
 - **Insert code** — code blocks in AI responses include **+ Insert into notebook**
-- **Switch provider** — use the provider bar at the top of the AI panel to switch between Claude, GitHub Copilot CLI, and Gemini CLI. The active provider is saved in Settings.
+- **Switch provider** — use the provider bar at the top of the AI panel to switch between Claude, GitHub Copilot (SDK), and Antigravity. The active provider is saved in Settings.
 - **Language conversion** — when you switch a cell's language, a banner appears offering to convert the existing code to the new language using AI
 
 All three providers run as **local CLI subprocesses** — no API key or cloud account needed (only CLI login).
@@ -337,14 +337,14 @@ The Console tab is a live REPL for JShell, Java, JavaScript, and TypeScript — 
 
 | Setting | Description |
 |---|---|
-| AI Provider | Claude CLI · GitHub Copilot CLI · Gemini CLI |
+| AI Provider | Claude CLI · GitHub Copilot SDK · Antigravity CLI (\`agy\`) |
 | Model | Model name for the selected provider (e.g. claude-sonnet-4-6) |
 | Theme | Dark (default) or Light |
 | Font Size | Editor font size in pixels |
 | Line Numbers | Show/hide in code cells |
 | Focus executing cell | Scroll to the cell being run during pipeline execution |
 
-The **Server Status** panel shows which runtimes are detected: Java, Node.js (JS + TS), TypeScript compiler, .NET SDK, C++ Compiler, Claude CLI, Copilot CLI, Gemini CLI.
+The **Server Status** panel shows which runtimes are detected: Java, Node.js (JS + TS), TypeScript compiler, .NET SDK, C++ Compiler, Claude CLI, Copilot (SDK), Antigravity CLI.
 
 ---
 
@@ -470,21 +470,25 @@ Arima supports three AI providers — all run as **local CLI subprocesses**, no 
 
 Verify: \`claude --version\`
 
-### GitHub Copilot CLI
+### GitHub Copilot (SDK)
 
-1. Install: \`npm install -g @githubnext/github-copilot-cli\`
-2. Authenticate: \`github-copilot-cli auth\`
-3. Select **GitHub Copilot** in Arima Settings → AI Provider
+Arima uses the **GitHub Copilot SDK for Java**, which drives the local \`copilot\` CLI (chat-only).
+
+1. Install the [GitHub Copilot CLI](https://github.com/github/copilot-cli) (\`copilot\`, v1.0.55-5+)
+2. Authenticate the \`copilot\` CLI
+3. Select **Copilot** in Arima Settings → AI Provider
 
 Verify: \`copilot --version\`
 
-### Gemini CLI
+### Antigravity CLI (\`agy\`)
 
-1. Install: \`npm install -g @google/gemini-cli\`
-2. Authenticate: \`gemini auth\`
-3. Select **Gemini** in Arima Settings → AI Provider
+Successor to the retired Gemini CLI (Google retired Gemini CLI on 2026-06-18).
 
-Verify: \`gemini --version\`
+1. Install: [antigravity.google/docs/cli-install](https://antigravity.google/docs/cli-install)
+2. Sign in: run \`agy\` (or set \`GEMINI_API_KEY\` / \`ANTIGRAVITY_API_KEY\`)
+3. Select **Antigravity** in Arima Settings → AI Provider
+
+Arima calls \`agy -p "prompt"\`.
 
 The Settings tab → Server Status shows which AI providers are detected.
 
@@ -555,8 +559,8 @@ Navigate to: **http://localhost:8585**
 | C++ (Windows) | \`cl\` | MSVC version line |
 | C++ (Mac/Linux) | \`g++ --version\` or \`clang++ --version\` | any version |
 | Claude CLI | \`claude --version\` | any version |
-| Copilot CLI | \`copilot --version\` | any version |
-| Gemini CLI | \`gemini --version\` | any version |
+| Copilot CLI | \`copilot --version\` | v1.0.55-5+ (used by the Copilot SDK) |
+| Antigravity CLI (\`agy\`) | run \`agy\` to sign in | any version |
 
 The **Settings → Server Status** panel shows which runtimes Arima detected on startup.
 
@@ -648,8 +652,8 @@ Check **Packages → NuGet** tab that the package is listed. Ensure internet acc
 
 ### AI not responding
 - **Claude:** Run \`claude auth\` in a terminal, then restart Arima. Check Settings → Server Status: **Claude CLI** must show ✓ Found.
-- **Copilot CLI:** Run \`github-copilot-cli auth\`. Verify: \`copilot --version\`.
-- **Gemini CLI:** Run \`gemini auth\`. Verify: \`gemini --version\`.
+- **Copilot (SDK):** Authenticate the \`copilot\` CLI (v1.0.55-5+). Verify: \`copilot --version\`.
+- **Antigravity (\`agy\`):** Run \`agy\` to sign in. Install: https://antigravity.google/docs/cli-install
 - Switch providers in Settings → AI Provider if one CLI is not available.
 
 ### Port 8585 in use
@@ -1323,7 +1327,7 @@ Coordinate format: \`groupId:artifactId:version\` — e.g. \`com.google.code.gso
 
 ## AI Assistant
 
-Arima routes all AI calls through the active provider (Claude, Copilot, or Gemini) configured in Settings.
+Arima routes all AI calls through the active provider (Claude, Copilot, or Antigravity) configured in Settings.
 
 | Method | Path | Description |
 |---|---|---|
@@ -1413,8 +1417,8 @@ graph LR
 
     subgraph AI["AI Providers (CLI subprocess)"]
         Claude["claude CLI"]
-        Copilot["copilot CLI"]
-        Gemini["gemini CLI"]
+        Copilot["copilot CLI (via Copilot SDK)"]
+        Gemini["agy CLI (Antigravity)"]
     end
 
     UI -- "HTTP REST\n+ STOMP/SockJS" --> Controllers
@@ -1452,8 +1456,8 @@ graph TD
     Controller --> NuGetSvc["NuGetService\nNuGet package list management"]
     Controller --> AIDelegate["AIDelegate interface\nRoutes to active provider"]
     AIDelegate --> ClaudeSvc["ClaudeService\nclaude CLI subprocess"]
-    AIDelegate --> CopilotSvc["CopilotCliService\ncopilot CLI subprocess"]
-    AIDelegate --> GeminiSvc["GeminiService\ngemini CLI subprocess"]
+    AIDelegate --> CopilotSvc["CopilotCliService\nGitHub Copilot SDK"]
+    AIDelegate --> GeminiSvc["GeminiService\nAntigravity agy CLI"]
     Controller --> SettingsSvc["SettingsService\ndata/settings.json"]
 
     Orchestration --> Shell
@@ -1592,7 +1596,7 @@ graph TD
     AppJS --> Pkg["packages.js\nMaven package manager UI\nC++ built-in headers panel"]
     AppJS --> NPM["npm-packages.js\nnpm package manager UI"]
     AppJS --> NuGet["nuget.js\nNuGet package manager UI"]
-    AppJS --> AI["ai-assistant.js\nMulti-provider AI panel\nClaude · Copilot · Gemini\nNotebook generation"]
+    AppJS --> AI["ai-assistant.js\nArima Agentic Assistant (AAA)\nClaude · Copilot · Antigravity\nNotebook generation"]
     AppJS --> Settings["settings.js\nSettings form · Server status\nAI provider switcher"]
     AppJS --> Docs["docs.js\nThis documentation overlay"]
     AppJS --> SLC["server-lifecycle.js\nHealth poll · Reconnect overlay\nShutdown/restart UI"]
@@ -1724,8 +1728,8 @@ The frontend has no build step — change a JS/CSS file and refresh the browser.
 | \`PackageService\` | Maven Central HTTP download; JShell classpath injection |
 | \`NuGetService\` | NuGet package list persistence; per-cell injection for C#/F# |
 | \`ClaudeService\` | claude CLI subprocess; streams stdout back to caller |
-| \`CopilotCliService\` | copilot CLI subprocess; implements AIDelegate |
-| \`GeminiService\` | gemini CLI subprocess; implements AIDelegate |
+| \`CopilotCliService\` | GitHub Copilot SDK (drives local copilot CLI); implements AIDelegate |
+| \`GeminiService\` | Antigravity \`agy\` CLI subprocess; implements AIDelegate |
 | \`SettingsService\` | data/settings.json load/save |
 
 ---
@@ -1933,8 +1937,8 @@ Arima is open source. To contribute:
 | \`service/NuGetService.java\` | NuGet package management |
 | \`service/CppExecutionService.java\` | C++ compilation + execution; compiler auto-detection |
 | \`service/ClaudeService.java\` | Claude CLI integration |
-| \`service/CopilotCliService.java\` | GitHub Copilot CLI integration |
-| \`service/GeminiService.java\` | Gemini CLI integration |
+| \`service/CopilotCliService.java\` | GitHub Copilot SDK integration |
+| \`service/GeminiService.java\` | Antigravity CLI (\`agy\`) integration |
 | \`static/index.html\` | Single-page app entry point |
 | \`static/js/orchestration.js\` | Client-side dep graph + badges |
 | \`static/js/notebook.js\` | Main notebook editor |

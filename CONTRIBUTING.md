@@ -33,7 +33,7 @@ This is a young, growing project. Your contributions have outsized impact — th
 Arima is designed to be **reshaped by AI in your own loop, then contributed back through the same loop.** You do not need to spend a Saturday morning learning the codebase by hand. The recommended workflow is:
 
 1. **Use Arima.** Notice something missing or wrong.
-2. **Open your AI CLI inside the repo** — `claude code`, `copilot`, `gemini`, whichever you have authenticated.
+2. **Open your AI CLI inside the repo** — `claude`, `copilot`, `agy` (Antigravity), whichever you have authenticated.
 3. **Describe what you want** in plain English. The AI reads the architecture rules in [`AGENTS.md`](AGENTS.md), edits the right files, runs the build, iterates.
 4. **Try it locally.** Refresh Arima. Confirm it works for you.
 5. **Ask the same AI to contribute it back:**

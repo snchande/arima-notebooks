@@ -1,5 +1,12 @@
 package com.barista.service;
 
+import com.github.copilot.CopilotClient;
+import com.github.copilot.generated.AssistantMessageEvent;
+import com.github.copilot.rpc.MessageOptions;
+import com.github.copilot.rpc.PermissionHandler;
+import com.github.copilot.rpc.PermissionRequestResult;
+import com.github.copilot.rpc.PermissionRequestResultKind;
+import com.github.copilot.rpc.SessionConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -8,21 +15,35 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
- * GitHub Copilot CLI integration via the local {@code copilot} CLI.
+ * GitHub Copilot integration via the official GitHub Copilot SDK for Java
+ * ({@code com.github:copilot-sdk-java}, MIT-licensed).
  *
- * Routes all requests through the CLI executable — similar to ClaudeService
- * and GeminiService. Prompts are piped via stdin.
+ * The SDK drives the local GitHub Copilot CLI ({@code copilot}) in server mode over
+ * JSON-RPC — replacing the previous raw-stdin piping with a typed session API
+ * (assistant-message events, usage metrics, permission handling). Authentication is
+ * reused from the {@code copilot} CLI login; Arima stores no API key and opens no new
+ * outbound host of its own (the CLI engine handles model access, exactly as before).
+ *
+ * Permission model: every tool/permission request is REJECTED ({@link #DENY_ALL}), so the
+ * assistant runs in chat-only mode. Any code it returns is applied to notebook cells through
+ * the Arima UI (auto-apply + undo) — the SDK never edits files on disk on its own.
  *
  * Prerequisites:
- *   Install the Copilot CLI and authenticate it.
- *   The CLI is expected to be available as {@code copilot} on the system PATH.
+ *   Install the GitHub Copilot CLI ({@code copilot}, v1.0.55-5+) on PATH and authenticate it.
  */
 @Service
 public class CopilotCliService {
 
     private static final Logger log = LoggerFactory.getLogger(CopilotCliService.class);
+
+    /** Chat-only guard: reject every permission request so the agent cannot run tools or edit files. */
+    private static final PermissionHandler DENY_ALL = (request, invocation) ->
+        CompletableFuture.completedFuture(
+            new PermissionRequestResult().setKind(PermissionRequestResultKind.REJECTED));
 
     private final SettingsService settingsService;
 
@@ -37,14 +58,13 @@ public class CopilotCliService {
     public String chat(List<Map<String, String>> messages, String systemPrompt)
             throws IOException, InterruptedException {
 
-        String exe = findCopilotExecutable();
-        if (exe == null) {
+        if (findCopilotExecutable() == null) {
             throw new IllegalStateException(
-                "Copilot CLI not found.\n\n" +
-                "Install the Copilot CLI and make sure the `copilot` command is available on your PATH.\n" +
-                "After installing, authenticate it before using it in Arima.");
+                "GitHub Copilot CLI not found.\n\n" +
+                "The Copilot SDK drives the local `copilot` CLI. Install it (v1.0.55-5 or later),\n" +
+                "add it to your PATH, and authenticate it, then try again.");
         }
-        return chatViaCli(messages, systemPrompt, exe);
+        return chatViaSdk(buildPrompt(messages, systemPrompt));
     }
 
     public String generateNotebook(String prompt) throws IOException, InterruptedException {
@@ -112,22 +132,20 @@ public class CopilotCliService {
 
     public String getStatusDetail() {
         String exe = findCopilotExecutable();
-        if (exe == null) return "copilot CLI not found — install and add to PATH";
+        if (exe == null) return "copilot CLI not found — install the GitHub Copilot CLI (v1.0.55-5+) and add it to PATH";
         try {
             ProcessBuilder pb = new ProcessBuilder(exe, "--version");
             pb.redirectErrorStream(true);
             Process p = pb.start();
             String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
             p.waitFor();
-            return out.isBlank() ? ("✓ Found: " + exe) : ("✓ " + out.split("\\r?\\n")[0]);
+            return out.isBlank() ? ("✓ Copilot SDK via " + exe) : ("✓ Copilot SDK · " + out.split("\\r?\\n")[0]);
         } catch (Exception e) {
-            return "✓ Found: " + exe;
+            return "✓ Copilot SDK via " + exe;
         }
     }
 
-    private String chatViaCli(List<Map<String, String>> messages, String systemPrompt, String exe)
-            throws IOException, InterruptedException {
-
+    private String buildPrompt(List<Map<String, String>> messages, String systemPrompt) {
         String sys = (systemPrompt != null && !systemPrompt.isBlank()) ? systemPrompt : getDefaultSystemPrompt();
         StringBuilder prompt = new StringBuilder();
         prompt.append(sys).append("\n\n---\n\n");
@@ -138,33 +156,45 @@ public class CopilotCliService {
             else if ("assistant".equals(role)) prompt.append("**Assistant:** ").append(content).append("\n\n");
         }
         prompt.append("**Assistant:**");
+        return prompt.toString();
+    }
 
-        log.info("Copilot CLI chat via {}: {} messages", exe, messages.size());
+    private String chatViaSdk(String prompt) throws IOException, InterruptedException {
+        log.info("Copilot SDK chat: prompt length {}", prompt.length());
 
-        // Pipe prompt via stdin. Run from the Arima repo root so Copilot loads
-        // .github/copilot-instructions.md + AGENTS.md (no-op when BARISTA_HOME is
-        // unset — see BaristaHome).
-        ProcessBuilder pb = new ProcessBuilder(exe);
-        pb.directory(com.barista.util.BaristaHome.directory());
-        pb.redirectErrorStream(false);
-        Process process = pb.start();
+        final String[] holder = { null };
+        CopilotClient client = null;
+        try {
+            client = new CopilotClient();
+            client.start().get(60, TimeUnit.SECONDS);
 
-        try (java.io.OutputStream stdin = process.getOutputStream()) {
-            stdin.write(prompt.toString().getBytes(StandardCharsets.UTF_8));
+            var session = client.createSession(
+                new SessionConfig().setOnPermissionRequest(DENY_ALL)).get(60, TimeUnit.SECONDS);
+
+            session.on(AssistantMessageEvent.class, msg -> {
+                String c = msg.getData().content();
+                if (c != null && !c.isBlank()) holder[0] = c;
+            });
+
+            session.sendAndWait(new MessageOptions().setPrompt(prompt)).get(180, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
+        } catch (Exception e) {
+            log.warn("Copilot SDK error", e);
+            throw new IOException("Copilot SDK error: " + e.getMessage()
+                + "\n\nMake sure the `copilot` CLI (v1.0.55-5+) is installed and authenticated.", e);
+        } finally {
+            if (client != null) {
+                try { client.close(); } catch (Exception ignore) {}
+            }
         }
 
-        String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-        String stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-        int exitCode  = process.waitFor();
-
-        if (exitCode != 0 || output.isBlank()) {
-            String err = stderr.isBlank() ? ("exit code " + exitCode) : stderr;
-            log.warn("Copilot CLI failed ({}): {}", exe, err);
-            throw new IOException("Copilot CLI error: " + err
-                + "\n\nMake sure the copilot CLI is authenticated.");
+        if (holder[0] == null || holder[0].isBlank()) {
+            throw new IOException("Copilot SDK returned no assistant message. "
+                + "Make sure the `copilot` CLI is authenticated.");
         }
-
-        return output;
+        return holder[0].trim();
     }
 
     private String findCopilotExecutable() {
@@ -188,7 +218,6 @@ public class CopilotCliService {
             }
         }
 
-        // Fall back to PATH lookup
         try {
             List<String> cmd = isWindows
                 ? List.of("cmd", "/c", "where", "copilot")

@@ -344,7 +344,7 @@
     <div class="cover-title">Arima<br><em>Notebooks</em></div>
     <p class="cover-tag">
       Interactive multi-language notebooks in your browser — <strong>Java, JShell, JavaScript, TypeScript, C#, F#, C++</strong> —
-      with first-class AI assistance from Claude, GitHub Copilot, and Gemini.
+      with first-class AI assistance from Claude, GitHub Copilot, and Antigravity.
       Runs entirely on your machine. No cloud account. No telemetry.
     </p>
     <div class="cover-langs">
@@ -377,7 +377,7 @@
   <p>
     Arima Notebooks is a <strong>locally-hosted, browser-based notebook environment</strong> for
     seven languages — JShell, Java, JavaScript, TypeScript, C#, F#, and C++ — with three AI
-    co-pilots (Claude, GitHub Copilot, Gemini) wired in as <strong>local CLI subprocesses</strong>
+    co-pilots (Claude, GitHub Copilot, Antigravity) wired in <strong>locally</strong> (CLI subprocesses + the GitHub Copilot SDK)
     and the <strong>whole system exposed via MCP</strong> so any agent can drive it programmatically.
     Everything runs on your machine. No cloud account. No telemetry.
   </p>
@@ -415,7 +415,7 @@
   <h3 style="margin-top:14px">At a glance</h3>
   <div class="grid-4">
     <div class="card"><div class="ttl"><span class="dot"></span>7 languages</div><p>JShell · Java · JS · TS · C# · F# · C++ — one UI.</p></div>
-    <div class="card"><div class="ttl"><span class="dot"></span>CLI inside</div><p>Claude · Copilot · Gemini as local subprocess.</p></div>
+    <div class="card"><div class="ttl"><span class="dot"></span>CLI inside</div><p>Claude · Copilot · Antigravity, all local.</p></div>
     <div class="card"><div class="ttl"><span class="dot"></span>MCP outside</div><p>Whole system exposed to any agent over MCP.</p></div>
     <div class="card"><div class="ttl"><span class="dot"></span>.ipynb interop</div><p>Round-trip with Jupyter — pick your canvas.</p></div>
     <div class="card"><div class="ttl"><span class="dot"></span>Live output</div><p>STOMP/WebSocket streaming. Zero polling.</p></div>
@@ -499,8 +499,9 @@
     </div>
     <div class="card">
       <div class="ttl"><span class="dot"></span>Multi-provider AI</div>
-      <p>Claude, GitHub Copilot, and Gemini all run as local CLI subprocesses. Switch providers from the
-      AI tab. No API keys stored by Arima; provider auth lives with the CLI.</p>
+      <p>Claude &amp; Antigravity run as local CLI subprocesses; GitHub Copilot runs via the GitHub Copilot SDK
+      (which drives the local <code>copilot</code> CLI). Switch providers from the AI tab. No API keys stored by
+      Arima; provider auth lives with the CLI.</p>
     </div>
     <div class="card">
       <div class="ttl"><span class="dot"></span>AI language conversion</div>
@@ -693,7 +694,7 @@ flowchart TB
   MAVEN["Maven Central"]:::ext
   NPMREG["npm registry"]:::ext
   NUGETREG["NuGet.org"]:::ext
-  CLI["Claude · Copilot · Gemini  CLI<br/>(local subprocess)"]:::ext
+  CLI["Claude · Copilot · Antigravity<br/>(local CLI + Copilot SDK)"]:::ext
 
   UI -- "REST /api/*" --> REST
   UI -- "STOMP /ws"   --> WS
@@ -777,7 +778,7 @@ sequenceDiagram
     <tr><td>Node.js</td><td>18+ (22.6+ for TS)</td><td>JavaScript / TypeScript cells + npm packages.</td></tr>
     <tr><td>.NET SDK</td><td>6.0+</td><td>C# (<code>dotnet run</code>) and F# (<code>dotnet fsi</code>).</td></tr>
     <tr><td>C++ compiler</td><td>any</td><td>MSVC on Windows, GCC or Clang on Linux/macOS — auto-detected.</td></tr>
-    <tr><td>AI CLI</td><td>latest</td><td>Optional. Claude CLI / GitHub Copilot CLI / Gemini CLI.</td></tr>
+    <tr><td>AI CLI</td><td>latest</td><td>Optional. Claude CLI / GitHub Copilot CLI (SDK) / Antigravity CLI (<code>agy</code>).</td></tr>
   </table>
 
   <h3>Five-step quick start</h3>
@@ -800,7 +801,7 @@ sequenceDiagram
     </div>
     <div class="step">
       <div class="st-ttl">(Optional) Enable AI</div>
-      <p>Install a CLI: <code>claude</code>, <code>github-copilot-cli</code>, or <code>gemini</code>. Pick the provider in <strong>Settings → AI Provider</strong>. No API keys touch Arima. <code>arima stop</code> · <code>arima status</code> · <code>arima rebuild</code> manage the lifecycle.</p>
+      <p>Install a CLI: <code>claude</code>, <code>copilot</code>, or <code>agy</code>. Pick the provider in <strong>Settings → AI Provider</strong>. No API keys touch Arima. <code>arima stop</code> · <code>arima status</code> · <code>arima rebuild</code> manage the lifecycle.</p>
     </div>
   </div>
 
@@ -915,11 +916,11 @@ barista.display(obj);</pre>
     </div>
     <div class="card">
       <div class="ttl"><span class="dot" style="background:var(--green)"></span>GitHub Copilot</div>
-      <p><code>npm install -g @githubnext/github-copilot-cli</code> → <code>github-copilot-cli auth</code>.</p>
+      <p>Install the <code>copilot</code> CLI (v1.0.55-5+) and authenticate it — the GitHub Copilot SDK drives it.</p>
     </div>
     <div class="card">
-      <div class="ttl"><span class="dot" style="background:var(--purple)"></span>Gemini</div>
-      <p><code>npm install -g @google/gemini-cli</code> → <code>gemini auth</code>.</p>
+      <div class="ttl"><span class="dot" style="background:var(--purple)"></span>Antigravity</div>
+      <p>Install <code>agy</code> (antigravity.google/docs/cli-install) → run <code>agy</code> to sign in.</p>
     </div>
   </div>
 
@@ -973,7 +974,7 @@ barista.display(obj);</pre>
 
   <p>Arima is meant to be <strong>shaped by the people who use it</strong>. The loop is short: clone,
   describe the change to your AI CLI, verify, ask the same CLI to package the PR. The repo ships with
-  explicit instruction files for Claude, Copilot, and Gemini so the agent respects the architecture
+  explicit instruction files for Claude, Copilot, and Antigravity so the agent respects the architecture
   while it works.</p>
 
   <h3>1 — Fork &amp; clone</h3>
@@ -995,9 +996,8 @@ git checkout -b feat/&lt;short-name&gt;</pre>
       <code>.github/copilot-instructions.md</code> — same architecture rules.</p>
     </div>
     <div class="card">
-      <div class="ttl"><span class="dot" style="background:var(--purple)"></span>Gemini CLI</div>
-      <p>Run <code>gemini</code> in the repo root. Reads <code>GEMINI.md</code> — same architecture rules
-      restated for Gemini's prompt format.</p>
+      <div class="ttl"><span class="dot" style="background:var(--purple)"></span>Antigravity CLI</div>
+      <p>Run <code>agy</code> in the repo root. Reads <code>AGENTS.md</code> (and <code>GEMINI.md</code>) — same architecture rules.</p>
     </div>
   </div>
 

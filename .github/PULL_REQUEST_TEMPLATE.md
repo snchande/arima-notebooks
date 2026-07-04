@@ -40,7 +40,7 @@ This PR will be auto-marked **draft** until the `security-check` workflow report
 
 ## AI-assisted changes
 
-If this PR was authored with the help of an AI CLI (Claude, GitHub Copilot, Gemini), briefly note:
+If this PR was authored with the help of an AI CLI (Claude, GitHub Copilot, Antigravity), briefly note:
 
 - Which agent: ___
 - Did the agent follow [`AGENTS.md`](../AGENTS.md)? [ ] yes

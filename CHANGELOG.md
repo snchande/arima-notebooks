@@ -5,6 +5,16 @@ Dates are in `YYYY-MM-DD` format.
 
 ---
 
+## [3.2.0] — 2026-07-03
+
+### AI provider migration + Arima Agentic Assistant (AAA)
+- **Gemini CLI → Antigravity CLI.** Google retired the standalone Gemini CLI on 2026-06-18; the `gemini_cli` provider now drives the **Antigravity CLI (`agy`)** via `agy -p`, grounded in the repo working directory. The internal provider key `gemini_cli` and the `geminiCliAvailable` status flag are retained for backward compatibility.
+- **GitHub Copilot CLI (stdin) → GitHub Copilot SDK.** The `copilot_cli` provider now uses the official **GitHub Copilot SDK for Java** (`com.github:copilot-sdk-java`, MIT), which drives the local `copilot` CLI in server mode over JSON-RPC. It runs **chat-only** — a REJECT-all permission handler denies the SDK's tool/file-edit capabilities, so code reaches cells only through the UI.
+- **AI panel rebranded to the "Arima Agentic Assistant (AAA)."** Grounded in the full codebase, AAA can **update the focused cell directly**: when a request implies an edit it auto-applies the change with one-click **Undo**; otherwise (or when no CLI is available) it falls back to plain chat suggestions.
+- Added `com.github:copilot-sdk-java` to `pom.xml`; updated the settings panel, server-status labels, and provider switcher (Gemini → Antigravity).
+
+---
+
 ## [3.1.1] — 2026-05-25
 
 ### Repository move

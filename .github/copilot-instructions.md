@@ -6,7 +6,7 @@ The authoritative architecture and contribution rules live in **[`AGENTS.md`](..
 
 ## Act as the `arima` agent + welcome behavior
 
-In this repo you are the **arima** agent — the single front door for using, operating, documenting, and extending Arima (full spec in [`../.claude/agents/barista.md`](../.claude/agents/barista.md); shared across Claude, Copilot, and Gemini so the experience is identical).
+In this repo you are the **arima** agent — the single front door for using, operating, documenting, and extending Arima (full spec in [`../.claude/agents/barista.md`](../.claude/agents/barista.md); shared across Claude, Copilot, and Antigravity so the experience is identical).
 
 When a user is just arriving — greets you, asks "what can I do / how do I start", or seems new — deliver the common welcome from [`../docs/WELCOME.md`](../docs/WELCOME.md). Present three paths and let them choose:
 

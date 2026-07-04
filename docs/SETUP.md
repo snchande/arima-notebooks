@@ -19,8 +19,8 @@
 | .NET SDK | 6.0 | C# and F# cells (no extra tools needed) |
 | g++ or clang++ | g++ 9 / clang++ 9 | C++ cells (`⚙ C++` mode), C++17 required |
 | Claude CLI | Latest | AI Assistant (Claude provider) — `claude auth` |
-| Copilot CLI | Latest | AI Assistant (Copilot provider) — `copilot` binary |
-| Gemini CLI | Latest | AI Assistant (Gemini provider) — `gemini auth` |
+| GitHub Copilot CLI | 1.0.55-5+ | AI Assistant (Copilot provider, driven by the Copilot SDK) — `copilot` binary |
+| Antigravity CLI (`agy`) | Latest | AI Assistant (Antigravity provider, formerly Gemini) — run `agy` to sign in |
 | Internet access | — | Maven Central, npm registry, NuGet |
 
 > **Node.js**: Install from [nodejs.org](https://nodejs.org) to use JavaScript and TypeScript cells (plus npm packages).
@@ -47,8 +47,8 @@ Arima is designed to be **used, customized, and contributed back to entirely thr
 | CLI | Install | Auth |
 |-----|---------|------|
 | **Claude Code** *(recommended)* | [claude.ai/code](https://claude.ai/code) | `claude auth` |
-| **GitHub Copilot CLI** | `npm install -g @githubnext/github-copilot-cli` | `github-copilot-cli auth` |
-| **Gemini CLI** | `npm install -g @google/gemini-cli` | `gemini auth` |
+| **GitHub Copilot CLI** | [GitHub Copilot CLI](https://github.com/github/copilot-cli) (`copilot`, v1.0.55-5+) | authenticate the `copilot` CLI |
+| **Antigravity CLI** | [install `agy`](https://antigravity.google/docs/cli-install) | run `agy` to sign in |
 
 Once installed, Arima uses the CLI as a **local subprocess** — no API key for Arima to manage, no second vendor relationship. The same CLI lets you:
 
@@ -361,35 +361,28 @@ Common install locations checked automatically:
 
 ---
 
-### Copilot CLI
+### GitHub Copilot (SDK)
 
-Arima calls the `copilot` binary directly as a subprocess.
+Arima uses the **GitHub Copilot SDK for Java** (`com.github:copilot-sdk-java`), which drives the local `copilot` CLI in server mode over JSON-RPC. It runs chat-only — the SDK's file-editing tools are denied.
 
-1. Install Copilot CLI — check [GitHub Copilot CLI docs](https://docs.github.com/en/copilot/github-copilot-in-the-cli) for the latest install instructions
-2. Authenticate as required by Copilot CLI
+1. Install the [GitHub Copilot CLI](https://github.com/github/copilot-cli) (`copilot`, v1.0.55-5 or later)
+2. Authenticate the `copilot` CLI
 3. Verify: `copilot --version` prints a version number
-4. In Arima, open **Settings → AI Provider** and select **Copilot CLI**, or use the toggle in the AI sidebar
+4. In Arima, open **Settings → AI Provider** and select **Copilot**, or use the toggle in the AI sidebar
 
-The Settings tab → Server Status shows **GitHub Copilot: ✓ Found** when the `copilot` binary is detected.
+The Settings tab → Server Status shows **Copilot SDK: ✓ copilot CLI found** when the `copilot` binary is detected.
 
 ---
 
-### Gemini CLI
+### Antigravity CLI (`agy`)
 
-Arima calls the `gemini` binary via `gemini -p "prompt"`.
+Google retired the standalone Gemini CLI on 2026-06-18 and replaced it with the **Antigravity CLI (`agy`)**. Arima calls `agy` via `agy -p "prompt"` (grounded in the repo working directory).
 
-1. Install Gemini CLI:
-   ```bash
-   npm install -g @google/gemini-cli
-   ```
-2. Authenticate:
-   ```bash
-   gemini auth
-   ```
-3. Verify: `gemini --version` prints a version number
-4. In Arima, open **Settings → AI Provider** and select **Gemini CLI**, or use the toggle in the AI sidebar
+1. Install the Antigravity CLI from [antigravity.google/docs/cli-install](https://antigravity.google/docs/cli-install)
+2. Sign in: run `agy` once in a terminal (or set `GEMINI_API_KEY` / `ANTIGRAVITY_API_KEY`)
+3. In Arima, open **Settings → AI Provider** and select **Antigravity**, or use the toggle in the AI sidebar
 
-The Settings tab → Server Status shows **Gemini CLI: ✓ Found** when detected.
+The Settings tab → Server Status shows **Antigravity CLI: ✓ Found** when detected. (The provider key remains `gemini_cli` for backward compatibility.)
 
 ---
 
@@ -397,7 +390,7 @@ The Settings tab → Server Status shows **Gemini CLI: ✓ Found** when detected
 
 You can switch providers at any time — no restart required:
 
-- **AI sidebar**: use the **Claude / Copilot / Gemini** toggle bar at the top of the AI panel
+- **AI sidebar**: use the **Claude / Copilot / Antigravity** toggle bar at the top of the AI panel
 - **Settings tab**: select the provider card under **AI Provider** and click **Save Settings**
 
 The active provider is shown in the sidebar header and in the status bar badge.
@@ -629,16 +622,15 @@ First, check which provider is active in the AI sidebar or Settings → AI Provi
 3. Verify: `where claude` (Windows) or `which claude` (Mac/Linux)
 4. Check Settings → Server Status → **Claude CLI: ✓ Found**
 
-**Copilot CLI**
-1. Verify the `copilot` binary is on your PATH: `copilot --version`
-2. Re-authenticate if needed (see Copilot CLI docs)
-3. Check Settings → Server Status → **GitHub Copilot: ✓ Found**
+**GitHub Copilot (SDK)**
+1. Verify the `copilot` binary (v1.0.55-5+) is on your PATH: `copilot --version`
+2. Re-authenticate the `copilot` CLI if needed
+3. Check Settings → Server Status → **Copilot SDK: ✓ copilot CLI found**
 
-**Gemini CLI**
-1. Install: `npm install -g @google/gemini-cli`
-2. Authenticate: `gemini auth`
-3. Verify: `gemini --version`
-4. Check Settings → Server Status → **Gemini CLI: ✓ Found**
+**Antigravity CLI (`agy`)**
+1. Install from [antigravity.google/docs/cli-install](https://antigravity.google/docs/cli-install)
+2. Sign in: run `agy` (or set `GEMINI_API_KEY` / `ANTIGRAVITY_API_KEY`)
+3. Check Settings → Server Status → **Antigravity CLI: ✓ Found**
 
 ### C++ cells fail with "C++ compiler not found"
 

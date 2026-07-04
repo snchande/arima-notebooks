@@ -47,13 +47,13 @@ export BARISTA_HOME="$PROJECT_DIR"
 [ -d "$PROJECT_DIR/.claude/skills" ]   && export BARISTA_SKILLS_DIR="$PROJECT_DIR/.claude/skills"
 [ -d "$PROJECT_DIR/.claude/agents" ]   && export BARISTA_AGENTS_DIR="$PROJECT_DIR/.claude/agents"
 AI_FOUND=""
-for c in claude copilot github-copilot-cli gemini; do
+for c in claude copilot github-copilot-cli agy gemini; do
     command -v "$c" &>/dev/null && AI_FOUND="$AI_FOUND $c"
 done
 if [ -n "$AI_FOUND" ]; then
     echo "AI:     $AI_FOUND  (co-pilot ready — AGENTS.md + .claude skills/agents loaded; run ./arima.sh agents)"
 else
-    echo "AI:     no CLI found  (install Claude / Copilot / Gemini CLI for AI features)"
+    echo "AI:     no CLI found  (install Claude / Copilot / Antigravity for AI features)"
 fi
 echo ""
 

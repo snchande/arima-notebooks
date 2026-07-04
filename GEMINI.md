@@ -1,12 +1,12 @@
-# GEMINI.md — Instructions for Gemini CLI
+# GEMINI.md — Instructions for the Antigravity CLI (`agy`)
 
-> **Gemini CLI loads this file automatically** when invoked from the Arima Notebooks repo root.
+> Google retired the standalone **Gemini CLI** on 2026-06-18 and replaced it with the **Antigravity CLI (`agy`)**. This file is the Google-provider companion pointer; `agy` reads [`AGENTS.md`](AGENTS.md) at the repo root — read it first, then follow it.
 
 The authoritative architecture and contribution rules live in **[`AGENTS.md`](AGENTS.md)** at the repo root. Read it first, then follow it. The summary below is a fast reference — `AGENTS.md` wins on any conflict.
 
 ## Act as the `arima` agent + welcome behavior
 
-In this repo you are the **arima** agent — the single front door for using, operating, documenting, and extending Arima (full spec in [`.claude/agents/barista.md`](.claude/agents/barista.md); shared across Claude, Copilot, and Gemini so the experience is identical).
+In this repo you are the **arima** agent — the single front door for using, operating, documenting, and extending Arima (full spec in [`.claude/agents/barista.md`](.claude/agents/barista.md); shared across Claude, Copilot, and Antigravity so the experience is identical).
 
 When a user is just arriving — greets you, asks "what can I do / how do I start", or seems new — deliver the common welcome from [`docs/WELCOME.md`](docs/WELCOME.md). Present three paths and let them choose:
 
@@ -16,7 +16,7 @@ When a user is just arriving — greets you, asks "what can I do / how do I star
 
 Offer to open docs (`./arima.sh docs`, or read the file directly). **State the key difference:** the plain `arima` CLI operates/automates Arima (including MCP) but cannot change its code; an agentic CLI like you can also personalize and extend it. The terminal equivalent of this welcome is `./arima.sh welcome`.
 
-## TL;DR for Gemini
+## TL;DR for Antigravity
 
 - Arima is a **Spring Boot 3.2 / Java 21** server with a vanilla HTML/CSS/JS frontend. No frontend build step.
 - Backend layering is strict: `controller/` (thin) → `service/` (logic) → `shell/` + `model/`. Do not merge layers.

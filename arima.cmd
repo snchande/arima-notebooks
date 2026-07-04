@@ -269,14 +269,16 @@ where github-copilot-cli >nul 2>&1
 if !ERRORLEVEL!==0 echo !ESC![92m    [ok] Copilot via github-copilot-cli!ESC![0m
 where gh      >nul 2>&1
 if !ERRORLEVEL!==0 echo !ESC![90m    [..] gh -- use: gh copilot!ESC![0m
+where agy     >nul 2>&1
+if !ERRORLEVEL!==0 echo !ESC![92m    [ok] Antigravity!ESC![0m
 where gemini  >nul 2>&1
-if !ERRORLEVEL!==0 echo !ESC![92m    [ok] Gemini!ESC![0m
+if !ERRORLEVEL!==0 echo !ESC![90m    [..] gemini -- retired 2026-06-18; use Antigravity (agy)!ESC![0m
 goto :agents_after_clis
 :agents_nocli
 echo !ESC![93m    none found -- install one:!ESC![0m
-echo !ESC![90m      Claude :  https://claude.ai/code           then  claude auth!ESC![0m
-echo !ESC![90m      Copilot:  npm i -g @githubnext/github-copilot-cli!ESC![0m
-echo !ESC![90m      Gemini :  npm i -g @google/gemini-cli       then  gemini auth!ESC![0m
+echo !ESC![90m      Claude     :  https://claude.ai/code                      then  claude auth!ESC![0m
+echo !ESC![90m      Copilot    :  GitHub Copilot CLI (copilot, v1.0.55-5+; used by the Copilot SDK)!ESC![0m
+echo !ESC![90m      Antigravity:  https://antigravity.google/docs/cli-install  then  run  agy!ESC![0m
 :agents_after_clis
 echo.
 echo !ESC![96m  GUARDRAILS read automatically by every AI CLI in this repo!ESC![0m
@@ -497,7 +499,7 @@ set "BARISTA_AI_COPILOTS="
 where claude  >nul 2>&1 && set "BARISTA_AI_COPILOTS=!BARISTA_AI_COPILOTS! Claude"
 where copilot >nul 2>&1 && set "BARISTA_AI_COPILOTS=!BARISTA_AI_COPILOTS! Copilot"
 if not defined BARISTA_AI_COPILOTS where github-copilot-cli >nul 2>&1 && set "BARISTA_AI_COPILOTS=!BARISTA_AI_COPILOTS! Copilot"
-where gemini  >nul 2>&1 && set "BARISTA_AI_COPILOTS=!BARISTA_AI_COPILOTS! Gemini"
+where agy     >nul 2>&1 && set "BARISTA_AI_COPILOTS=!BARISTA_AI_COPILOTS! Antigravity"
 REM Trim leading space
 if defined BARISTA_AI_COPILOTS if "!BARISTA_AI_COPILOTS:~0,1!"==" " set "BARISTA_AI_COPILOTS=!BARISTA_AI_COPILOTS:~1!"
 exit /b 0

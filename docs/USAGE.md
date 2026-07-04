@@ -25,7 +25,7 @@ Arima Notebooks has five main tabs:
 | **Notebook** | Write and execute Java, JavaScript, TypeScript, C#, F#, or C++ code in cells |
 | **Console** | Multi-runtime REPL — JShell, Java, JavaScript, or TypeScript with Tab completion |
 | **Packages** | Install Maven packages (Java), npm packages (JavaScript / TypeScript), and NuGet packages (C#/F#) |
-| **Settings** | Configure AI provider (Claude/Copilot/Gemini), theme, and preferences |
+| **Settings** | Configure AI provider (Claude/Copilot/Antigravity), theme, and preferences |
 | **AI** | Chat with the active AI provider; generate notebooks; switch providers inline |
 
 ---
@@ -849,7 +849,7 @@ Click **Remove** next to any installed package (Maven, npm, or NuGet).
 The AI sidebar header shows the active provider name and icon. Directly below it is a **three-button toggle bar**:
 
 ```
-[ 🤖 Claude ]  [ 🐙 Copilot ]  [ ✨ Gemini ]
+[ 🤖 Claude ]  [ 🐙 Copilot ]  [ 🚀 Antigravity ]
 ```
 
 Click any button to switch providers instantly — no restart required. The switch is saved to settings and a confirmation notice appears in the chat. Only providers with their CLI detected are fully active; unavailable CLIs show a dimmed button.
@@ -895,7 +895,7 @@ For *this notebook, right now*. Generate cells, explain output, convert between 
 
 ### Surface 2 — Your AI CLI in the Arima repo (customize)
 
-For *Arima itself*. Open `claude code`, `copilot`, or `gemini` inside the cloned repo. The agent reads [`AGENTS.md`](../AGENTS.md) for the architecture rules and edits the right files. Most one-feature changes take under an hour.
+For *Arima itself*. Open `claude`, `copilot`, or `agy` (Antigravity) inside the cloned repo. The agent reads [`AGENTS.md`](../AGENTS.md) for the architecture rules and edits the right files. Most one-feature changes take under an hour.
 
 **Try:**
 - *"Add a 'Export as Markdown' button to the notebook toolbar. New endpoint, new UI button, update `docs/API.md`."*
@@ -930,7 +930,7 @@ The notebook is the shared artifact. You, the Arima UI, the AI panel, the CLI, a
 
 ### AI Provider
 
-Select the active AI provider with the **Claude / Copilot CLI / Gemini CLI** radio buttons. Each provider card expands to show its specific settings and a live status indicator.
+Select the active AI provider with the **Claude CLI / Copilot / Antigravity** radio buttons. Each provider card expands to show its specific settings and a live status indicator.
 
 **Claude CLI**
 
@@ -941,17 +941,13 @@ Select the active AI provider with the **Claude / Copilot CLI / Gemini CLI** rad
 
 Recommended models: `claude-sonnet-4-6` (balanced), `claude-opus-4-6` (most capable), `claude-haiku-4-5` (fastest)
 
-**Copilot CLI**
+**GitHub Copilot (SDK)**
 
-Shows a live status dot indicating whether the `copilot` binary is found and authenticated.
+Uses the GitHub Copilot SDK, which drives the local `copilot` CLI (v1.0.55-5+). Shows a live status dot indicating whether the `copilot` binary is found and authenticated.
 
-**Gemini CLI**
+**Antigravity CLI (`agy`)**
 
-| Setting | Description |
-|---------|-------------|
-| Gemini Model | Which Gemini model to use (`gemini-2.5-flash` default) |
-
-Shows a live status dot indicating whether the `gemini` binary is found and authenticated.
+The successor to the retired Gemini CLI. Shows a live status dot indicating whether the `agy` binary is found and signed in. (The model is managed by `agy`; the provider key remains `gemini_cli` for compatibility.)
 
 ### Editor Settings
 

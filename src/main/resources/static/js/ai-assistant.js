@@ -15,6 +15,11 @@ const AIAssistant = (() => {
     let nbContext    = null;   // { notebookName, cellCount, anchors, ... }
     let directEdit   = false;  // when true, first code block auto-applied to focused cell
     let pendingAutoMode = null; // 'insert' | 'apply' | null — set by notebook action buttons
+    let agenticAvailable = false; // true when the active provider's CLI is present (enables auto-apply)
+    let lastUserMessage  = '';    // last prompt sent — used to detect edit intent for proactive apply
+
+    // Heuristic: does the user's message ask AAA to change code (vs. just explain/answer)?
+    const EDIT_INTENT = /\b(fix|update|change|refactor|improve|rewrite|add|convert|optimi\w*|replace|clean|correct|implement|complete|make it|simplif\w*|shorten|renam\w*)\b/i;
 
     // ── Init ──────────────────────────────────────────────────────────────
     function init() {
@@ -139,9 +144,9 @@ const AIAssistant = (() => {
 
     // Provider metadata
     const PROVIDERS = {
-        claude_cli:  { label: 'Claude',  icon: '🤖', color: '#cba6f7' },
-        copilot_cli: { label: 'Copilot', icon: '🐙', color: '#f0883e' },
-        gemini_cli:  { label: 'Gemini',  icon: '✨', color: '#4285f4' },
+        claude_cli:  { label: 'Claude',      icon: '🤖', color: '#cba6f7' },
+        copilot_cli: { label: 'Copilot',     icon: '🐙', color: '#f0883e' },
+        gemini_cli:  { label: 'Antigravity', icon: '🚀', color: '#4285f4' },
     };
 
     async function _switchProvider(provider) {
@@ -181,14 +186,15 @@ const AIAssistant = (() => {
     function _updateProviderUI() {
         Arima.api('GET', '/llm/provider').then(data => {
             const p = PROVIDERS[data.provider] || { label: data.provider, icon: '🤖', color: '#888' };
+            agenticAvailable = !!data.available;
 
-            // Header title + icon + badge
+            // Header: fixed "Arima Agentic Assistant" branding; active provider shown in the badge
             const titleEl = document.getElementById('ai-provider-title');
             const iconEl  = document.getElementById('ai-prov-icon');
             const badge   = document.getElementById('ai-model-badge');
-            if (titleEl) titleEl.textContent = p.label + ' AI';
+            if (titleEl) titleEl.textContent = 'Arima Agentic Assistant';
             if (iconEl)  iconEl.textContent  = p.icon;
-            if (badge)   badge.textContent   = data.model || p.label;
+            if (badge)   badge.textContent   = p.label + (data.model ? ' · ' + data.model : '');
 
             // Switcher active state + availability
             document.querySelectorAll('.ai-prov-btn').forEach(btn => {
@@ -281,7 +287,7 @@ const AIAssistant = (() => {
             cpp:        'C++ (MSVC / GCC / Clang subprocess)',
         };
 
-        let sys = `You are the AI assistant embedded in **Arima Notebooks** — an interactive multi-language notebook environment.
+        let sys = `You are the **Arima Agentic Assistant (AAA)** embedded in **Arima Notebooks** — an interactive multi-language notebook environment. You are grounded in the full Arima codebase (you may reference project files and AGENTS.md when relevant).
 
 ## Supported execution modes
 | Mode | Language | Notes |
@@ -295,7 +301,8 @@ const AIAssistant = (() => {
 
 ## Your role
 - Help the user write, debug, understand, and improve code in their Arima notebook cells
-- When asked to fix/rewrite/improve code, output a **complete, runnable** code block in the same language as the focused cell
+- **Proactively offer concrete changes.** When the request implies an edit (fix, improve, refactor, change, add, convert…), return the **complete, runnable** updated cell as a single code block in the focused cell's language — AAA applies it directly to that cell and the user can Undo with one click.
+- When only explaining or answering, do NOT return a full replacement cell (it should not overwrite their code); use short illustrative snippets instead.
 - Answer questions about the notebook's structure, dependencies, and execution flow
 - If the user asks "why is this failing" check the last error in context before answering
 - Be concise; working code over lengthy explanation
@@ -366,7 +373,7 @@ When a cell has \`//@ depends: anchor\`, Arima compiles and injects the ancestor
 ## Responding with code
 - Wrap ALL code in fenced code blocks with the correct language tag (\`\`\`java, \`\`\`jshell, \`\`\`csharp, \`\`\`fsharp, \`\`\`js, \`\`\`ts, \`\`\`cpp)
 - Match the language/mode of the focused cell unless the user explicitly asks to change it
-- Arima shows **Apply to cell**, **Apply & Run**, and **Insert as new cell** buttons under every code block
+- For an edit request, the FIRST code block is auto-applied to the focused cell (with Undo); make it the complete replacement. Additional blocks show manual **Apply to cell**, **Apply & Run**, and **New cell** buttons.
 - Keep each block complete and immediately runnable as a Arima cell`;
 
         return sys;
@@ -389,6 +396,7 @@ When a cell has \`//@ depends: anchor\`, Arima compiles and injects the ancestor
         const message = input?.value.trim();
         if (!message) return;
         input.value = '';
+        lastUserMessage = message;
 
         // Consume the pending auto-mode (set by notebook action buttons)
         const autoMode = pendingAutoMode;
@@ -426,13 +434,13 @@ When a cell has \`//@ depends: anchor\`, Arima compiles and injects the ancestor
             // Provider-aware error hint
             const _ap = Arima.state?.settings?.aiProvider || 'claude_cli';
             const providerHint = _ap === 'copilot_cli'
-                ? `Arima is configured to use **Copilot CLI**.\n` +
-                  `Make sure the \`copilot\` command is on your PATH and authenticated.`
+                ? `AAA is using the **GitHub Copilot SDK**, which drives the local \`copilot\` CLI.\n` +
+                  `Make sure the \`copilot\` command (v1.0.55-5+) is on your PATH and authenticated.`
                 : _ap === 'gemini_cli'
-                ? `Arima is configured to use **Gemini CLI**.\n` +
-                  `Make sure it is installed and authenticated:\n` +
-                  `\`\`\`\nnpm install -g @google/gemini-cli\ngemini auth\n\`\`\``
-                : `Arima uses your local **Claude CLI** (Pro plan). Make sure it is installed and signed in:\n` +
+                ? `AAA is using the **Antigravity CLI** (agy).\n` +
+                  `Make sure it is installed and signed in:\n` +
+                  `\`\`\`\n# https://antigravity.google/docs/cli-install\nagy\n\`\`\``
+                : `AAA uses your local **Claude CLI** (Pro plan). Make sure it is installed and signed in:\n` +
                   `\`\`\`\nclaude auth\n\`\`\``;
             appendMessage('assistant', `**Error:** ${errText}\n\n${providerHint}`);
             Arima.setStatus('AI error');
@@ -462,48 +470,61 @@ When a cell has \`//@ depends: anchor\`, Arima compiles and injects the ancestor
         return div;
     }
 
-    /** Add "Apply to cell" and "Insert as new cell" buttons after every code block.
+    /** Render the "applied" badge with a one-click Undo that restores the prior cell source. */
+    function _appliedBadge(preEl, cellId, prevSource, label) {
+        const badge = document.createElement('div');
+        badge.className = 'ai-code-actions';
+        const span = document.createElement('span');
+        span.className = 'ai-action-applied-badge';
+        span.innerHTML = '✓ <span class="ai-auto-badge">AAA</span> ' + label;
+        badge.appendChild(span);
+        if (cellId != null && prevSource != null) {
+            const undo = document.createElement('button');
+            undo.className = 'ai-action-btn ai-action-undo';
+            undo.innerHTML = '↶ Undo';
+            undo.title = 'Restore the cell to its previous content';
+            undo.onclick = () => {
+                NotebookEditor?.applyCodeToCell(cellId, prevSource);
+                undo.textContent = '✓ Reverted';
+                undo.disabled = true;
+                Arima.setStatus('Reverted AAA edit');
+            };
+            badge.appendChild(undo);
+        }
+        preEl.insertAdjacentElement('afterend', badge);
+    }
+
+    /** Add code actions after every code block.
      *  autoMode: 'insert' auto-creates a new cell, 'apply' auto-updates the focused cell.
-     *  directEdit: first block auto-applied to focused cell (existing toggle). */
+     *  directEdit: explicit toggle to always auto-apply.
+     *  Proactive agentic mode: when the provider is available and the request implies an
+     *  edit, AAA auto-applies the first block to the focused cell (with Undo). Otherwise the
+     *  manual Apply / Apply & Run / New cell buttons are shown ("simpler UI support"). */
     function addCodeActions(msgDiv, text, autoMode) {
         if (!msgDiv) return;
+        const editIntent = EDIT_INTENT.test(lastUserMessage || '');
+        const proactiveApply = agenticAvailable && editIntent;
         let firstBlock = true;
         msgDiv.querySelectorAll('pre code').forEach(codeEl => {
             const code = codeEl.textContent.trim();
+            const preEl = codeEl.closest('pre');
 
             // Notebook action button — auto-insert as new cell
             if (autoMode === 'insert' && firstBlock) {
                 firstBlock = false;
                 NotebookEditor?.insertCodeFromAI(code);
                 document.querySelector('[data-tab="notebook"]')?.click();
-                const badge = document.createElement('div');
-                badge.className = 'ai-code-actions';
-                badge.innerHTML = '<span class="ai-action-applied-badge">✓ <span class="ai-auto-badge">AUTO</span> Inserted as new cell</span>';
-                codeEl.closest('pre').insertAdjacentElement('afterend', badge);
+                _appliedBadge(preEl, null, null, 'Inserted as new cell');
                 return;
             }
 
-            // Notebook action button — auto-apply to focused cell
-            if (autoMode === 'apply' && firstBlock && cellContext) {
+            // Auto-apply the first block to the focused cell when requested explicitly
+            // (button / directEdit toggle) or proactively (agentic + edit intent).
+            if (firstBlock && cellContext && (autoMode === 'apply' || directEdit || proactiveApply)) {
                 firstBlock = false;
-                NotebookEditor?.applyCodeToCell(cellContext?.id, code);
+                const prev = NotebookEditor?.applyCodeToCell(cellContext?.id, code);
                 document.querySelector('[data-tab="notebook"]')?.click();
-                const badge = document.createElement('div');
-                badge.className = 'ai-code-actions';
-                badge.innerHTML = '<span class="ai-action-applied-badge">✓ <span class="ai-auto-badge">AUTO</span> Applied to cell</span>';
-                codeEl.closest('pre').insertAdjacentElement('afterend', badge);
-                return;
-            }
-
-            // Direct-edit mode: auto-apply first block
-            if (directEdit && firstBlock && cellContext) {
-                firstBlock = false;
-                NotebookEditor?.applyCodeToCell(cellContext?.id, code);
-                document.querySelector('[data-tab="notebook"]')?.click();
-                const badge = document.createElement('div');
-                badge.className = 'ai-code-actions';
-                badge.innerHTML = '<span class="ai-action-applied-badge">✓ Auto-applied to cell</span>';
-                codeEl.closest('pre').insertAdjacentElement('afterend', badge);
+                _appliedBadge(preEl, cellContext?.id, prev ?? null, 'Updated cell');
                 return;
             }
             firstBlock = false;

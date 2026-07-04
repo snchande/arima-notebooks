@@ -37,13 +37,13 @@ The plain **`arima` command line** manages the lifecycle (`start` · `stop` · `
 ### 3 · Personalize & extend Arima (only via an agentic CLI)
 
 This is the part a plain CLI can't do. Run your favorite **agentic CLI** inside the repo —
-`claude`, `copilot`, or `gemini` — and the **arima** agent helps you change and grow Arima itself:
+`claude`, `copilot`, or `agy` (Antigravity) — and the **arima** agent helps you change and grow Arima itself:
 add a language, tweak the theme, write a tutorial, fix a bug. It follows the architecture
 guardrails in [`AGENTS.md`](../AGENTS.md), verifies locally, runs the security check, and can
 package the change as a PR.
 
 ```bash
-claude        # or: copilot   /   gemini   — run from the repo root
+claude        # or: copilot   /   agy   — run from the repo root
 ```
 
 > **The one difference that matters:** the plain `arima` CLI lets you **operate and automate** Arima (including over MCP). An **agentic CLI** lets you do all of that **and personalize/extend** Arima — because it can write code, and Arima is built to be reshaped by the people who use it.

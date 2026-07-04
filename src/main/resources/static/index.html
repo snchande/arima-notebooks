@@ -694,8 +694,8 @@ dotnet fsi --version  # verify F# Interactive</pre>
                       <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.5"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
                     </div>
                     <div>
-                      <div class="ai-provider-name">Gemini CLI</div>
-                      <div class="ai-provider-desc">Google Gemini via local CLI (no API key required)</div>
+                      <div class="ai-provider-name">Antigravity CLI</div>
+                      <div class="ai-provider-desc">Google Antigravity (agy) via local CLI — no API key required</div>
                     </div>
                   </div>
                 </label>
@@ -730,32 +730,29 @@ dotnet fsi --version  # verify F# Interactive</pre>
                   <span id="gh-cli-status-text">Checking copilot CLI…</span>
                 </div>
                 <div class="field-hint">
-                  Install the Copilot CLI so that <code>copilot</code> is available on your PATH, then authenticate it.
+                  Uses the <strong>GitHub Copilot SDK</strong>, which drives the local <code>copilot</code> CLI (v1.0.55-5+).
+                  Make sure <code>copilot</code> is on your PATH and authenticated.
                 </div>
               </div>
             </div>
 
-            <!-- Gemini CLI fields -->
+            <!-- Antigravity CLI fields (provider key gemini_cli, retained for compatibility) -->
             <div id="ai-gemini-fields" style="display:none;">
               <div class="field-group">
                 <label>CLI Status</label>
                 <div id="gemini-cli-status" class="info-box" style="font-size:12.5px;line-height:1.6;padding:8px 12px;display:flex;align-items:center;gap:8px">
                   <span id="gemini-cli-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--text-3);flex-shrink:0"></span>
-                  <span id="gemini-cli-status-text">Checking gemini CLI…</span>
+                  <span id="gemini-cli-status-text">Checking Antigravity CLI…</span>
                 </div>
                 <div class="field-hint">
-                  Install via <code>npm install -g @google/gemini-cli</code>, then run <code>gemini auth</code> once.
-                  <a href="https://github.com/google-gemini/gemini-cli" target="_blank">Learn more →</a>
+                  Install the <a href="https://antigravity.google/docs/cli-install" target="_blank">Antigravity CLI</a> (<code>agy</code>),
+                  then run <code>agy</code> once to sign in (or set <code>GEMINI_API_KEY</code> / <code>ANTIGRAVITY_API_KEY</code>).
                 </div>
               </div>
               <div class="field-group">
                 <label>Model</label>
                 <select id="s-gemini-model" class="field-input">
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash — fast (recommended)</option>
-                  <option value="gemini-2.5-pro">Gemini 2.5 Pro — most capable</option>
-                  <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                  <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                  <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                  <option value="">Managed by Antigravity (agy) — uses the CLI's default model</option>
                 </select>
               </div>
             </div>
@@ -1012,7 +1009,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
     <div class="ai-sidebar-header">
       <div class="ai-title">
         <span class="ai-prov-icon" id="ai-prov-icon">🤖</span>
-        <span id="ai-provider-title">AI Assistant</span>
+        <span id="ai-provider-title">Arima Agentic Assistant</span>
         <span class="ai-model-badge" id="ai-model-badge">CLI</span>
       </div>
       <div class="ai-header-actions">
@@ -1042,8 +1039,8 @@ dotnet fsi --version  # verify F# Interactive</pre>
       <button class="ai-prov-btn" data-provider="copilot_cli" id="ai-prov-copilot" title="Switch to Copilot CLI">
         <span class="prov-dot"></span>Copilot
       </button>
-      <button class="ai-prov-btn" data-provider="gemini_cli" id="ai-prov-gemini" title="Switch to Gemini CLI">
-        <span class="prov-dot"></span>Gemini
+      <button class="ai-prov-btn" data-provider="gemini_cli" id="ai-prov-gemini" title="Switch to Antigravity CLI (agy)">
+        <span class="prov-dot"></span>Antigravity
       </button>
     </div>
 
@@ -1066,8 +1063,8 @@ dotnet fsi --version  # verify F# Interactive</pre>
       <div class="ai-msg assistant" id="ai-intro-msg">
         <div class="ai-msg-avatar">AI</div>
         <div class="ai-msg-body" id="ai-intro-body">
-          <p>Hi! I'm your Arima AI assistant — I help you write, explain, fix, and generate code across <strong>Java, JavaScript, C++, C#, and F#</strong>.</p>
-          <p>I work through your local AI CLI — no separate API key needed. Switch providers anytime in <strong>Settings → AI Assistant</strong>.</p>
+          <p>Hi! I'm the <strong>Arima Agentic Assistant (AAA)</strong> — grounded in the full Arima codebase. I help you write, explain, fix, and generate code across <strong>Java, JavaScript, C++, C#, and F#</strong>, and I can update the focused cell directly (with one-click Undo).</p>
+          <p>I work through your local AI CLI — no separate API key needed. Switch providers (Claude · Copilot · Antigravity) anytime in <strong>Settings → AI Assistant</strong>. Without a CLI I fall back to plain chat suggestions.</p>
           <p id="ai-intro-provider-line">Try a quick action above or ask anything!</p>
         </div>
       </div>

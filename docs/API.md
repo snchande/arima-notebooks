@@ -439,7 +439,7 @@ Example: `DELETE /api/nuget/Newtonsoft.Json`
 
 ## AI Assistant
 
-Arima supports three AI providers: **Claude CLI**, **Copilot CLI**, and **Gemini CLI**. All `/api/llm/*` endpoints route to the currently active provider — no change to request format needed when switching.
+Arima supports three AI providers: **Claude CLI**, **GitHub Copilot SDK**, and **Antigravity CLI** (`agy`). All `/api/llm/*` endpoints route to the currently active provider — no change to request format needed when switching.
 
 ### Get Active Provider
 ```
@@ -457,7 +457,7 @@ Returns information about the active AI provider and its status.
 }
 ```
 
-`provider` values: `claude_cli` · `copilot_cli` · `gemini_cli`
+`provider` values: `claude_cli` · `copilot_cli` (Copilot SDK) · `gemini_cli` (now the Antigravity CLI `agy`; key retained for compatibility)
 
 ---
 
@@ -598,10 +598,10 @@ GET /api/settings/status
   "claudeCliAvailable": true,
   "claudeModel": "claude-sonnet-4-6",
   "githubCopilotAvailable": true,
-  "githubCopilotStatus": "✓ copilot v1.0.32",
+  "githubCopilotStatus": "✓ Copilot SDK · GitHub Copilot CLI 1.0.69-0",
   "githubCopilotModel": "gpt-4o",
   "geminiCliAvailable": false,
-  "geminiCliStatus": "✗ gemini CLI not found",
+  "geminiCliStatus": "✗ Antigravity CLI (agy) not found",
   "geminiModel": "gemini-2.5-flash",
   "theme": "dark",
   "dotnetAvailable": true,

@@ -74,7 +74,7 @@ const SettingsPanel = (() => {
             const badge = document.getElementById('ai-model-badge');
             if (badge) {
                 if (saved.aiProvider === 'copilot_cli') badge.textContent = 'Copilot';
-                else if (saved.aiProvider === 'gemini_cli') badge.textContent = saved.geminiModel || 'Gemini';
+                else if (saved.aiProvider === 'gemini_cli') badge.textContent = 'Antigravity';
                 else badge.textContent = saved.claudeModel || 'Claude';
             }
 
@@ -120,7 +120,7 @@ const SettingsPanel = (() => {
             // Update inline gh/gemini CLI status in the settings cards
             _updateGhCliStatus(status.githubCopilotAvailable, status.githubCopilotStatus);
             _updateGeminiCliStatus(status.geminiCliAvailable, status.geminiCliStatus);
-            const providerLabel = { claude_cli: 'Claude CLI', copilot_cli: 'Copilot CLI', gemini_cli: 'Gemini CLI' }[activeProvider] || activeProvider;
+            const providerLabel = { claude_cli: 'Claude CLI', copilot_cli: 'Copilot SDK', gemini_cli: 'Antigravity CLI' }[activeProvider] || activeProvider;
             container.innerHTML = `
                 <table class="status-table">
                     <tr><td>Version</td><td><strong>v${status.version || '1.0.0'}</strong></td></tr>
@@ -130,11 +130,10 @@ const SettingsPanel = (() => {
                     <tr><td>AI Provider</td><td>${providerLabel}</td></tr>
                     <tr><td>Claude CLI</td><td>${status.claudeCliAvailable ? '✓ Found' : '✗ Not found — run <code>claude auth</code>'}</td></tr>
                     <tr><td>Claude Model</td><td>${status.claudeModel || '—'}</td></tr>
-                    <tr><td>GitHub Copilot</td><td>${status.githubCopilotAvailable ? '✓ gh CLI found' : '✗ gh CLI not found — <a href="https://cli.github.com" target="_blank">install</a>'}</td></tr>
+                    <tr><td>Copilot SDK</td><td>${status.githubCopilotAvailable ? '✓ copilot CLI found' : '✗ copilot CLI not found — install the <a href="https://github.com/github/copilot-cli" target="_blank">GitHub Copilot CLI</a>'}</td></tr>
                     <tr><td>Copilot Auth</td><td style="font-size:11.5px">${status.githubCopilotStatus || '—'}</td></tr>
-                    <tr><td>Copilot Model</td><td>${status.githubCopilotModel || 'gpt-4o'}</td></tr>
-                    <tr><td>Gemini CLI</td><td>${status.geminiCliAvailable ? '✓ Found' : '✗ Not found — run <code>npm i -g @google/gemini-cli</code>'}</td></tr>
-                    <tr><td>Gemini Model</td><td>${status.geminiModel || 'gemini-2.5-flash'}</td></tr>
+                    <tr><td>Antigravity CLI</td><td>${status.geminiCliAvailable ? '✓ Found' : '✗ Not found — <a href="https://antigravity.google/docs/cli-install" target="_blank">install agy</a>'}</td></tr>
+                    <tr><td>Antigravity Status</td><td style="font-size:11.5px">${status.geminiCliStatus || '—'}</td></tr>
                     <tr><td>C++ Compiler</td><td>${status.cppAvailable ? '✓ ' + (status.cppCompilerDetail || 'Found') : '✗ Not found — see Packages → C++ for setup'}</td></tr>
                     <tr><td>Theme</td><td>${status.theme || 'dark'}</td></tr>
                 </table>
@@ -315,7 +314,7 @@ const SettingsPanel = (() => {
         if (!dot || !text) return;
         const isOk = available && detail && detail.startsWith('✓');
         dot.style.background  = isOk ? '#22c55e' : (available ? '#f59e0b' : '#ef4444');
-        text.textContent = detail || (available ? 'gemini found — run: gemini auth' : 'gemini CLI not found');
+        text.textContent = detail || (available ? 'agy found — run: agy to sign in' : 'Antigravity CLI (agy) not found');
     }
 
     function bindButtons() {
