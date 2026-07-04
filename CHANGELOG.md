@@ -5,6 +5,16 @@ Dates are in `YYYY-MM-DD` format.
 
 ---
 
+## [3.3.0] — 2026-07-03
+
+### Interactive input for every language + runaway-execution guards + attention bell
+- **Interactive stdin in all seven languages.** Reading from standard input now prompts the user inline in the cell — `Scanner`/`System.in` (JShell, compiled Java), `readline`/`process.stdin` (JavaScript, TypeScript), `Console.ReadLine()` (C#, F#), and `std::cin` (C++). A new shared `InteractiveProcessRunner` streams subprocess output and, when a program blocks on stdin, flushes what it printed and shows the same inline terminal prompt JShell already used; the typed line is sent back over the existing STOMP channel. Pipelines and MCP runs stay non-interactive (unchanged).
+- **Runaway / never-ending loops can no longer wedge a notebook.** JShell cells now run on a bounded worker with an input-aware compute budget (`maxExecutionTimeMs`, default 30s) enforced via `jshell.stop()`, plus an output-line cap (`maxOutputLines`, default 1000). Previously a `while(true){}` in a JShell cell hung the request thread *and* the session lock forever; now it is stopped with a clear message and the session keeps working. Subprocess languages already had a hard timeout — it is now input-aware (time spent waiting on the user is not counted).
+- **Manual Stop button.** Every running cell shows a Stop control that interrupts it immediately — `jshell.stop()` for JShell, process kill for subprocess languages — and unblocks a stuck input wait.
+- **Attention bell + desktop notification.** When a cell is waiting for your input and you've switched to another tab or app, the header bell lights up with a count, a desktop notification fires (browser-local Web Notification — no new server/host), and the tab title flashes. Clicking the notification or bell entry jumps straight to the waiting cell (right view + notebook tab), scrolls to it, and focuses its prompt.
+
+---
+
 ## [3.2.0] — 2026-07-03
 
 ### AI provider migration + Arima Agentic Assistant (AAA)

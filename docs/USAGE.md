@@ -152,6 +152,35 @@ barista.stats([12, 45, 23, 67, 34, 56]);
 - **Run with dependencies**: Click **Run ↓** to run the current cell plus all cells it depends on first
 - After execution, the view scrolls to the cell output automatically
 
+### Interactive Input
+
+Cells can read from standard input in **every language**. When your code asks for input, the
+program's output so far appears and an inline terminal prompt (`▶`) opens right in the cell — type
+a line and press `Enter` to send it, then execution continues. Works for:
+
+| Language | Read input with |
+|----------|-----------------|
+| JShell / Java | `new Scanner(System.in).nextLine()` |
+| JavaScript / TypeScript | `readline` / `process.stdin` |
+| C# / F# | `Console.ReadLine()` |
+| C++ | `std::cin` / `std::getline` |
+
+If you switch to another browser tab or app while a cell is waiting, the header **🔔 bell** lights
+up with a count, a **desktop notification** fires, and the tab title flashes. Click the
+notification (or the bell entry) to jump straight back to the waiting cell with its prompt focused.
+
+### Stopping a Cell / Runaway Protection
+
+Every running cell shows a **■ Stop** button that interrupts it immediately — use it to break out of
+a long computation or a prompt you no longer want to answer. Arima also stops cells automatically so
+a never-ending loop can't wedge your notebook:
+
+- **Execution time limit** (`maxExecutionTimeMs`, default **30s**) — a `while(true){}` is stopped with
+  a clear message and the session keeps working. Time spent waiting at an input prompt does not count.
+- **Output limit** (`maxOutputLines`, default **1000**) — a runaway printer is capped and stopped.
+
+Both limits are configurable in **Settings → Execution**.
+
 ### Cell Keyboard Shortcuts
 
 | Key | Action |

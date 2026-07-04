@@ -95,6 +95,11 @@ public class TypeScriptExecutionService {
     private String dataDir;
 
     private final AtomicInteger execCounter = new AtomicInteger(0);
+    private final InteractiveProcessRunner runner;
+
+    public TypeScriptExecutionService(InteractiveProcessRunner runner) {
+        this.runner = runner;
+    }
 
     /** Cached availability — checked once per JVM run. */
     private volatile Boolean nodeAvailable = null;
@@ -206,31 +211,20 @@ public class TypeScriptExecutionService {
         cmd.add(scriptFile.toString());
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
-        pb.redirectErrorStream(false);
         pb.environment().put("NODE_PATH", npmModules.toString());
 
-        Process process = pb.start();
+        // Interactive stdin (UI runs) + runaway guards via the shared runner.
+        InteractiveProcessRunner.ProcRun run = runner.run(pb);
 
-        StringBuilder stdout = new StringBuilder();
-        StringBuilder stderr = new StringBuilder();
-        Thread outT = captureStream(process.getInputStream(), stdout);
-        Thread errT = captureStream(process.getErrorStream(), stderr);
-        outT.start();
-        errT.start();
-
-        boolean finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        outT.join(2000);
-        errT.join(2000);
-
-        if (!finished) {
-            process.destroyForcibly();
+        if (run.timedOut()) {
             return err(sessionId, cellId,
-                "Execution timed out after " + TIMEOUT_SECONDS + " seconds.", start);
+                "Execution timed out after " + TIMEOUT_SECONDS
+                + " seconds (possible never-ending loop) and was stopped.", start);
         }
 
-        long elapsed = System.currentTimeMillis() - start;
-        int exitCode = process.exitValue();
-        String errStr = stderr.toString().trim();
+        long elapsed  = System.currentTimeMillis() - start;
+        int  exitCode = run.exitCode();
+        String errStr = run.stderr().trim();
 
         // Clean up the temp path from Node's diagnostics so users see "script.ts" instead of "/tmp/xyz/script.ts".
         String cleanErr = errStr.replace(scriptFile.toString(), "script.ts")
@@ -241,7 +235,7 @@ public class TypeScriptExecutionService {
 
         // Pull the variable dump out of stdout (if the trailer ran).
         VariableInspector.ParsedOutput parsed =
-                VariableInspector.parseDumpFromOutput(stdout.toString());
+                VariableInspector.parseDumpFromOutput(run.stdout());
 
         return ExecutionResult.builder()
                 .sessionId(sessionId).cellId(cellId)
