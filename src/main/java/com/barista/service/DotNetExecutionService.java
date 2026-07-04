@@ -113,6 +113,7 @@ public class DotNetExecutionService {
                 "(?:class|record|struct|interface|enum|namespace)\\s");
 
     private final NuGetService nuGetService;
+    private final InteractiveProcessRunner runner;
     private final AtomicInteger execCounter = new AtomicInteger(0);
 
     /**
@@ -122,8 +123,9 @@ public class DotNetExecutionService {
      */
     private final Map<String, Map<String, String>> sessionAnchorSources = new ConcurrentHashMap<>();
 
-    public DotNetExecutionService(NuGetService nuGetService) {
+    public DotNetExecutionService(NuGetService nuGetService, InteractiveProcessRunner runner) {
         this.nuGetService = nuGetService;
+        this.runner = runner;
     }
 
     // ── C# execution ──────────────────────────────────────────────────────────
@@ -549,35 +551,28 @@ public class DotNetExecutionService {
                                        long start, int preambleLines, String scriptName)
             throws IOException, InterruptedException {
 
-        Process process = pb.start();
-        StringBuilder stdout = new StringBuilder();
-        StringBuilder stderr = new StringBuilder();
+        // Interactive stdin (UI runs) + runaway guards via the shared runner. The build
+        // phase of `dotnet run` / `dotnet fsi` streams too, then the program can prompt.
+        InteractiveProcessRunner.ProcRun run = runner.run(pb);
 
-        Thread outT = captureStream(process.getInputStream(), stdout);
-        Thread errT = captureStream(process.getErrorStream(), stderr);
-        outT.start(); errT.start();
-
-        boolean finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        outT.join(2000); errT.join(2000);
-
-        if (!finished) {
-            process.destroyForcibly();
+        if (run.timedOut()) {
             return err(sessionId, cellId,
-                "Execution timed out after " + TIMEOUT_SECONDS + " seconds.", start);
+                "Execution timed out after " + TIMEOUT_SECONDS
+                + " seconds (possible never-ending loop) and was stopped.", start);
         }
 
         long elapsed = System.currentTimeMillis() - start;
-        int exitCode  = process.exitValue();
+        int exitCode  = run.exitCode();
         String tempDirStr = scriptFile.getParent().toString();
 
         // Remove temp file paths from both stdout and stderr
-        String cleanOut = stdout.toString()
+        String cleanOut = run.stdout()
                 .replace(scriptFile.toString(), scriptName)
                 .replace(tempDirStr + File.separator, "")
                 .replace(tempDirStr + "/", "")
                 .replace(tempDirStr, "");
 
-        String errStr = stderr.toString().trim();
+        String errStr = run.stderr().trim();
         String cleanErr = errStr
                 .replace(scriptFile.toString(), scriptName)
                 .replace(tempDirStr + File.separator, "")
@@ -871,17 +866,6 @@ public class DotNetExecutionService {
             } catch (Exception ignored) {}
         }
         return null;
-    }
-
-    private Thread captureStream(InputStream is, StringBuilder target) {
-        return new Thread(() -> {
-            try (BufferedReader r = new BufferedReader(new InputStreamReader(is))) {
-                String line;
-                while ((line = r.readLine()) != null) {
-                    target.append(line).append("\n");
-                }
-            } catch (IOException ignored) {}
-        });
     }
 
     private ExecutionResult err(String sessionId, String cellId, String error, long start) {

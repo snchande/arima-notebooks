@@ -1,6 +1,8 @@
 package com.barista.shell;
 
+import com.barista.model.BaristaSettings;
 import com.barista.model.ExecutionResult;
+import com.barista.service.SettingsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -29,9 +31,21 @@ public class JShellManager {
 
     private final Map<String, ShellSession> sessions = new ConcurrentHashMap<>();
     private final SimpMessagingTemplate messagingTemplate;
+    private final SettingsService settingsService;
 
-    public JShellManager(SimpMessagingTemplate messagingTemplate) {
+    public JShellManager(SimpMessagingTemplate messagingTemplate, SettingsService settingsService) {
         this.messagingTemplate = messagingTemplate;
+        this.settingsService = settingsService;
+    }
+
+    private long maxExecMs() {
+        BaristaSettings s = settingsService.getSettings();
+        return s.getMaxExecutionTimeMs() > 0 ? s.getMaxExecutionTimeMs() : 30_000L;
+    }
+
+    private int maxOutputLines() {
+        BaristaSettings s = settingsService.getSettings();
+        return s.getMaxOutputLines() > 0 ? s.getMaxOutputLines() : 1_000;
     }
 
     /**
@@ -48,7 +62,7 @@ public class JShellManager {
         log.debug("Executing in session {}: {}", sessionId,
                 code.length() > 80 ? code.substring(0, 80) + "..." : code);
 
-        ExecutionResult result = session.execute(code, cellId);
+        ExecutionResult result = session.execute(code, cellId, maxExecMs(), maxOutputLines());
 
         // Broadcast to WebSocket subscribers
         messagingTemplate.convertAndSend("/topic/shell/" + sessionId, result);
@@ -60,7 +74,16 @@ public class JShellManager {
      * Execute code without broadcasting via WebSocket.
      */
     public ExecutionResult executeQuiet(String sessionId, String code) {
-        return getOrCreateSession(sessionId).execute(code, null);
+        return getOrCreateSession(sessionId).execute(code, null, maxExecMs(), maxOutputLines());
+    }
+
+    /**
+     * Stop the cell currently running in a session (manual Stop button / interrupt).
+     * Safe to call when nothing is running — it is a no-op.
+     */
+    public void interrupt(String sessionId) {
+        ShellSession session = sessions.get(sessionId);
+        if (session != null) session.requestStop();
     }
 
     /**

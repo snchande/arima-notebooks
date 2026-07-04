@@ -20,6 +20,12 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -46,6 +52,19 @@ public class ShellSession {
     /** Proxy stream registered with JShell builder — routes snippet output to captureBuffer. */
     private PrintStream proxyStream;
 
+    /** Runs each cell's eval on a dedicated thread so it can be time-boxed and stopped. */
+    private final ExecutorService evalExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "jshell-eval");
+        t.setDaemon(true);
+        return t;
+    });
+
+    /** Set when the current cell should stop (manual Stop button / interrupt). */
+    private volatile boolean stopRequested = false;
+
+    /** Live count of newlines written to the capture buffer — drives the output-line cap. */
+    private final AtomicInteger outputLineCount = new AtomicInteger(0);
+
     public ShellSession(String sessionId) {
         this.sessionId = sessionId;
         this.classpath = new ArrayList<>();
@@ -58,8 +77,14 @@ public class ShellSession {
         // We register this with JShell so that System.out / System.err from
         // evaluated snippets are routed here (even in remote subprocess mode).
         OutputStream proxy = new OutputStream() {
-            @Override public void write(int b)                          { captureBuffer.write(b); }
-            @Override public void write(byte[] b, int off, int len)     { captureBuffer.write(b, off, len); }
+            @Override public void write(int b) {
+                captureBuffer.write(b);
+                if (b == '\n') outputLineCount.incrementAndGet();
+            }
+            @Override public void write(byte[] b, int off, int len) {
+                captureBuffer.write(b, off, len);
+                for (int i = off; i < off + len; i++) if (b[i] == '\n') outputLineCount.incrementAndGet();
+            }
             @Override public void flush() throws IOException            { captureBuffer.flush(); }
         };
 
@@ -161,12 +186,97 @@ public class ShellSession {
         } catch (Exception ignore) {}
     }
 
-    /** Execute code linked to a specific notebook cell. */
+    /** Execute code linked to a specific notebook cell (default runaway guards). */
     public synchronized ExecutionResult execute(String code, String cellId) {
-        long startTime = System.currentTimeMillis();
+        return execute(code, cellId, 30_000L, 1_000);
+    }
 
-        // Reset capture buffer before each eval so we only get THIS cell's output.
+    /**
+     * Execute code with runaway guards. The snippet loop runs on a bounded worker thread so a
+     * never-ending loop can be stopped via {@code jshell.stop()} without wedging the HTTP
+     * thread or the per-session lock. Two limits apply:
+     *   • {@code maxExecMs} — wall-clock compute budget; time spent blocked waiting on user
+     *     input is excluded, so a user thinking at a prompt is never killed.
+     *   • {@code maxOutputLines} — cap on printed lines, so a runaway printer can't OOM.
+     * Either limit (or the manual Stop button) stops the cell and leaves the session usable.
+     */
+    public synchronized ExecutionResult execute(String code, String cellId,
+                                                long maxExecMs, int maxOutputLines) {
+        long startTime = System.currentTimeMillis();
+        stopRequested = false;
         captureBuffer.reset();
+        outputLineCount.set(0);
+
+        Future<ExecutionResult> future = evalExecutor.submit(() -> runEval(code, cellId, startTime));
+
+        long computeElapsed = 0;
+        final long SLICE = 120;
+        while (true) {
+            try {
+                return future.get(SLICE, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException te) {
+                if (stopRequested) {
+                    stopEval();
+                    return abortedResult(cellId, startTime, "Execution stopped by user.", "STOPPED");
+                }
+                if (maxOutputLines > 0 && outputLineCount.get() > maxOutputLines) {
+                    stopEval();
+                    return abortedResult(cellId, startTime,
+                        "Output exceeded " + maxOutputLines + " lines and was stopped "
+                        + "(possible runaway loop).", "OUTPUT_LIMIT");
+                }
+                // Time blocked waiting on user input does NOT count toward the compute budget.
+                if (!BaristaInput.isWaitingForInput()) {
+                    computeElapsed += SLICE;
+                    if (maxExecMs > 0 && computeElapsed >= maxExecMs) {
+                        stopEval();
+                        return abortedResult(cellId, startTime,
+                            "Execution exceeded " + (maxExecMs / 1000) + "s and was stopped "
+                            + "(possible never-ending loop).", "TIMEOUT");
+                    }
+                }
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                stopEval();
+                return abortedResult(cellId, startTime, "Execution interrupted.", "STOPPED");
+            } catch (ExecutionException ee) {
+                Throwable cause = ee.getCause() != null ? ee.getCause() : ee;
+                return abortedResult(cellId, startTime,
+                    "Internal execution error: " + cause.getMessage(), "ERROR");
+            }
+        }
+    }
+
+    /** Stop the currently-running snippet and unblock any pending stdin read. */
+    private void stopEval() {
+        try { BaristaInput.cancel(); } catch (Exception ignore) {}
+        try { jshell.stop(); }        catch (Exception ignore) {}
+    }
+
+    /** Request that the running cell stop (manual Stop button / WebSocket interrupt). */
+    public void requestStop() {
+        stopRequested = true;
+        stopEval();
+    }
+
+    /** Build a result for a cell that was stopped before completing normally. */
+    private ExecutionResult abortedResult(String cellId, long startTime, String message, String status) {
+        try { proxyStream.flush(); } catch (Exception ignore) {}
+        String partial = captureBuffer.toString(StandardCharsets.UTF_8);
+        return ExecutionResult.builder()
+                .sessionId(sessionId)
+                .cellId(cellId)
+                .output(partial)
+                .error(message)
+                .status(status)
+                .success(false)
+                .executionTimeMs(System.currentTimeMillis() - startTime)
+                .executionCount(executionCounter.incrementAndGet())
+                .build();
+    }
+
+    /** The actual snippet evaluation — runs on the eval worker thread. */
+    private ExecutionResult runEval(String code, String cellId, long startTime) {
 
         // Use JShell's SourceCodeAnalysis to split the input into individual complete
         // snippets, exactly as the JShell REPL does. This is critical: jshell.eval()
@@ -344,5 +454,6 @@ public class ShellSession {
 
     public void close() {
         if (jshell != null) jshell.close();
+        evalExecutor.shutdownNow();
     }
 }

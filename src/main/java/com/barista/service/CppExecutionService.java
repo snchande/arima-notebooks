@@ -111,6 +111,11 @@ public class CppExecutionService {
 
     private final Map<String, Map<String, String>> sessionAnchorSources = new ConcurrentHashMap<>();
     private final AtomicInteger execCounter = new AtomicInteger(0);
+    private final InteractiveProcessRunner runner;
+
+    public CppExecutionService(InteractiveProcessRunner runner) {
+        this.runner = runner;
+    }
 
     // ── Public API ────────────────────────────────────────────────────────────
 
@@ -278,28 +283,20 @@ public class CppExecutionService {
             }
 
             // ── Run ──────────────────────────────────────────────────────────
+            // Only the compiled program runs interactively; compilation above stays batch.
             ProcessBuilder runPb = new ProcessBuilder(exeFile.toAbsolutePath().toString());
-            runPb.redirectErrorStream(false);
 
-            StringBuilder runOut = new StringBuilder();
-            StringBuilder runErr = new StringBuilder();
-            Process runProc = runPb.start();
-            Thread t3 = captureStream(runProc.getInputStream(), runOut);
-            Thread t4 = captureStream(runProc.getErrorStream(), runErr);
-            t3.start(); t4.start();
+            InteractiveProcessRunner.ProcRun run = runner.run(runPb);
 
-            boolean finished = runProc.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            t3.join(2000); t4.join(2000);
-
-            if (!finished) {
-                runProc.destroyForcibly();
+            if (run.timedOut()) {
                 return err(sessionId, cellId,
-                    "Execution timed out after " + TIMEOUT_SECONDS + " seconds.", start);
+                    "Execution timed out after " + TIMEOUT_SECONDS
+                    + " seconds (possible never-ending loop) and was stopped.", start);
             }
 
             long elapsed  = System.currentTimeMillis() - start;
-            int  exitCode = runProc.exitValue();
-            String runErrStr = runErr.toString().trim();
+            int  exitCode = run.exitCode();
+            String runErrStr = run.stderr().trim();
             boolean success  = exitCode == 0 && runErrStr.isEmpty();
 
             if (success && anchor != null && !anchor.isBlank()) {
@@ -312,7 +309,7 @@ public class CppExecutionService {
 
             // Strip the dump sentinels from stdout and attach the parsed vars.
             VariableInspector.ParsedOutput parsed =
-                    VariableInspector.parseDumpFromOutput(runOut.toString());
+                    VariableInspector.parseDumpFromOutput(run.stdout());
 
             return ExecutionResult.builder()
                     .sessionId(sessionId).cellId(cellId)

@@ -5,6 +5,8 @@ import com.barista.model.Notebook;
 import com.barista.model.PackageInfo;
 import com.barista.service.CppExecutionService;
 import com.barista.service.DotNetExecutionService;
+import com.barista.service.InteractiveIO;
+import com.barista.service.InteractiveProcessRunner;
 import com.barista.service.JavaCompilerService;
 import com.barista.service.NodeJsExecutionService;
 import com.barista.service.NotebookService;
@@ -25,6 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -60,6 +64,9 @@ public class ShellController {
     private final NotebookService notebookService;
     private final UserService userService;
     private final SimpMessagingTemplate messagingTemplate;
+
+    /** Per-session "stop the running cell" hook, registered while a cell executes. */
+    private final Map<String, Runnable> cancellers = new ConcurrentHashMap<>();
 
     public ShellController(JShellManager jShellManager,
                            PackageService packageService,
@@ -106,17 +113,23 @@ public class ShellController {
                 List<String> classpath = packageService.getInstalledPackages().stream()
                         .map(PackageInfo::getJarPath)
                         .collect(Collectors.toList());
-                result = javaCompilerService.execute(sessionId, cellId, code, classpath);
+                result = runInteractiveSubprocess(sessionId, cellId, stdin,
+                        () -> javaCompilerService.execute(sessionId, cellId, code, classpath));
             } else if ("nodejs".equals(mode)) {
-                result = nodeJsExecutionService.execute(sessionId, cellId, code);
+                result = runInteractiveSubprocess(sessionId, cellId, stdin,
+                        () -> nodeJsExecutionService.execute(sessionId, cellId, code));
             } else if ("typescript".equals(mode)) {
-                result = typeScriptExecutionService.execute(sessionId, cellId, code);
+                result = runInteractiveSubprocess(sessionId, cellId, stdin,
+                        () -> typeScriptExecutionService.execute(sessionId, cellId, code));
             } else if ("csharp".equals(mode)) {
-                result = dotNetExecutionService.executeCSharp(sessionId, cellId, code);
+                result = runInteractiveSubprocess(sessionId, cellId, stdin,
+                        () -> dotNetExecutionService.executeCSharp(sessionId, cellId, code));
             } else if ("fsharp".equals(mode)) {
-                result = dotNetExecutionService.executeFSharp(sessionId, cellId, code);
+                result = runInteractiveSubprocess(sessionId, cellId, stdin,
+                        () -> dotNetExecutionService.executeFSharp(sessionId, cellId, code));
             } else if ("cpp".equals(mode)) {
-                result = cppExecutionService.execute(sessionId, cellId, code);
+                result = runInteractiveSubprocess(sessionId, cellId, stdin,
+                        () -> cppExecutionService.execute(sessionId, cellId, code));
             } else {
                 boolean isNewSession = !jShellManager.hasSession(sessionId);
                 if (isNewSession) {
@@ -147,10 +160,12 @@ public class ShellController {
                     ));
                 });
 
+                cancellers.put(sessionId, () -> jShellManager.interrupt(sessionId));
                 try {
                     result = jShellManager.execute(sessionId, code, cellId);
                 } finally {
                     BaristaInput.setInputNeededCallback(null);
+                    cancellers.remove(sessionId);
                 }
             }
         } catch (Exception e) {
@@ -411,5 +426,52 @@ public class ShellController {
                                  Map<String, String> payload) {
         String line = payload.getOrDefault("line", "");
         BaristaInput.addLine(line);
+    }
+
+    /**
+     * WebSocket handler for the manual Stop button.
+     * Browser sends to /app/shell/{sessionId}/interrupt to abort the running cell:
+     * JShell snippets are stopped via {@code jshell.stop()}, subprocess languages are killed,
+     * and any thread blocked waiting for stdin is unblocked. Leaves the session usable.
+     */
+    @MessageMapping("/shell/{sessionId}/interrupt")
+    public void handleInterrupt(@DestinationVariable String sessionId,
+                                Map<String, String> payload) {
+        BaristaInput.cancel(); // unblock a pending stdin read first
+        Runnable canceller = cancellers.get(sessionId);
+        if (canceller != null) {
+            try { canceller.run(); } catch (Exception ignore) {}
+        } else {
+            jShellManager.interrupt(sessionId);
+        }
+    }
+
+    /**
+     * Run a subprocess-language cell with interactive stdin + runaway guards.
+     * Installs an {@link InteractiveIO} (bound to this thread) that streams output to the
+     * browser and shows the inline prompt when the program blocks on input, pre-feeds any
+     * stdin-panel lines, and registers the Stop hook. Non-interactive callers (orchestration
+     * pipelines, MCP) never take this path, so their batch behaviour is unchanged.
+     */
+    private ExecutionResult runInteractiveSubprocess(String sessionId, String cellId, String stdin,
+                                                     Supplier<ExecutionResult> exec) {
+        String[] stdinLines = (stdin == null || stdin.isBlank()) ? new String[0] : stdin.split("\n", -1);
+        BaristaInput.provide(stdinLines);
+
+        final String topic   = "/topic/shell/" + sessionId;
+        final String fCellId = cellId == null ? "" : cellId;
+        InteractiveIO io = new InteractiveIO(
+                bufferedText -> messagingTemplate.convertAndSend(topic, Map.of(
+                        "type", "input_needed", "cellId", fCellId, "text", bufferedText)),
+                canceller -> cancellers.put(sessionId, canceller));
+
+        InteractiveProcessRunner.bind(io);
+        try {
+            return exec.get();
+        } finally {
+            InteractiveProcessRunner.unbind();
+            BaristaInput.clear();
+            cancellers.remove(sessionId);
+        }
     }
 }

@@ -1369,12 +1369,22 @@ const NotebookEditor = (() => {
         <span class="run-spinner" id="run-spinner-${cellId}">⠋</span>
         <span class="run-label">&nbsp;Executing</span>
         <span class="run-prog-pct" id="run-ptext-${cellId}">0%</span>
+        <button class="run-stop-btn" id="run-stop-${cellId}" type="button" title="Stop this cell (interrupts a never-ending loop or a stuck input wait)">■ Stop</button>
       </div>
       <div class="run-progress-track">
         <div class="run-progress-fill" id="run-prog-${cellId}" style="width:0%"></div>
       </div>
       <div class="run-current-line" id="run-line-${cellId}">→&nbsp;<span>${escapeHtml(firstLine)}</span></div>`;
     body.insertBefore(el, body.firstChild);
+
+    // Stop button — interrupt this cell (never-ending loop or stuck input wait).
+    const stopBtn = document.getElementById(`run-stop-${cellId}`);
+    if (stopBtn) stopBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      Arima.sendToShell(Arima.state.currentSessionId, 'interrupt', { cellId });
+      stopBtn.textContent = '■ Stopping…';
+      stopBtn.disabled = true;
+    });
 
     let tick = 0, lineIdx = 0, progress = 0;
     const timer = setInterval(() => {
@@ -1597,7 +1607,12 @@ const NotebookEditor = (() => {
         // Append any output the program printed before blocking (e.g. "What's your name? ")
         // then immediately show the prompt — single message guarantees correct order.
         if (msg.text) appendInteractiveChunk(bodyWrap, msg.text);
-        showInteractivePrompt(bodyWrap, sessionId);
+        showInteractivePrompt(bodyWrap, sessionId, cellId);
+        // Grab the user's attention if they've switched to another tab/app.
+        if (window.Notifications) {
+          const nbName = (typeof notebook !== 'undefined' && notebook) ? notebook.name : '';
+          Notifications.inputNeeded({ sessionId, cellId, tabId: activeTabId, notebookName: nbName });
+        }
       }
     });
 
@@ -1610,6 +1625,7 @@ const NotebookEditor = (() => {
 
       unsubWs();
       clearRunningIndicator(cellId);
+      if (window.Notifications) Notifications.clear(cellId);
 
       // Remove any lingering input prompt (shouldn't exist if execution finished)
       bodyWrap?.querySelector('.stdin-interactive-prompt')?.remove();
@@ -1634,6 +1650,7 @@ const NotebookEditor = (() => {
     } catch(e) {
       unsubWs();
       clearRunningIndicator(cellId);
+      if (window.Notifications) Notifications.clear(cellId);
       bodyWrap?.querySelector('.stdin-interactive-prompt')?.remove();
       div?.classList.remove('running');
       div?.classList.add('has-error');
@@ -1669,7 +1686,7 @@ const NotebookEditor = (() => {
   }
 
   // Show the live terminal-style input prompt inside the terminal container
-  function showInteractivePrompt(bodyWrap, sessionId) {
+  function showInteractivePrompt(bodyWrap, sessionId, cellId) {
     if (!bodyWrap) return;
     const terminal = getOrCreateTerminal(bodyWrap);
     terminal.querySelector('.stdin-interactive-prompt')?.remove(); // deduplicate
@@ -1697,6 +1714,7 @@ const NotebookEditor = (() => {
 
       // Send the line to the server → unblocks ArimaInput.take()
       Arima.sendToShell(sessionId, 'input', { line });
+      if (window.Notifications && cellId) Notifications.clear(cellId);
     });
   }
 
@@ -2817,9 +2835,27 @@ const NotebookEditor = (() => {
     setTimeout(() => el.classList.remove('focus-flash'), 1500);
   }
 
+  /**
+   * Bring a specific cell fully into focus from anywhere in the app — used when the user
+   * clicks a "cell is waiting for input" notification. Switches to the Notebook view, opens
+   * the owning notebook tab if needed, scrolls/flashes the cell, and focuses its live prompt.
+   */
+  function revealCell(tabId, cellId) {
+    // Switch to the top-level Notebook view.
+    document.querySelector('.tab-btn[data-tab="notebook"]')?.click();
+    // Switch to the owning notebook tab if it's a different one.
+    if (tabId && tabId !== activeTabId && tabStore.has(tabId)) switchTab(tabId);
+    // Let any tab switch render, then focus the cell + its input prompt.
+    setTimeout(() => {
+      focusCell(cellId);
+      const sip = document.querySelector(`#body-${cellId} .stdin-interactive-prompt .sip-input`);
+      if (sip) sip.focus();
+    }, 60);
+  }
+
   return {
     init, loadNotebook, save, deleteCell, deleteNotebook, moveUp, moveDown, addCell, addCellWithSource,
-    insertCodeFromAI, applyCodeToCell, executeCell, getContext, focusCell,
+    insertCodeFromAI, applyCodeToCell, executeCell, getContext, focusCell, revealCell,
     runToHere, runPipeline, runWithDeps, switchTab, closeTab,
     stepStart, stepClose, stepAction, stepPrev,
     _openCrossNbPicker, _closeCrossNbPicker, _insertCrossNbRef,
