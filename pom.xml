@@ -137,6 +137,14 @@
             <artifactId>spring-boot-starter-oauth2-client</artifactId>
         </dependency>
 
+        <!-- GitHub Copilot SDK (MIT) — typed JSON-RPC client that drives the local
+             `copilot` CLI in server mode; replaces raw-stdin piping for the copilot_cli provider -->
+        <dependency>
+            <groupId>com.github</groupId>
+            <artifactId>copilot-sdk-java</artifactId>
+            <version>1.0.5-01</version>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

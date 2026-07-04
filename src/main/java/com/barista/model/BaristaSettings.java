@@ -15,7 +15,7 @@ public class BaristaSettings {
     private String githubToken         = "";
     private String githubCopilotModel  = "gpt-4o";
 
-    // ── Gemini CLI (gemini_cli provider) ────────────────────────────────
+    // ── Antigravity CLI (gemini_cli provider key, retained for compatibility) ──
     private String geminiModel = "gemini-2.5-flash";
 
     // ── Editor ─────────────────────────────────────────────────────────

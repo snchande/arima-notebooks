@@ -2622,14 +2622,17 @@ const NotebookEditor = (() => {
   /** Replace the focused cell's source with AI-provided code */
   function applyCodeToCell(cellId, code) {
     const targetId = cellId || focusedCellId;
-    if (!targetId) { insertCodeFromAI(code); return; }
+    if (!targetId) { insertCodeFromAI(code); return null; }
     const cm = editors[targetId];
     if (cm) {
+      const prev = cm.getValue();
       cm.setValue(code);
       Arima.markDirty(true);
       Arima.setStatus('Cell updated from AI');
       document.getElementById(`cell-${targetId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return prev;
     }
+    return null;
   }
 
   // ── Language conversion helpers ──────────────────────────────────────

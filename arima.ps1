@@ -68,9 +68,9 @@ function Show-Banner {
 function Get-AiCopilots {
     $copilots = [ordered]@{}
     $probes = [ordered]@{
-        'Claude'  = @('claude')
-        'Copilot' = @('copilot', 'github-copilot-cli', 'gh')
-        'Gemini'  = @('gemini')
+        'Claude'      = @('claude')
+        'Copilot'     = @('copilot', 'github-copilot-cli', 'gh')
+        'Antigravity' = @('agy', 'gemini')
     }
     foreach ($name in $probes.Keys) {
         foreach ($bin in $probes[$name]) {
@@ -104,7 +104,7 @@ function Show-AiCopilots {
         $list = ($Copilots.Keys -join ' · ')
         W-Dim  "  AI:      $list  (co-pilot ready)"
     } else {
-        W-Warn '  AI:      no CLI found  (install Claude, Copilot, or Gemini CLI for AI features)'
+        W-Warn '  AI:      no CLI found  (install Claude, Copilot, or Antigravity for AI features)'
     }
     if ($guardOk) {
         W-Dim  '           guardrails AGENTS.md + skills/ + agents/ loaded -> run `./arima.ps1 agents`'
@@ -514,9 +514,9 @@ function Cmd-Agents {
         foreach ($name in $copilots.Keys) { W-Ok "    [ok] $name  (binary: $($copilots[$name]))" }
     } else {
         W-Warn '    none found -- install one:'
-        W-Dim  '      Claude :  https://claude.ai/code           then  claude auth'
-        W-Dim  '      Copilot:  npm i -g @githubnext/github-copilot-cli'
-        W-Dim  '      Gemini :  npm i -g @google/gemini-cli       then  gemini auth'
+        W-Dim  '      Claude     :  https://claude.ai/code                      then  claude auth'
+        W-Dim  '      Copilot    :  GitHub Copilot CLI (copilot, v1.0.55-5+; used by the Copilot SDK)'
+        W-Dim  '      Antigravity:  https://antigravity.google/docs/cli-install  then  run  agy'
     }
     Write-Host ''
 

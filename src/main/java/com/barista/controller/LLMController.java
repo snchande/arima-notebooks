@@ -17,7 +17,7 @@ import java.util.Map;
  * Supports three AI providers, configured in Settings:
  *   "claude_cli"      — Routes to ClaudeService (local Claude CLI / Claude Code Pro)
  *   "copilot_cli"     — Routes to CopilotCliService (local copilot CLI)
- *   "gemini_cli"      — Routes to GeminiService (local Gemini CLI)
+ *   "gemini_cli"      — Routes to GeminiService (Antigravity CLI `agy`; key retained for compatibility)
  *
  * POST /api/llm/chat           - Send a message and get a response
  * POST /api/llm/generate       - Generate a notebook from a prompt

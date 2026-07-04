@@ -75,8 +75,8 @@ Most "AI in the editor" experiences ask you for an API key and route through a v
 Arima takes a different route. It shells out to whatever AI CLI you already have authenticated on your machine:
 
 - **Claude Code CLI**
-- **GitHub Copilot CLI**
-- **Gemini CLI**
+- **GitHub Copilot SDK** (drives the local `copilot` CLI)
+- **Antigravity CLI** (`agy`)
 
 Switch providers in Settings. The AI runs as a local subprocess, using your existing CLI auth. No second API key. No second vendor. No exfiltration path that wasn't already there.
 

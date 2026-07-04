@@ -71,8 +71,8 @@ The interesting part isn't the language list. It's three design decisions that c
 Arima runs AI as a local subprocess via whatever CLI you have authenticated:
 
 - Claude Code CLI
-- GitHub Copilot CLI
-- Gemini CLI
+- GitHub Copilot SDK (drives the local `copilot` CLI)
+- Antigravity CLI (`agy`)
 
 No second API key. No second vendor relationship. No new exfiltration path. If your security team has already cleared one of these CLIs for your developers, Arima inherits that posture exactly.
 

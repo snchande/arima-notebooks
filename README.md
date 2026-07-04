@@ -5,9 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-21%2B-orange.svg)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.3-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Version](https://img.shields.io/badge/version-3.1.0-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.2.0-informational.svg)](CHANGELOG.md)
 
-Arima Notebooks is a **locally-hosted, browser-based notebook environment** for seven languages — JShell, Java, JavaScript, TypeScript, C#, F#, and C++ — with three AI co-pilots (Claude, GitHub Copilot, Gemini) wired in as **local CLI subprocesses** and the **whole system exposed via MCP** so any agent can drive it programmatically.
+Arima Notebooks is a **locally-hosted, browser-based notebook environment** for seven languages — JShell, Java, JavaScript, TypeScript, C#, F#, and C++ — with three AI co-pilots (Claude, GitHub Copilot, Antigravity) wired in locally (Claude & Antigravity as CLI subprocesses, Copilot via the GitHub Copilot SDK — no API keys) and the **whole system exposed via MCP** so any agent can drive it programmatically.
 
 No cloud account. No data sent anywhere. Runs entirely on your machine.
 
@@ -31,7 +31,7 @@ Java developers have always been second-class citizens in the notebook world. Ju
 - **TypeScript built in** — TS cells via Node.js's built-in type-stripping (Node 22.6+); install `tsc` for full type-check diagnostics; shares npm modules with JavaScript
 - **C# and F# support** — .NET cells via `dotnet run` and `dotnet fsi`; install NuGet packages via the NuGet tab or inline `#r` directives
 - **C++ native** — compile and run C++ cells with MSVC, GCC, or Clang; 26 standard headers pre-included
-- **AI in the loop** — Claude, GitHub Copilot, or Gemini generates, explains, and debugs code inline — all via local CLI, no API keys
+- **AI in the loop** — Claude, GitHub Copilot, or Antigravity generates, explains, and debugs code inline — locally, no API keys
 - **Offline by default** — your notebooks and code never leave your machine
 
 ---
@@ -54,8 +54,8 @@ Three surfaces, one workflow:
 
 | Surface | What you do | How AI helps |
 |---|---|---|
-| **Arima UI** | Write and run cells | The built-in AI panel (Claude / Copilot / Gemini CLI) generates cells, explains errors, converts between languages |
-| **Your terminal** | `claude code` / `copilot` / `gemini` inside the Arima repo | Reshape Arima itself — add a language, change a theme, fix a bug, write a tutorial |
+| **Arima UI** | Write and run cells | The built-in **Arima Agentic Assistant (AAA)** (Claude / Copilot / Antigravity) generates cells, explains errors, converts between languages, and can update the focused cell directly (with one-click Undo) |
+| **Your terminal** | `claude` / `copilot` / `agy` inside the Arima repo | Reshape Arima itself — add a language, change a theme, fix a bug, write a tutorial |
 | **Any MCP-aware agent** | Claude Code, Claude Desktop, custom agents | Drive Arima over MCP — create notebooks, add cells, run pipelines, install packages programmatically |
 
 ### Sample Agentic Prompts
@@ -92,7 +92,7 @@ The bar to **customize for yourself** and the bar to **contribute back** become 
 | **C++ Built-in Headers** | 26 standard headers pre-included; MSVC, GCC, and Clang auto-detected |
 | **TypeScript Type-checking** | Optional `tsc --noEmit` pass before each cell — type errors with proper line numbers |
 | **Pipeline Orchestration** | Chain cells with `//@ depends:` annotations — works across all 7 languages |
-| **Multi-provider AI** | Claude · GitHub Copilot · Gemini — all via local CLI, no API key needed |
+| **Multi-provider AI** | Claude · GitHub Copilot · Antigravity — local (CLI + Copilot SDK), no API key needed |
 | **AI Language Conversion** | Switch a cell's language and AI converts the code automatically |
 | **MCP Server** | Expose Arima as an MCP tool server for Claude Code, Claude Desktop, and custom agents |
 | **Built-in Data Science** | XChart · Commons Math · Tablesaw · simple-statistics · mathjs — pre-installed |
@@ -112,7 +112,7 @@ The bar to **customize for yourself** and the bar to **contribute back** become 
 | **TypeScript (tsc)** | 5.0+ | Optional — `npm install -g typescript` to enable type-check diagnostics |
 | **.NET SDK** | 6.0+ | Optional — for C# and F# cells (free from [dot.net](https://dot.net)) |
 | **C++ compiler** | Any | Optional — MSVC (Windows), GCC or Clang (Mac/Linux); auto-detected |
-| **AI CLI** | Latest | Optional — Claude CLI, GitHub Copilot CLI, or Gemini CLI for AI features |
+| **AI CLI** | Latest | Optional — Claude CLI, GitHub Copilot CLI (`copilot`, used by the Copilot SDK), or Antigravity CLI (`agy`) for AI features |
 | **Internet** | — | For Maven Central, npm registry, NuGet downloads |
 
 > **Quick launch**: the `arima` CLI (`arima.cmd` for CMD, `arima.ps1` for PowerShell, `arima.sh` for Linux/macOS) handles everything — build, start, stop, status, and browser open in one command.
@@ -172,13 +172,13 @@ The `arima` CLI opens this automatically on every platform.
 
 ### Step 4 — (Optional) Enable AI features
 
-Arima supports three AI providers — all run as local CLI subprocesses, no API key needed:
+Arima supports three AI providers — all local, no API key needed. Claude & Antigravity run as CLI subprocesses; Copilot runs through the **GitHub Copilot SDK**, which drives the local `copilot` CLI:
 
 | Provider | Install | Auth |
 |----------|---------|------|
 | **Claude** (recommended) | [claude.ai/code](https://claude.ai/code) | `claude auth` |
-| **GitHub Copilot** | `npm install -g @githubnext/github-copilot-cli` | `github-copilot-cli auth` |
-| **Gemini** | `npm install -g @google/gemini-cli` | `gemini auth` |
+| **GitHub Copilot** | [GitHub Copilot CLI](https://github.com/github/copilot-cli) (`copilot`, v1.0.55-5+) | authenticate the `copilot` CLI |
+| **Antigravity** | [install `agy`](https://antigravity.google/docs/cli-install) | run `agy` to sign in (or set `GEMINI_API_KEY` / `ANTIGRAVITY_API_KEY`) |
 
 Switch providers any time in **Settings → AI Provider**.
 
@@ -287,7 +287,7 @@ Click **Run with Dependencies** on any cell to automatically execute its full de
 ### AI Assistant
 
 1. Click the **AI** tab in the right panel (or press `Ctrl+\`)
-2. Select your AI provider in the provider bar (Claude · Copilot · Gemini)
+2. Select your AI provider in the provider bar (Claude · Copilot · Antigravity)
 3. Type a question or request:
    - *"Write a C++ cell that sorts a vector using std::sort"*
    - *"Explain what this code does"* (attach a cell with the 🤖 button)
@@ -364,7 +364,7 @@ Three launchers sit in the project root — pick whichever matches your shell. T
 | `open` | Open browser (server must be running) |
 | `logs` | Tail `arima.log` (background mode only) |
 | `version` | Show project, Java, Node.js, .NET, and Maven versions |
-| `agents` *(alias `ai`)* | List detected AI co-pilots (Claude/Copilot/Gemini), guardrail files, skills, and subagents wired into the repo — *available in the CMD launcher (`arima.cmd`) today; PowerShell/bash parity planned* |
+| `agents` *(alias `ai`)* | List detected AI co-pilots (Claude/Copilot/Antigravity), guardrail files, skills, and subagents wired into the repo — *available in the CMD launcher (`arima.cmd`) today; PowerShell/bash parity planned* |
 | `help` | Show help screen |
 
 > **PowerShell note**: if `./arima.ps1` is blocked, run once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
@@ -444,8 +444,8 @@ Edit `src/main/resources/application.properties` or set environment variables be
 
 **AI not responding**
 - **Claude**: Install [Claude Code](https://claude.ai/code) and run `claude auth`
-- **GitHub Copilot**: Run `github-copilot-cli auth`
-- **Gemini**: Run `gemini auth`
+- **GitHub Copilot**: Install the [GitHub Copilot CLI](https://github.com/github/copilot-cli) (`copilot`, v1.0.55-5+) and authenticate it — the Copilot SDK drives it
+- **Antigravity**: Install [`agy`](https://antigravity.google/docs/cli-install) and run `agy` to sign in
 - Check Settings → Server Status — your selected provider should show ✓ Found
 
 **C++ cells fail — "No compiler found"**
@@ -486,7 +486,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 - Inspired by [Jupyter Notebooks](https://jupyter.org/)
 - Java REPL powered by [JShell](https://openjdk.org/jeps/222) (JEP 222)
-- AI features via [Claude](https://www.anthropic.com/), [GitHub Copilot](https://github.com/features/copilot), and [Gemini](https://gemini.google.com/) CLI tools
+- AI features via [Claude](https://www.anthropic.com/), [GitHub Copilot](https://github.com/features/copilot) (SDK), and [Antigravity](https://antigravity.google/) (`agy` CLI)
 - Built with [Spring Boot](https://spring.io/projects/spring-boot)
 - Charts via [XChart](https://knowm.org/open-source/xchart/)
 - DataFrames via [Tablesaw](https://github.com/jtablesaw/tablesaw)

@@ -19,7 +19,7 @@ Arima Notebooks is a Java-based interactive notebook environment (similar to Jup
 JShell (Java's interactive REPL). It runs as a local Spring Boot web server with a single-page
 web UI for writing and executing code in **seven languages** — Java/JShell, JavaScript (Node.js),
 TypeScript (Node.js type-stripping + optional `tsc`), C# / F# (.NET SDK), and C++ (MSVC/GCC/Clang) —
-managing Maven, npm, and NuGet packages, and using Claude/Copilot/Gemini AI assistance.
+managing Maven, npm, and NuGet packages, and using Claude/Copilot/Antigravity AI assistance.
 
 ## Technology Stack
 - **Backend**: Java 21 + Spring Boot 3.2.x
@@ -27,7 +27,7 @@ managing Maven, npm, and NuGet packages, and using Claude/Copilot/Gemini AI assi
 - **Subprocess runtimes**: Node.js (JS/TS), .NET SDK (C#/F#), MSVC/GCC/Clang (C++)
 - **Real-time**: STOMP over WebSocket (SockJS)
 - **Frontend**: Vanilla HTML/CSS/JavaScript (no build step required)
-- **AI**: Three providers — Claude, GitHub Copilot, Gemini — each invoked as a **local CLI subprocess** via `ProcessBuilder` (no HTTP API key managed by Arima)
+- **AI**: Three providers — Claude, GitHub Copilot, Antigravity — Claude & Antigravity invoked as **local CLI subprocesses** via `ProcessBuilder`; GitHub Copilot via the **GitHub Copilot SDK** (drives the local `copilot` CLI). No HTTP API key managed by Arima
 - **Package Managers**: Maven Central (JShell classpath), npm registry (`data/npm-modules/` for JS/TS), NuGet.org (`#r "nuget:"` for C#/F#)
 - **Auth**: Spring Security with two modes — `local` (default, OS username, no login) and `oauth` (OAuth2 social login via `data/oauth-config.json`)
 - **MCP**: Built-in Model Context Protocol server (HTTP+SSE, JSON-RPC 2.0) at `/api/mcp` exposing Arima as a tool server
@@ -123,7 +123,7 @@ arima/
 │   │   ├── DotNetExecutionService     #   C# (dotnet run) + F# (dotnet fsi)
 │   │   ├── CppExecutionService        #   C++ via MSVC/GCC/Clang
 │   │   ├── OrchestrationService       #   Pipeline DAG: topo-sort, cycle detection, deps
-│   │   ├── ClaudeService / GitHubCopilotService / CopilotCliService / GeminiService  # AI CLIs
+│   │   ├── ClaudeService / GitHubCopilotService / CopilotCliService / GeminiService  # AI providers (Copilot→SDK; Gemini slot→Antigravity agy)
 │   │   ├── OAuthConfigService / UserService  # Auth
 │   │   └── SettingsService            #   Settings persistence
 │   └── controller/                    # REST + WebSocket — thin, one service call each:
@@ -170,14 +170,19 @@ arima/
 7. **No `Runtime.exec(String)`**: build subprocesses with `ProcessBuilder(List<String>)` only — command injection is blocked by `scripts/security-check`
 
 ## AI Provider Configuration
-Arima does **not** store an API key for AI. All three providers run as local CLI subprocesses, using
-whatever auth the CLI already has:
-1. Install a CLI — `claude` ([claude.ai/code](https://claude.ai/code)), `github-copilot-cli`, or `gemini`
-2. Authenticate it once in a terminal (e.g. `claude auth`)
+Arima does **not** store an API key for AI. All three providers run locally, using whatever auth the
+underlying CLI already has. Claude and Antigravity are invoked as **CLI subprocesses**; GitHub Copilot
+runs through the **GitHub Copilot SDK** (`com.github:copilot-sdk-java`), which drives the local
+`copilot` CLI in server mode (chat-only — the SDK's file-editing tools are denied via a REJECT-all
+permission handler):
+1. Install a CLI — `claude` ([claude.ai/code](https://claude.ai/code)), the GitHub Copilot CLI (`copilot`), or Antigravity (`agy`, https://antigravity.google/docs/cli-install)
+2. Authenticate it once in a terminal (e.g. `claude auth`, or run `agy` to sign in)
 3. Pick the active provider in **Settings → AI Provider** (or via `PUT /api/settings`)
 
 `GET /api/settings/status` reports each provider's availability (`claudeCliAvailable`,
-`githubCopilotAvailable`, `geminiCliAvailable`).
+`githubCopilotAvailable`, `geminiCliAvailable`). NOTE: the `gemini_cli` provider key and
+`geminiCliAvailable` flag are retained for backward compatibility but now route to the Antigravity
+CLI (`agy`) — Google retired the standalone Gemini CLI on 2026-06-18.
 
 ## Common Tasks
 
@@ -202,6 +207,6 @@ whatever auth the CLI already has:
 - **JShell not found**: Ensure a full JDK 17+ (21 recommended) is installed (not just JRE). Check `java.home` system property.
 - **WebSocket connection fails**: Check browser console for STOMP errors. Ensure `/ws` endpoint is accessible.
 - **Package download fails**: Check internet connectivity and Maven Central / npm registry / NuGet.org availability.
-- **AI not responding**: The selected provider's CLI must be installed and authenticated. Run `claude auth` (or the Copilot/Gemini equivalent) and check **Settings → Server Status** — the active provider should show ✓ Found.
+- **AI not responding**: The selected provider's CLI must be installed and authenticated. Run `claude auth` (or the Copilot/Antigravity equivalent: authenticate the `copilot` CLI, or run `agy` to sign in) and check **Settings → Server Status** — the active provider should show ✓ Found.
 - **TypeScript cells fail**: Node.js 22.6+ required for built-in type-stripping; install `tsc` (`npm i -g typescript`) for type-check diagnostics.
 - **C++ / C# / F# cells fail**: Ensure a C++ compiler (MSVC/GCC/Clang) or the .NET SDK is on `PATH`; `arima status` reports what's detected.

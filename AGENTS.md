@@ -1,8 +1,8 @@
 # AGENTS.md — Architecture Guardrails for AI Contributors
 
-> **Audience:** Claude, GitHub Copilot, Gemini, Cursor, Continue.dev, and any other AI coding agent invoked inside this repository.
+> **Audience:** Claude, GitHub Copilot, Antigravity, Cursor, Continue.dev, and any other AI coding agent invoked inside this repository.
 >
-> **Companion files:** [`CLAUDE.md`](CLAUDE.md) (Claude-specific), [`.github/copilot-instructions.md`](.github/copilot-instructions.md) (Copilot), [`GEMINI.md`](GEMINI.md) (Gemini). All three load this file by reference — change one, change the others.
+> **Companion files:** [`CLAUDE.md`](CLAUDE.md) (Claude-specific), [`.github/copilot-instructions.md`](.github/copilot-instructions.md) (Copilot), [`GEMINI.md`](GEMINI.md) (Antigravity `agy` / legacy Gemini). All three load this file by reference — change one, change the others.
 
 Arima Notebooks is meant to be **personalized and extended by its users with AI assistance**. That is the workflow the product is built around — the *use → customize → contribute* loop. The expectation:
 
@@ -145,11 +145,11 @@ This is the loop the product is built around. Treat it as the happy path.
 
 ## 7. About this file
 
-This file lives at the repo root so it loads automatically into Claude, Copilot, and Gemini's context. If you change it, update the per-provider companion files too:
+This file lives at the repo root so it loads automatically into Claude, Copilot, and Antigravity's context. If you change it, update the per-provider companion files too:
 
 - `CLAUDE.md` — Claude Code's primary instruction file
 - `.github/copilot-instructions.md` — GitHub Copilot's instructions
-- `GEMINI.md` — Gemini CLI's instructions
+- `GEMINI.md` — Antigravity CLI (`agy`) instructions (formerly the Gemini CLI; Google retired Gemini CLI on 2026-06-18)
 
 The three companion files are short — they exist to point at this file as the source of truth.
 

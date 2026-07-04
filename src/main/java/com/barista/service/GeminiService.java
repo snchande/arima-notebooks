@@ -10,14 +10,23 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Gemini AI integration via the local {@code gemini} CLI (Google Gemini).
+ * Antigravity AI integration via the local {@code agy} CLI (Google Antigravity).
  *
- * Routes all requests through the CLI executable — no API key configuration
- * required in Arima as long as the CLI is authenticated.
+ * Google retired the standalone Gemini CLI on 2026-06-18 and replaced it with the
+ * Antigravity CLI ({@code agy}). This service drives {@code agy} in its non-interactive
+ * print mode ({@code agy -p "<prompt>"}) — no API key is stored in Arima as long as the
+ * CLI is signed in (or {@code GEMINI_API_KEY} / {@code ANTIGRAVITY_API_KEY} is set in the
+ * environment).
+ *
+ * The process runs with the Arima repo as its working directory, so Antigravity is
+ * grounded in the full codebase (it reads AGENTS.md and project files on demand).
  *
  * Prerequisites:
- *   1. Install: npm install -g @google/gemini-cli  (or brew install gemini)
- *   2. Authenticate: run  gemini auth  in a terminal
+ *   1. Install the Antigravity CLI (https://antigravity.google/docs/cli-install)
+ *   2. Sign in: run {@code agy} once in a terminal, or set GEMINI_API_KEY / ANTIGRAVITY_API_KEY
+ *
+ * NOTE: the internal provider key remains {@code gemini_cli} for backward compatibility
+ * with saved settings and the frontend provider switcher.
  */
 @Service
 public class GeminiService {
@@ -37,18 +46,18 @@ public class GeminiService {
     public String chat(List<Map<String, String>> messages, String systemPrompt)
             throws IOException, InterruptedException {
 
-        String geminiExe = findGeminiExecutable();
-        if (geminiExe == null) {
+        String agyExe = findAgyExecutable();
+        if (agyExe == null) {
             throw new IllegalStateException(
-                "Gemini CLI not found.\n\n" +
-                "Arima requires the Google Gemini CLI to be installed and signed in:\n" +
-                "  1. Install: npm install -g @google/gemini-cli\n" +
-                "  2. Authenticate: run  gemini auth  in a terminal\n\n" +
+                "Antigravity CLI not found.\n\n" +
+                "Arima requires the Google Antigravity CLI (agy) to be installed and signed in:\n" +
+                "  1. Install: https://antigravity.google/docs/cli-install\n" +
+                "  2. Sign in: run  agy  once in a terminal (or set GEMINI_API_KEY / ANTIGRAVITY_API_KEY)\n\n" +
                 "The CLI is checked in these locations:\n" +
-                "  ~/.local/bin/gemini, ~/AppData/Roaming/npm/gemini.cmd, and your system PATH.");
+                "  ~/AppData/Local/agy/bin/agy.exe, ~/.local/bin/agy, and your system PATH.");
         }
 
-        return chatViaCli(messages, systemPrompt, geminiExe);
+        return chatViaCli(messages, systemPrompt, agyExe);
     }
 
     public String generateNotebook(String prompt) throws IOException, InterruptedException {
@@ -111,25 +120,18 @@ public class GeminiService {
     }
 
     public boolean isAvailable() {
-        return findGeminiExecutable() != null;
+        return findAgyExecutable() != null;
     }
 
     public String getStatusDetail() {
-        String exe = findGeminiExecutable();
-        if (exe == null) return "gemini CLI not found — install via: npm i -g @google/gemini-cli";
-        try {
-            ProcessBuilder pb = new ProcessBuilder(exe, "--version");
-            pb.redirectErrorStream(true);
-            Process p = pb.start();
-            String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-            p.waitFor();
-            return out.isBlank() ? ("✓ Found: " + exe) : ("✓ " + out.split("\\r?\\n")[0]);
-        } catch (Exception e) {
-            return "✓ Found: " + exe;
+        String exe = findAgyExecutable();
+        if (exe == null) {
+            return "Antigravity CLI (agy) not found — install from https://antigravity.google/docs/cli-install";
         }
+        return "✓ Antigravity CLI: " + exe;
     }
 
-    private String chatViaCli(List<Map<String, String>> messages, String systemPrompt, String geminiExe)
+    private String chatViaCli(List<Map<String, String>> messages, String systemPrompt, String agyExe)
             throws IOException, InterruptedException {
 
         String sys = (systemPrompt != null && !systemPrompt.isBlank()) ? systemPrompt : getDefaultSystemPrompt();
@@ -143,9 +145,11 @@ public class GeminiService {
         }
         prompt.append("**Assistant:**");
 
-        log.info("Gemini CLI chat via {}: {} messages", geminiExe, messages.size());
+        log.info("Antigravity CLI chat via {}: {} messages", agyExe, messages.size());
 
-        ProcessBuilder pb = new ProcessBuilder(geminiExe, "-p", prompt.toString());
+        // `agy -p` runs a single prompt non-interactively and prints the response.
+        // The repo working dir grounds Antigravity in the full Arima codebase.
+        ProcessBuilder pb = new ProcessBuilder(agyExe, "-p", prompt.toString());
         pb.directory(com.barista.util.BaristaHome.directory());
         pb.redirectErrorStream(false);
         Process process = pb.start();
@@ -158,69 +162,46 @@ public class GeminiService {
         int exitCode  = process.waitFor();
 
         if (exitCode != 0 || output.isBlank()) {
-            // Fallback: try piping via stdin instead
-            return chatViaStdin(prompt.toString(), geminiExe);
-        }
-
-        return output;
-    }
-
-    private String chatViaStdin(String prompt, String geminiExe) throws IOException, InterruptedException {
-        ProcessBuilder pb = new ProcessBuilder(geminiExe);
-        pb.directory(com.barista.util.BaristaHome.directory());
-        pb.redirectErrorStream(false);
-        Process process = pb.start();
-
-        try (java.io.OutputStream stdin = process.getOutputStream()) {
-            stdin.write(prompt.getBytes(StandardCharsets.UTF_8));
-        }
-
-        String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-        String stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-        int exitCode  = process.waitFor();
-
-        if (exitCode != 0 || output.isBlank()) {
             String err = stderr.isBlank() ? ("exit code " + exitCode) : stderr;
-            log.warn("Gemini CLI failed ({}): {}", geminiExe, err);
-            throw new IOException("Gemini CLI error: " + err
-                + "\n\nRun `gemini auth` in a terminal to sign in.");
+            log.warn("Antigravity CLI failed ({}): {}", agyExe, err);
+            throw new IOException("Antigravity CLI error: " + err
+                + "\n\nRun `agy` in a terminal to sign in (or set GEMINI_API_KEY / ANTIGRAVITY_API_KEY).");
         }
 
         return output;
     }
 
-    private String findGeminiExecutable() {
+    private String findAgyExecutable() {
         boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("win");
         String home = System.getProperty("user.home", "");
 
         java.util.List<String> candidates = new java.util.ArrayList<>(java.util.List.of(
-            home + "/.local/bin/gemini",
-            home + "/AppData/Roaming/npm/gemini.cmd",
-            home + "/AppData/Local/Programs/gemini/gemini.exe",
-            "/usr/local/bin/gemini",
-            "/usr/bin/gemini",
-            "/opt/homebrew/bin/gemini"
+            home + "/AppData/Local/agy/bin/agy.exe",
+            home + "/.local/bin/agy",
+            "/usr/local/bin/agy",
+            "/usr/bin/agy",
+            "/opt/homebrew/bin/agy"
         ));
 
         for (String path : candidates) {
             java.io.File f = new java.io.File(path);
             if (f.exists() && f.canRead()) {
-                log.debug("Found gemini at: {}", path);
+                log.debug("Found agy at: {}", path);
                 return path;
             }
         }
 
         try {
             List<String> cmd = isWindows
-                ? List.of("cmd", "/c", "where", "gemini")
-                : List.of("which", "gemini");
+                ? List.of("cmd", "/c", "where", "agy")
+                : List.of("which", "agy");
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.redirectErrorStream(true);
             Process p = pb.start();
             String result = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
             if (p.waitFor() == 0 && !result.isBlank()) {
                 String found = result.split("\\r?\\n")[0].trim();
-                log.debug("Found gemini via PATH: {}", found);
+                log.debug("Found agy via PATH: {}", found);
                 return found;
             }
         } catch (Exception ignore) {}

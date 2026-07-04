@@ -47,7 +47,7 @@
       version: '3.0.0', date: '2026-05-24',
       title: 'Major release — Arima goes AI-native & agentic',
       items: [
-        'AI is multi-provider and local-first: Claude, GitHub Copilot, and Gemini run as local CLIs — no API keys.',
+        'AI is multi-provider and local-first: Claude & Antigravity run as local CLIs and GitHub Copilot via the Copilot SDK — no API keys.',
         'Arima is now an MCP server — drive notebooks, cells, packages, and pipelines from any agent.',
         'Authentication: local (default) and OAuth2 modes.',
         'Cross-platform barista CLI: start · stop · status · welcome · docs · agents.',
@@ -119,7 +119,7 @@
       icon: 'M8 1.5l5.5 2.4v3.6c0 3.3-2.3 5.6-5.5 6.6-3.2-1-5.5-3.3-5.5-6.6V3.9z',
       steps: [
         { do: 'Start/stop/restart the server.', where: 'Shutdown button (top bar) · or barista start / stop / status.' },
-        { do: 'Pick your AI provider — Claude, Copilot, or Gemini (local CLI, no API key).', where: 'Settings → AI Provider.' },
+        { do: 'Pick your AI provider — Claude, Copilot, or Antigravity (local, no API key).', where: 'Settings → AI Provider.' },
         { do: 'Choose auth: local (default) or OAuth2.', where: 'barista.auth.mode · data/oauth-config.json.' },
         { do: 'Install Maven, npm, and NuGet packages.', where: 'Packages and NuGet tabs.' },
         { do: 'Notebooks live in notebooks/ (.vnb); app data in data/ — never commit data/.', where: 'Project root.' }

@@ -69,7 +69,7 @@ detect_copilots() {
     local first
     for first in claude;                          do have "$first" && { echo "Claude=$first";  break; }; done
     for first in copilot github-copilot-cli gh;   do have "$first" && { echo "Copilot=$first"; break; }; done
-    for first in gemini;                          do have "$first" && { echo "Gemini=$first";  break; }; done
+    for first in agy gemini;                      do have "$first" && { echo "Antigravity=$first";  break; }; done
 }
 
 # Export the context so the Arima JVM (and any CLI it spawns for the in-UI AI
@@ -91,7 +91,7 @@ show_copilots() {
     if [ -n "$names" ]; then
         dim  "  AI:      ${names}  (co-pilot ready)"
     else
-        warn '  AI:      no CLI found  (install Claude, Copilot, or Gemini CLI for AI features)'
+        warn '  AI:      no CLI found  (install Claude, Copilot, or Antigravity for AI features)'
     fi
     if [ -f "$AGENTS_GUIDE" ] && [ -d "$SKILLS_DIR" ] && [ -d "$AGENTS_DIR" ]; then
         dim  '           guardrails AGENTS.md + skills/ + agents/ loaded -> run: ./arima.sh agents'
@@ -398,9 +398,9 @@ cmd_agents() {
         done <<< "$found"
     else
         warn '    none found -- install one:'
-        dim  '      Claude :  https://claude.ai/code           then  claude auth'
-        dim  '      Copilot:  npm i -g @githubnext/github-copilot-cli'
-        dim  '      Gemini :  npm i -g @google/gemini-cli       then  gemini auth'
+        dim  '      Claude     :  https://claude.ai/code                      then  claude auth'
+        dim  '      Copilot    :  GitHub Copilot CLI (copilot, v1.0.55-5+; used by the Copilot SDK)'
+        dim  '      Antigravity:  https://antigravity.google/docs/cli-install  then  run  agy'
     fi
     echo
 

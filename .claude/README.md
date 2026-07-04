@@ -63,6 +63,6 @@ content lives in [`../docs/WELCOME.md`](../docs/WELCOME.md).
 - [`../AGENTS.md`](../AGENTS.md) — architecture guardrails every contributor (human or AI) must follow.
 - [`../CLAUDE.md`](../CLAUDE.md) — Claude-specific instructions.
 - [`../.github/copilot-instructions.md`](../.github/copilot-instructions.md) — Copilot equivalent.
-- [`../GEMINI.md`](../GEMINI.md) — Gemini equivalent.
+- [`../GEMINI.md`](../GEMINI.md) — Antigravity (`agy`) equivalent (formerly Gemini CLI).
 
 — Suresh Chande, founding contributor

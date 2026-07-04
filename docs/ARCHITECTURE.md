@@ -52,8 +52,8 @@ Browser                          Arima Server (Spring Boot 3.2, Java 21)
                       │  (routed by LLMController based on active provider)  │
                       └──────────────────────────────────────────────────────┘
 
-  AI chat/generate      ──────▶  claude / copilot / gemini CLI (local subprocess)
-                        ◀──────  stdout response
+  AI chat/generate      ──────▶  claude / agy CLI (local subprocess) · copilot (via Copilot SDK)
+                        ◀──────  stdout response / SDK assistant-message event
 ```
 
 ---
@@ -94,8 +94,8 @@ com.barista/
 │   ├── NuGetService          NuGet package list management (data/nuget-packages.json)
 │   ├── OrchestrationService  Dependency graph, topological sort, cross-notebook refs
 │   ├── ClaudeService         Claude CLI integration (local subprocess, no API key stored)
-│   ├── CopilotCliService     Copilot CLI integration (`copilot` binary, stdin pipe)
-│   ├── GeminiService         Gemini CLI integration (`gemini -p` subprocess)
+│   ├── CopilotCliService     GitHub Copilot SDK integration (copilot-sdk-java → local `copilot` CLI, JSON-RPC, chat-only)
+│   ├── GeminiService         Antigravity CLI integration (`agy -p` subprocess; provider key `gemini_cli`)
 │   └── SettingsService       Settings load/save (data/settings.json)
 │
 ├── controller/               REST API layer
@@ -357,7 +357,7 @@ Cell `mode` values: `jshell` · `java` · `nodejs` · `typescript` · `csharp` �
 ## Security Model
 
 - **Local only**: no authentication by default. Bind to `127.0.0.1` only (default Spring Boot behaviour).
-- **No API keys in transit**: all three AI providers (Claude, Copilot, Gemini) are invoked as local CLI subprocesses — no credentials leave the machine through Arima.
+- **No API keys in transit**: all three AI providers (Claude, Copilot, Antigravity) run locally — Claude & Antigravity as CLI subprocesses, Copilot via the GitHub Copilot SDK driving the local `copilot` CLI — no credentials leave the machine through Arima.
 - **Code execution**: JShell, Java, Node.js, `dotnet run`, `dotnet fsi`, and `g++`/MSVC all run with the same OS-user permissions as the Arima server process. Do **not** expose Arima to untrusted network access.
 - **CORS**: configured for `localhost` only. Restrict further in production.
 
@@ -372,7 +372,7 @@ Cell `mode` values: `jshell` · `java` · `nodejs` · `typescript` · `csharp` �
 | `dotnet run` instead of `dotnet-script` | Standard SDK only, no global tool install required |
 | Source injection for C#/F#/C++ pipeline deps | Processes are isolated; injecting source is the only way to share types/variables across cells |
 | C++ declaration splitting | Brace-depth tracker separates global-scope items (classes/functions) from statements; enables the no-`main()` notebook UX |
-| Multi-CLI AI provider pattern | Each provider (Claude/Copilot/Gemini) is a standalone `*Service`; `LLMController` dispatches via a thin `AIDelegate` interface — adding a new provider requires only a new service + one switch case |
+| Multi-provider AI pattern | Each provider (Claude/Copilot/Antigravity) is a standalone `*Service`; `LLMController` dispatches via a thin `AIDelegate` interface — adding a new provider requires only a new service + one switch case. Claude & Antigravity are CLI subprocesses; Copilot uses the GitHub Copilot SDK |
 | Trampoline restart | Works whether started via `mvn spring-boot:run`, `start.sh`, or JAR directly |
 | Health-poll reconnect | More reliable than STOMP reconnect; works regardless of how the server stopped |
 | Cell expand/collapse | CSS `max-height` transition (96px collapsed → 2000px expanded); CodeMirror `refresh()` after transition keeps line rendering correct |
