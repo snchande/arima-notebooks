@@ -837,6 +837,22 @@ dotnet fsi --version  # verify F# Interactive</pre>
           </div>
         </div>
 
+        <!-- ── Guided Tour ── -->
+        <div class="card" id="fre-tour-setting">
+          <div class="card-title">Guided Tour</div>
+          <div class="card-body">
+            <p class="muted" style="margin:0 0 12px;font-size:12.5px;line-height:1.6">
+              The First Run Experience walks you through every section of Arima Notebooks.
+              Replay it anytime, or have it show again the next time you launch.
+            </p>
+            <div class="field-group inline-field">
+              <label>Show the tour on next launch <span class="hint">Relaunch the walkthrough automatically</span></label>
+              <label class="toggle"><input type="checkbox" id="s-replay-tour"><span class="slider"></span></label>
+            </div>
+            <button class="btn-secondary" id="btn-start-tour" type="button" style="margin-top:6px">Start tour now</button>
+          </div>
+        </div>
+
         <!-- ── Authentication ── -->
         <div class="card" id="auth-card">
           <div class="card-title">Authentication</div>
@@ -1448,6 +1464,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
 <script src="/js/npm-packages.js"></script>
 <script src="/js/nuget.js"></script>
 <script src="/js/welcome.js"></script>
+<script src="/js/fre.js"></script>
 <script>
 const PackageTabUI = {
   show(tab) {

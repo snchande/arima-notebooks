@@ -7,6 +7,13 @@ Dates are in `YYYY-MM-DD` format.
 
 ## [Unreleased]
 
+### First Run Experience — a guided tour of the whole workspace
+- **New guided walkthrough on first launch.** New users are now welcomed with an interactive **First Run Experience (FRE)** — a spotlight tour (`js/fre.js`) that drives real navigation through every section of Arima Notebooks (the four workspaces, the notebook canvas, first-class languages, pipelines with named anchors, and cross-notebook reuse) before landing on the main workspace. Each step highlights the actual UI element it describes.
+- **Opt-in replay from Settings.** A new **Guided Tour** card in **Settings** lets you **Start tour now** at any time, or toggle **"Show the tour on next launch"** to have it replay automatically. The tour runs once automatically on a fresh install and remembers that it has been seen (`localStorage: arima.fre.done` / `arima.fre.replay`).
+- Added `src/main/resources/static/js/fre.js`, FRE styles in `css/arima.css`, the Guided Tour settings card in `index.html`, and wiring in `js/settings.js`. The FRE supersedes the old auto-popup welcome modal on first run.
+
+---
+
 ### Repositioning — "the notebook, modernized for the agentic era"
 - **Product story realigned across all docs.** Arima Notebooks is now consistently positioned as a ground-up *modernization of the notebook* — a **cross-platform execution plane** where people and AI agents collaborate on the same code — rather than as a Java/JVM-first notebook. Messaging is built around two shifts (real work is polyglot; code is a team sport with AI), **every language first-class** (JavaScript, TypeScript, C#, F#, C++, Java, JShell — with more to come), humans-and-agents on a shared artifact, local-first, and **open source built to be reshaped**.
 - **Positioned within the platform.** Arima Notebooks is now introduced as **part of the Arima platform** (Arima being the broader product); product docs describe Arima Notebooks specifically and no longer use bare "Arima" to mean the notebook.
