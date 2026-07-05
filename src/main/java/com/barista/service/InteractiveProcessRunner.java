@@ -201,11 +201,24 @@ public class InteractiveProcessRunner {
         long    promptShownAt = 0;
         int     answered = 0;
         boolean stdinClosed = false;
+        int     streamedLen = 0;   // chars of `pending` already streamed to the browser
         OutputStream procIn = process.getOutputStream();
 
         while (process.isAlive()) {
             if (BaristaInput.isCancelled()) { process.destroyForcibly(); return false; }
             if (truncated.get())            { process.destroyForcibly(); return false; }
+
+            // Stream output produced since the last slice so the browser shows the cell running
+            // live. Offset-based: `pending` is left intact so the final result still has it all.
+            synchronized (pending) {
+                if (pending.length() > streamedLen) {
+                    String delta = pending.substring(streamedLen);
+                    streamedLen = pending.length();
+                    io.streamOutput(stripVarDump(delta));
+                } else if (pending.length() < streamedLen) {
+                    streamedLen = pending.length();   // a prompt flush reset the buffer
+                }
+            }
 
             if (promptShown) {
                 // Waiting on the user — this time is excluded from the compute budget.

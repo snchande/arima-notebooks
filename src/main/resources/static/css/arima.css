@@ -988,11 +988,38 @@ a:hover { text-decoration: underline; }
   z-index: 1;
 }
 
-/* Focused cell — expand fully, no scroll cap, show all lines */
+/* Focused cell — fully expand to show all code by default. The user can shrink or
+   set any height with the drag handle (or minimize via double-click); that inline
+   height then wins over this default. */
 .cell.cell-focused .cell-editor .CodeMirror-scroll {
-  max-height: 2000px;
+  max-height: none;
   overflow: auto !important;
 }
+
+/* Drag-to-resize handle at the bottom of a cell editor */
+.cell-editor-resize {
+  height: 9px;
+  cursor: ns-resize;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  opacity: 0; transition: opacity .15s;
+  position: relative; z-index: 2;
+}
+.cell-editor-resize::before {
+  content: ''; width: 34px; height: 3px; border-radius: 2px;
+  background: var(--text-3);
+}
+.cell:hover .cell-editor-resize,
+.cell.cell-focused .cell-editor-resize { opacity: .55; }
+.cell-editor-resize:hover { opacity: 1 !important; }
+.cell-editor-resize:hover::before { background: var(--accent); }
+
+/* Once the user has sized/minimized the editor, its inline height wins and the
+   collapse-on-blur cap + fade hint are suppressed. */
+.cell-editor.user-sized .CodeMirror-scroll { overflow: auto !important; }
+.cell-editor.user-sized::after,
+.cell-editor.minimized::after { opacity: 0; }
 .cell.cell-focused .cell-editor::after { opacity: 0; }
 
 /* Maximized cell (Ctrl+M / expand button) keeps full screen height */
@@ -3427,6 +3454,35 @@ table.barista-df th { position: relative; padding-bottom: 14px; }
   font-family: var(--font-code); font-size: 13px;
 }
 
+/* Notice shown when a very large output is trimmed for display */
+.cell-output-trim-note {
+  margin: 0 0 6px; padding: 4px 8px;
+  font-size: 11px; font-weight: 600;
+  color: var(--yellow);
+  background: rgba(247,200,106,.08);
+  border-left: 2px solid var(--yellow);
+  border-radius: 3px;
+}
+
+/* Live streaming preview — shown while a long-running cell is producing output.
+   Replaced by the authoritative result when the cell finishes. */
+.cell-stream-preview {
+  margin: 6px 0 2px;
+  padding: 8px 12px;
+  max-height: 40vh; overflow: auto;
+  background: var(--surface-2);
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  font-family: var(--font-code); font-size: 13px;
+  color: var(--text-1); white-space: pre-wrap; word-break: break-all;
+}
+.cell-stream-preview::before {
+  content: '● streaming live…';
+  display: block; margin-bottom: 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  color: var(--yellow); opacity: .85;
+}
+
 /* Program output printed before / between prompts */
 .cell-terminal .cell-interactive-chunk {
   margin: 0; padding: 6px 12px;
@@ -3757,6 +3813,15 @@ table.barista-df th { position: relative; padding-bottom: 14px; }
 }
 .run-stop-btn:hover:not(:disabled) { background: rgba(240,120,120,.2); border-color: var(--red); }
 .run-stop-btn:disabled { opacity: .6; cursor: default; }
+
+/* Persistent per-cell Stop in the action bar — visible for the WHOLE run (all
+   languages), so it never vanishes when the transient run animation clears. */
+.cell.running .cell-actions { opacity: 1; }
+.cell.running .run-btn { display: none; }
+.cell.running .cell-stop-btn { display: inline-flex !important; }
+.cell-stop-btn { color: var(--red); border-color: rgba(240,120,120,.45); }
+.cell-stop-btn:hover:not(:disabled) { color: #fff; background: var(--red); border-color: var(--red); }
+.cell-stop-btn:disabled { opacity: .6; cursor: default; }
 
 /* ── Notifications bell ── */
 .notif-wrap { position: relative; display: inline-flex; }

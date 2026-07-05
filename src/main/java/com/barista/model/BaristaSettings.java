@@ -33,7 +33,7 @@ public class BaristaSettings {
 
     // ── Execution ──────────────────────────────────────────────────────
     private int     maxExecutionTimeMs = 30000;
-    private int     maxOutputLines     = 1000;
+    private int     maxOutputLines     = 20000;
     private boolean enableInlineCharts = true;
     private boolean wrapLongLines      = false;
 

@@ -693,6 +693,9 @@ const NotebookEditor = (() => {
           <button class="cell-btn run-btn" title="Run cell (Shift+Enter)">
             <svg viewBox="0 0 16 16"><path d="M3 2l12 6-12 6V2z" fill="currentColor"/></svg>
           </button>
+          <button class="cell-btn cell-stop-btn" id="cell-stop-${cell.id}" title="Stop this cell" style="display:none">
+            <svg viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1.5" fill="currentColor"/></svg>
+          </button>
 ` : ''}
           ${isPipeline ? `
           <button class="cell-btn run-pipeline-btn" title="Run pipeline — uses cached output for already-run steps">
@@ -888,6 +891,63 @@ const NotebookEditor = (() => {
     if (cm && cm.getValue() !== cell.source) cm.setValue(cell.source);
   }
 
+  /* ── User drag-to-resize / minimize for a cell editor ─────────────────
+     The user, not Arima, decides the editor height. Dragging the handle sets an
+     explicit height on the CodeMirror scroller (inline style wins over the CSS
+     focus/blur caps); double-clicking toggles a minimized state and back. */
+  function attachEditorResizer(editorDiv, cm, handle) {
+    const MIN_H = 48;
+    const scroller = () => editorDiv.querySelector('.CodeMirror-scroll');
+
+    let startY = 0, startH = 0, dragging = false;
+
+    const onMove = (e) => {
+      if (!dragging) return;
+      const h = Math.max(MIN_H, startH + (e.clientY - startY));
+      const s = scroller();
+      if (s) { s.style.height = h + 'px'; s.style.maxHeight = h + 'px'; }
+      e.preventDefault();
+    };
+    const onUp = () => {
+      dragging = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      cm.refresh();
+    };
+
+    handle.addEventListener('mousedown', (e) => {
+      const s = scroller();
+      if (!s) return;
+      e.preventDefault();
+      startY = e.clientY;
+      startH = s.getBoundingClientRect().height;
+      dragging = true;
+      editorDiv.classList.add('user-sized');
+      editorDiv.classList.remove('minimized');
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      document.body.style.cursor = 'ns-resize';
+    });
+
+    handle.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      const s = scroller();
+      if (!s) return;
+      if (editorDiv.classList.toggle('minimized')) {
+        editorDiv.classList.add('user-sized');
+        s.style.height = MIN_H + 'px';
+        s.style.maxHeight = MIN_H + 'px';
+      } else {
+        // Restore: hand height back to the CSS focus/blur defaults.
+        editorDiv.classList.remove('user-sized');
+        s.style.height = '';
+        s.style.maxHeight = '';
+      }
+      cm.refresh();
+    });
+  }
+
   /* ── Build CODE cell ──────────────────────────────── */
   function buildCodeCell(cell, div, bodyWrap) {
     const editorDiv = document.createElement('div');
@@ -911,6 +971,15 @@ const NotebookEditor = (() => {
       }
     });
     editors[cell.id] = cm;
+
+    // User-controlled editor height: a drag handle at the bottom lets the user set any
+    // height (drag), and double-click toggles minimize/restore. Their choice wins over
+    // the focus/blur defaults — Arima does not hardcode the size.
+    const resizer = document.createElement('div');
+    resizer.className = 'cell-editor-resize';
+    resizer.title = 'Drag to resize · double-click to minimize / restore';
+    editorDiv.appendChild(resizer);
+    attachEditorResizer(editorDiv, cm, resizer);
 
     // Expand on focus, collapse on blur — refresh CM so it recalculates line layout
     cm.on('focus', () => {
@@ -977,6 +1046,7 @@ const NotebookEditor = (() => {
 
     // Button handlers
     div.querySelector('.run-btn')?.addEventListener('click', () => executeCell(cell.id));
+    div.querySelector('.cell-stop-btn')?.addEventListener('click', (e) => { e.stopPropagation(); stopCell(cell.id); });
     div.querySelector('.run-to-here-btn')?.addEventListener('click', () => runToHere(cell.id));
     document.getElementById(`run-deps-btn-${cell.id}`)?.addEventListener('click', () => runWithDeps(cell.id, false));
     document.getElementById(`clean-run-btn-${cell.id}`)?.addEventListener('click', () => runWithDeps(cell.id, true));
@@ -1531,35 +1601,102 @@ const NotebookEditor = (() => {
     }, 80);
   }
 
+  /* ── Notebook run lifecycle (Stop / abort) ─────────
+     Complements the per-cell Stop button: this halts a whole-notebook run
+     (Run All / Run-to-here) and interrupts whichever cell is executing.
+     _seqRun is non-null while a sequence is in flight; _runningCellId names
+     the single cell the kernel is currently executing, for a targeted interrupt. */
+  let _seqRun = null;
+  let _runningCellId = null;
+
+  // A run started — reveal the toolbar Stop button, disable Run All.
+  function _runUiActive() {
+    const stop = document.getElementById('btn-stop-run');
+    if (stop) {
+      stop.style.display = '';
+      stop.disabled = false;
+      const label = document.getElementById('stop-run-label');
+      if (label) label.textContent = 'Stop';
+    }
+    document.getElementById('btn-run-all')?.setAttribute('disabled', '');
+  }
+
+  // Nothing left running — hide Stop, re-enable Run All.
+  function _runUiIdleIfDone() {
+    if (_seqRun || _runningCellId) return;
+    const stop = document.getElementById('btn-stop-run');
+    if (stop) {
+      stop.style.display = 'none';
+      stop.disabled = false;
+      const label = document.getElementById('stop-run-label');
+      if (label) label.textContent = 'Stop';
+    }
+    document.getElementById('btn-run-all')?.removeAttribute('disabled');
+  }
+
+  // Per-cell Stop: interrupt just this cell (leaves any Run-All sequence to continue
+  // to the next cell — the notebook-level Stop is what aborts the whole run).
+  function stopCell(cellId) {
+    if (!Arima.state.currentSessionId) return;
+    Arima.sendToShell(Arima.state.currentSessionId, 'interrupt', { cellId });
+    const btn = document.getElementById(`cell-stop-${cellId}`);
+    if (btn) { btn.disabled = true; btn.title = 'Stopping…'; }
+  }
+
+  // Toolbar Stop: abort any running sequence, then interrupt the current cell.
+  function stopRun() {
+    if (_seqRun) _seqRun.aborted = true;
+    if (_runningCellId && Arima.state.currentSessionId) {
+      Arima.sendToShell(Arima.state.currentSessionId, 'interrupt', { cellId: _runningCellId });
+    }
+    const stop = document.getElementById('btn-stop-run');
+    if (stop) {
+      stop.disabled = true;
+      const label = document.getElementById('stop-run-label');
+      if (label) label.textContent = 'Stopping…';
+    }
+    Arima.setStatus('Stopping…');
+  }
+
   async function runAllSequential(cells, { delay = 0 } = {}) {
     clearNotebookStats();
+    const run = { aborted: false };
+    _seqRun = run;
+    _runUiActive();
     const t0 = Date.now();
-    let executed = 0, ok = 0, errors = 0;
+    let executed = 0, ok = 0, errors = 0, aborted = false;
     const cellStats = [];
 
-    for (let i = 0; i < cells.length; i++) {
-      const cell = cells[i];
-      if (cell.type !== 'CODE' && cell.type !== 'PIPELINE') continue;
+    try {
+      for (let i = 0; i < cells.length; i++) {
+        if (run.aborted) { aborted = true; break; }
+        const cell = cells[i];
+        if (cell.type !== 'CODE' && cell.type !== 'PIPELINE') continue;
 
-      const cellT0 = Date.now();
-      if (cell.type === 'CODE') await executeCell(cell.id);
-      else await runPipeline(cell.id);
-      const cellMs = Date.now() - cellT0;
+        const cellT0 = Date.now();
+        if (cell.type === 'CODE') await executeCell(cell.id);
+        else await runPipeline(cell.id);
+        const cellMs = Date.now() - cellT0;
 
-      if (cell.type === 'CODE') {
-        executed++;
-        const div = document.getElementById(`cell-${cell.id}`);
-        const hasErr = div?.classList.contains('has-error');
-        if (hasErr) errors++; else ok++;
-        cellStats.push({ label: cell.anchor || cell.id, ms: cellMs, err: hasErr });
+        if (cell.type === 'CODE') {
+          executed++;
+          const div = document.getElementById(`cell-${cell.id}`);
+          const hasErr = div?.classList.contains('has-error');
+          if (hasErr) errors++; else ok++;
+          cellStats.push({ label: cell.anchor || cell.id, ms: cellMs, err: hasErr });
+        }
+
+        if (run.aborted) { aborted = true; break; }
+        // delay between cells (skip after last)
+        const isLast = cells.slice(i + 1).every(c => c.type === 'MARKDOWN');
+        if (delay > 0 && !isLast) await sleep(delay);
       }
-
-      // delay between cells (skip after last)
-      const isLast = cells.slice(i + 1).every(c => c.type === 'MARKDOWN');
-      if (delay > 0 && !isLast) await sleep(delay);
+    } finally {
+      _seqRun = null;
+      _runUiIdleIfDone();
     }
 
-    return { executed, ok, errors, totalMs: Date.now() - t0, cellStats };
+    return { executed, ok, errors, aborted, totalMs: Date.now() - t0, cellStats };
   }
 
   /* ── Execute a single cell ────────────────────────── */
@@ -1596,11 +1733,22 @@ const NotebookEditor = (() => {
     // call is still in flight (the HTTP thread blocks on JShell execution).
     const sessionId = Arima.state.currentSessionId;
     let hadInteractiveInput = false;
+    let hadStreamed = false;
     const bodyWrap = document.getElementById(`body-${cellId}`);
 
     const unsubWs = Arima.subscribeToSession(sessionId, (msg) => {
       if (msg.cellId !== cellId) return; // ignore other cells
+      if (msg.type === 'partial_output') {
+        // Live progress: show output as it is produced. This is an ephemeral preview —
+        // the authoritative full output replaces it via applyResult() on completion.
+        if (hadInteractiveInput) return;   // interactive terminal owns the display
+        if (!hadStreamed) { clearRunningIndicator(cellId); hadStreamed = true; }
+        appendStreamPreview(bodyWrap, msg.text);
+        return;
+      }
       if (msg.type === 'input_needed') {
+        // Switching to interactive input — drop the streaming preview, the terminal takes over.
+        removeStreamPreview(bodyWrap); hadStreamed = false;
         // Stop the running animation — the terminal prompt is the new "waiting" indicator
         if (!hadInteractiveInput) clearRunningIndicator(cellId);
         hadInteractiveInput = true;
@@ -1616,6 +1764,12 @@ const NotebookEditor = (() => {
       }
     });
 
+    _runningCellId = cellId;
+    _runUiActive();
+    // Reset the persistent per-cell Stop button for this fresh run.
+    const cellStopBtn = document.getElementById(`cell-stop-${cellId}`);
+    if (cellStopBtn) { cellStopBtn.disabled = false; cellStopBtn.title = 'Stop this cell'; }
+
     try {
       const result = await Arima.api('POST', '/shell/execute', {
         sessionId,
@@ -1625,6 +1779,7 @@ const NotebookEditor = (() => {
 
       unsubWs();
       clearRunningIndicator(cellId);
+      removeStreamPreview(bodyWrap);   // ephemeral live preview → replaced by the full result below
       if (window.Notifications) Notifications.clear(cellId);
 
       // Remove any lingering input prompt (shouldn't exist if execution finished)
@@ -1642,7 +1797,9 @@ const NotebookEditor = (() => {
         result.success ? Orchestration.markOk(cell.anchor, result.executionCount)
                        : Orchestration.markError(cell.anchor);
       }
-      const statusLabel = result.status === 'COMPILE_ERROR' ? 'Compile error'
+      const RUNAWAY_LABEL = { OUTPUT_LIMIT: 'Stopped · output limit', TIMEOUT: 'Stopped · time limit', STOPPED: 'Stopped' };
+      const statusLabel = RUNAWAY_LABEL[result.status] ? RUNAWAY_LABEL[result.status]
+                        : result.status === 'COMPILE_ERROR' ? 'Compile error'
                         : result.success ? 'Done' : 'Runtime error';
       Arima.setStatus(`[${modeLabel}] ${statusLabel} — ${result.executionTimeMs}ms`);
       document.getElementById('kernel-info').textContent =
@@ -1650,6 +1807,7 @@ const NotebookEditor = (() => {
     } catch(e) {
       unsubWs();
       clearRunningIndicator(cellId);
+      removeStreamPreview(bodyWrap);
       if (window.Notifications) Notifications.clear(cellId);
       bodyWrap?.querySelector('.stdin-interactive-prompt')?.remove();
       div?.classList.remove('running');
@@ -1659,6 +1817,9 @@ const NotebookEditor = (() => {
       const errMsg = e.message || 'Unknown error';
       Arima.setStatus('Error: ' + errMsg);
       ErrorLog.add(cell.anchor || cellId, errMsg, null);
+    } finally {
+      _runningCellId = null;
+      _runUiIdleIfDone();
     }
   }
 
@@ -1672,6 +1833,27 @@ const NotebookEditor = (() => {
       bodyWrap.appendChild(t);
     }
     return t;
+  }
+
+  // Live streaming preview — an ephemeral <pre> that fills with output while a cell runs,
+  // then is removed and replaced by the authoritative full result. Keeps only a bounded tail
+  // so a runaway printer can't grow the DOM without limit.
+  const STREAM_PREVIEW_MAX = 20000;
+  function appendStreamPreview(bodyWrap, text) {
+    if (!bodyWrap || !text) return;
+    let pre = bodyWrap.querySelector('.cell-stream-preview');
+    if (!pre) {
+      pre = document.createElement('pre');
+      pre.className = 'cell-stream-preview';
+      bodyWrap.appendChild(pre);
+    }
+    let next = pre.textContent + text;
+    if (next.length > STREAM_PREVIEW_MAX) next = '… (streaming — earlier output trimmed)\n' + next.slice(-STREAM_PREVIEW_MAX);
+    pre.textContent = next;
+    pre.scrollTop = pre.scrollHeight;
+  }
+  function removeStreamPreview(bodyWrap) {
+    bodyWrap?.querySelector('.cell-stream-preview')?.remove();
   }
 
   // Append a chunk of program output (printed before / between stdin prompts)
@@ -1758,7 +1940,8 @@ const NotebookEditor = (() => {
       cell.lastExecutedAt    = now.toISOString();
       cell.lastExecutionTimeMs = result.executionTimeMs || 0;
       const ts  = _fmtDateTime(cell.lastExecutedAt);
-      const runLabel = ok ? 'Completed' : 'Failed';
+      const STOP_LABEL = { STOPPED: 'Stopped', OUTPUT_LIMIT: 'Stopped · output limit', TIMEOUT: 'Stopped · time limit' };
+      const runLabel = STOP_LABEL[result.status] ? STOP_LABEL[result.status] : (ok ? 'Completed' : 'Failed');
       const footer = document.createElement('div');
       footer.className = `cell-exec-footer ${ok ? 'ok' : 'err'}`;
       footer.innerHTML =
@@ -1883,7 +2066,9 @@ const NotebookEditor = (() => {
       if (cell.id === cellId) break;
     }
     const stats = await runAllSequential(cells, { delay: 2500 });
-    Arima.setStatus(`Run to here — ${stats.ok} OK, ${stats.errors} error(s), ${(stats.totalMs/1000).toFixed(2)}s`);
+    Arima.setStatus(stats.aborted
+      ? `Stopped — ${stats.ok} OK, ${stats.errors} error(s) before stop`
+      : `Run to here — ${stats.ok} OK, ${stats.errors} error(s), ${(stats.totalMs/1000).toFixed(2)}s`);
     showNotebookStats(stats);
   }
 
@@ -2150,7 +2335,9 @@ const NotebookEditor = (() => {
       const ok  = result.success;
       const dur = formatDuration(result.executionTimeMs);
       const ts  = _fmtDateTime(cell.lastExecutedAt);
-      const runLabel = result.status === 'COMPILE_ERROR' ? 'Compile Error'
+      const STOP_LABEL = { STOPPED: 'Stopped', OUTPUT_LIMIT: 'Stopped · output limit', TIMEOUT: 'Stopped · time limit' };
+      const runLabel = STOP_LABEL[result.status] ? STOP_LABEL[result.status]
+                     : result.status === 'COMPILE_ERROR' ? 'Compile Error'
                      : ok ? 'Completed' : 'Failed';
       const footer = document.createElement('div');
       footer.className = `cell-exec-footer ${ok ? 'ok' : 'err'}`;
@@ -2238,7 +2425,17 @@ const NotebookEditor = (() => {
       const el = document.createElement('div');
       el.className = 'cell-output stdout';
       // Split output into lines — detect BARISTA_IMG / BARISTA_HTML sentinels
-      const lines = result.output.split('\n');
+      let lines = result.output.split('\n');
+      // Guard the DOM against a huge (e.g. runaway) output — render only the last slice.
+      const MAX_RENDER_LINES = 5000;
+      if (lines.length > MAX_RENDER_LINES) {
+        const total = lines.length;
+        lines = lines.slice(-MAX_RENDER_LINES);
+        const note = document.createElement('div');
+        note.className = 'cell-output-trim-note';
+        note.textContent = `⚠ Output too large — showing the last ${MAX_RENDER_LINES.toLocaleString()} of ${total.toLocaleString()} lines.`;
+        el.appendChild(note);
+      }
       let textBuf = [];
       const flushText = () => {
         const t = textBuf.join('\n').trimEnd();
@@ -2297,7 +2494,9 @@ const NotebookEditor = (() => {
     if (!notebook) return;
     Arima.setStatus('Running all cells…');
     const stats = await runAllSequential(notebook.cells, { delay: 2500 });
-    Arima.setStatus(`Done — ${stats.ok} OK, ${stats.errors} error(s), ${(stats.totalMs/1000).toFixed(2)}s`);
+    Arima.setStatus(stats.aborted
+      ? `Stopped — ${stats.ok} OK, ${stats.errors} error(s) before stop`
+      : `Done — ${stats.ok} OK, ${stats.errors} error(s), ${(stats.totalMs/1000).toFixed(2)}s`);
     showNotebookStats(stats);
   }
 
@@ -2441,6 +2640,7 @@ const NotebookEditor = (() => {
     });
     document.getElementById('btn-save')?.addEventListener('click', save);
     document.getElementById('btn-run-all')?.addEventListener('click', runAll);
+    document.getElementById('btn-stop-run')?.addEventListener('click', stopRun);
     document.getElementById('btn-add-code')?.addEventListener('click', () => addCell('CODE'));
     document.getElementById('btn-add-md')?.addEventListener('click', () => addCell('MARKDOWN'));
     document.getElementById('btn-paste-cell')?.addEventListener('click', async () => {
@@ -2457,6 +2657,9 @@ const NotebookEditor = (() => {
     document.getElementById('btn-restart')?.addEventListener('click', async () => {
       if (!Arima.state.currentSessionId) return;
       if (!confirm('Restart the JShell kernel? All variables will be lost.')) return;
+      // Abort any in-flight run and interrupt the current cell before the kernel resets,
+      // so a Run All in progress does not keep firing cells at a restarting session.
+      stopRun();
       await Arima.api('POST', `/shell/${Arima.state.currentSessionId}/restart`);
       // Reset all dep statuses to pending
       Object.keys(depStatus || {}).forEach(k => delete depStatus[k]);

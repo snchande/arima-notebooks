@@ -308,6 +308,10 @@
       <svg viewBox="0 0 16 16"><path d="M3 2l12 6-12 6V2z" fill="currentColor"/></svg>
       Run All
     </button>
+    <button class="nb-tool nb-tool-danger" id="btn-stop-run" title="Stop the running notebook — aborts Run All / Run-to-here and interrupts the cell currently executing" style="display:none">
+      <svg viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9" rx="1.5" fill="currentColor"/></svg>
+      <span id="stop-run-label">Stop</span>
+    </button>
     <button class="nb-tool nb-tool-step" id="btn-step-mode" title="Step through cells one by one" onclick="NotebookEditor.stepStart()">
       <svg viewBox="0 0 16 16" fill="none"><path d="M3 2l9 6-9 6V2z" fill="currentColor"/><line x1="13" y1="2" x2="13" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       Step

@@ -65,6 +65,14 @@ public class ShellSession {
     /** Live count of newlines written to the capture buffer — drives the output-line cap. */
     private final AtomicInteger outputLineCount = new AtomicInteger(0);
 
+    /** When set, receives incremental output chunks during a run for live streaming to the browser. */
+    private volatile java.util.function.Consumer<String> outputSink;
+    /** Bytes of the capture buffer already streamed this run (offset — the buffer itself is left intact). */
+    private volatile int streamedLen = 0;
+
+    /** Register a sink that receives incremental output while a cell runs (null to disable). */
+    public void setOutputSink(java.util.function.Consumer<String> sink) { this.outputSink = sink; }
+
     public ShellSession(String sessionId) {
         this.sessionId = sessionId;
         this.classpath = new ArrayList<>();
@@ -206,6 +214,7 @@ public class ShellSession {
         stopRequested = false;
         captureBuffer.reset();
         outputLineCount.set(0);
+        streamedLen = 0;
 
         Future<ExecutionResult> future = evalExecutor.submit(() -> runEval(code, cellId, startTime));
 
@@ -213,7 +222,13 @@ public class ShellSession {
         final long SLICE = 120;
         while (true) {
             try {
-                return future.get(SLICE, TimeUnit.MILLISECONDS);
+                ExecutionResult r = future.get(SLICE, TimeUnit.MILLISECONDS);
+                // A manual Stop makes jshell.stop() unblock the eval, so the future can complete
+                // "normally" here — report it as STOPPED rather than a successful run.
+                if (stopRequested) {
+                    return abortedResult(cellId, startTime, "Execution stopped by user.", "STOPPED");
+                }
+                return r;
             } catch (TimeoutException te) {
                 if (stopRequested) {
                     stopEval();
@@ -235,6 +250,8 @@ public class ShellSession {
                             + "(possible never-ending loop).", "TIMEOUT");
                     }
                 }
+                // Stream whatever this cell has printed so far so the browser shows it running live.
+                streamPartial();
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
                 stopEval();
@@ -244,6 +261,22 @@ public class ShellSession {
                 return abortedResult(cellId, startTime,
                     "Internal execution error: " + cause.getMessage(), "ERROR");
             }
+        }
+    }
+
+    /**
+     * Stream output produced since the last slice to the browser, by byte offset so the capture
+     * buffer stays intact for the final result. A no-op when no sink is registered.
+     */
+    private void streamPartial() {
+        java.util.function.Consumer<String> sink = outputSink;
+        if (sink == null) return;
+        byte[] all;
+        synchronized (captureBuffer) { all = captureBuffer.toByteArray(); }
+        if (all.length > streamedLen) {
+            String chunk = new String(all, streamedLen, all.length - streamedLen, StandardCharsets.UTF_8);
+            streamedLen = all.length;
+            try { sink.accept(chunk); } catch (Exception ignore) {}
         }
     }
 
@@ -446,9 +479,12 @@ public class ShellSession {
      * blocking for user input, so the user can see what was printed before the prompt.
      */
     public String drainOutput() {
-        String text = captureBuffer.toString(java.nio.charset.StandardCharsets.UTF_8);
-        captureBuffer.reset();
-        return text;
+        synchronized (captureBuffer) {
+            String text = captureBuffer.toString(java.nio.charset.StandardCharsets.UTF_8);
+            captureBuffer.reset();
+            streamedLen = 0;
+            return text;
+        }
     }
     public JShell getJShell()         { return jshell; }
 

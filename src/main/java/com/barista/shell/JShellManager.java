@@ -62,10 +62,23 @@ public class JShellManager {
         log.debug("Executing in session {}: {}", sessionId,
                 code.length() > 80 ? code.substring(0, 80) + "..." : code);
 
-        ExecutionResult result = session.execute(code, cellId, maxExecMs(), maxOutputLines());
+        // Stream incremental output to the browser while the cell runs (live progress for
+        // long-running / high-output cells). Only for cell-bound runs — quiet/console runs skip it.
+        String topic = "/topic/shell/" + sessionId;
+        if (cellId != null) {
+            session.setOutputSink(chunk -> messagingTemplate.convertAndSend(topic,
+                    Map.of("type", "partial_output", "cellId", cellId, "text", chunk)));
+        }
+
+        ExecutionResult result;
+        try {
+            result = session.execute(code, cellId, maxExecMs(), maxOutputLines());
+        } finally {
+            session.setOutputSink(null);
+        }
 
         // Broadcast to WebSocket subscribers
-        messagingTemplate.convertAndSend("/topic/shell/" + sessionId, result);
+        messagingTemplate.convertAndSend(topic, result);
 
         return result;
     }
