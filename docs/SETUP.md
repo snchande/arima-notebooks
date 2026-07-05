@@ -32,7 +32,7 @@
 > npm install -g typescript
 > tsc --version   # verify
 > ```
-> Without `tsc`, TS cells still run — Node strips the type annotations and trusts the code. With `tsc` on the PATH, Arima also runs `tsc --noEmit` before each cell and folds the diagnostics into the cell's error stream.
+> Without `tsc`, TS cells still run — Node strips the type annotations and trusts the code. With `tsc` on the PATH, Arima Notebooks also runs `tsc --noEmit` before each cell and folds the diagnostics into the cell's error stream.
 
 > **.NET SDK**: Install from [dot.net](https://dot.net) to use C# **and** F# cells. The SDK is free for all platforms.
 > Both C# and F# cells require only the standard .NET SDK — no extra tools like `dotnet-script` are needed.
@@ -42,7 +42,7 @@
 
 ## Recommended: an AI CLI
 
-Arima is designed to be **used, customized, and contributed back to entirely through agentic prompts** — see the [README's "Built for the Agentic Era"](../README.md#built-for-the-agentic-era) section. To get the full workflow, install at least one of:
+Arima Notebooks is designed to be **used, customized, and contributed back to entirely through agentic prompts** — see the [README's "Built for the Agentic Era"](../README.md#built-for-the-agentic-era) section. To get the full workflow, install at least one of:
 
 | CLI | Install | Auth |
 |-----|---------|------|
@@ -50,19 +50,19 @@ Arima is designed to be **used, customized, and contributed back to entirely thr
 | **GitHub Copilot CLI** | [GitHub Copilot CLI](https://github.com/github/copilot-cli) (`copilot`, v1.0.55-5+) | authenticate the `copilot` CLI |
 | **Antigravity CLI** | [install `agy`](https://antigravity.google/docs/cli-install) | run `agy` to sign in |
 
-Once installed, Arima uses the CLI as a **local subprocess** — no API key for Arima to manage, no second vendor relationship. The same CLI lets you:
+Once installed, Arima Notebooks uses the CLI as a **local subprocess** — no API key for Arima Notebooks to manage, no second vendor relationship. The same CLI lets you:
 
-- Drive Arima from the in-app AI panel (generate cells, explain output, convert languages)
-- Open the same CLI inside the cloned repo to **reshape Arima itself** (add a feature, fix a bug, write a tutorial)
+- Drive Arima Notebooks from the in-app AI panel (generate cells, explain output, convert languages)
+- Open the same CLI inside the cloned repo to **reshape Arima Notebooks itself** (add a feature, fix a bug, write a tutorial)
 - Ask the same CLI to **package your change as a PR back upstream** — closing the contribute loop
 
-If you also want to drive Arima from outside the UI, the Arima MCP server lets any MCP-aware agent (Claude Code, Claude Desktop, custom agents) create notebooks, add cells, and run pipelines programmatically. See [`docs/USAGE.md` → Agentic Workflows](USAGE.md#agentic-workflows--use-customize-contribute).
+If you also want to drive Arima Notebooks from outside the UI, the Arima Notebooks MCP server lets any MCP-aware agent (Claude Code, Claude Desktop, custom agents) create notebooks, add cells, and run pipelines programmatically. See [`docs/USAGE.md` → Agentic Workflows](USAGE.md#agentic-workflows--use-customize-contribute).
 
 ---
 
 ## Language Support
 
-Arima supports multiple cell execution modes. Each language is **optional** — install only what you need.
+Arima Notebooks supports multiple cell execution modes. Each language is **optional** — install only what you need.
 
 | Language | Mode | Requirement | Install |
 |----------|------|-------------|---------|
@@ -76,12 +76,12 @@ Arima supports multiple cell execution modes. Each language is **optional** — 
 
 ### Setting up C++ support
 
-C++ cells require a C++17-compatible compiler. Arima auto-detects compilers in this order:
+C++ cells require a C++17-compatible compiler. Arima Notebooks auto-detects compilers in this order:
 1. `g++` on PATH
 2. `clang++` on PATH
 3. Visual Studio / Build Tools (MSVC) — Windows only, searched automatically in standard install locations
 
-If no compiler is found, Arima displays step-by-step installation instructions when you run a C++ cell.
+If no compiler is found, Arima Notebooks displays step-by-step installation instructions when you run a C++ cell.
 
 > **Quick check**: Run `cout << "hello" << endl;` in a C++ cell. If it works, you're all set.
 > If you see "C++ compiler not found", follow one of the install options below for your platform.
@@ -131,19 +131,19 @@ g++-13 --version   # Homebrew installs as g++-<version>
 
 #### Windows — Option A: Visual Studio / Build Tools (Auto-detected, No PATH setup needed)
 
-If you already have **Visual Studio 2017, 2019, or 2022** (any edition) or the standalone **Build Tools**, Arima finds the compiler automatically — no PATH changes required.
+If you already have **Visual Studio 2017, 2019, or 2022** (any edition) or the standalone **Build Tools**, Arima Notebooks finds the compiler automatically — no PATH changes required.
 
 1. Open **Visual Studio Installer** (search "Visual Studio Installer" in Start)
 2. Click **Modify** on your installation
 3. Under *Workloads*, check **"Desktop development with C++"**
 4. Click **Modify** to install
-5. Restart Arima — C++ cells will work immediately
+5. Restart Arima Notebooks — C++ cells will work immediately
 
 If you don't have Visual Studio yet, download the free **Build Tools** (no IDE required):
 - Go to [visualstudio.microsoft.com/downloads/](https://visualstudio.microsoft.com/downloads/)
 - Scroll to "Tools for Visual Studio" → download **"Build Tools for Visual Studio 2022"**
 - During install, select **"Desktop development with C++"**
-- Restart Arima after installation
+- Restart Arima Notebooks after installation
 
 > **Verify**: Run `cout << __cplusplus << endl;` in a C++ cell. You should see `201703`.
 
@@ -160,7 +160,7 @@ MSYS2 provides a native Windows GCC toolchain with `g++` accessible from any ter
    - Open **Start → Edit the system environment variables → Environment Variables**
    - Under *System variables*, select **Path → Edit → New**
    - Add: `C:\msys64\ucrt64\bin`
-   - Click OK, then **restart Arima and any open terminals**
+   - Click OK, then **restart Arima Notebooks and any open terminals**
 4. Verify (in a new Command Prompt or PowerShell):
    ```cmd
    g++ --version
@@ -188,11 +188,11 @@ g++ --version
 
 #### Windows — Option E: WSL (Windows Subsystem for Linux)
 
-If you use WSL, install `build-essential` inside WSL, but note that Arima runs as a Windows process and needs a Windows-native `g++.exe` on the Windows PATH. The WSL `g++` is not directly usable from Arima.
+If you use WSL, install `build-essential` inside WSL, but note that Arima Notebooks runs as a Windows process and needs a Windows-native `g++.exe` on the Windows PATH. The WSL `g++` is not directly usable from Arima Notebooks.
 
-#### Verify C++ is ready in Arima
+#### Verify C++ is ready in Arima Notebooks
 
-After installing, restart Arima and run this cell:
+After installing, restart Arima Notebooks and run this cell:
 
 ```cpp
 cout << "C++ " << __cplusplus << " works!" << endl;
@@ -221,12 +221,12 @@ dotnet fsi --version
 C# cells compile and run via `dotnet run` inside a generated temp project.
 F# cells run via `dotnet fsi --exec` (F# Interactive, bundled with the SDK).
 
-> **No dotnet-script needed**: Arima uses `dotnet run` directly for C# cells.
-> If you previously installed `dotnet-script`, you can keep it — Arima will not use it.
+> **No dotnet-script needed**: Arima Notebooks uses `dotnet run` directly for C# cells.
+> If you previously installed `dotnet-script`, you can keep it — Arima Notebooks will not use it.
 
 ### NuGet packages (C# and F#)
 
-Install NuGet packages via the **Packages → NuGet** tab in Arima. Installed packages are automatically injected as `#r "nuget: PackageId, Version"` directives in every C# and F# cell.
+Install NuGet packages via the **Packages → NuGet** tab in Arima Notebooks. Installed packages are automatically injected as `#r "nuget: PackageId, Version"` directives in every C# and F# cell.
 
 ---
 
@@ -275,11 +275,11 @@ This creates `target/arima-notebooks-1.0.0-SNAPSHOT.jar`.
 
 ### Step 4: Run
 
-**Option A: Arima CLI — Windows (recommended)**
+**Option A: Arima Notebooks CLI — Windows (recommended)**
 ```cmd
 arima
 ```
-`arima.cmd` in the project root auto-builds if the JAR is missing, starts the server, and opens your browser. See the [Arima CLI reference](#arima-cli-windows) below for all commands.
+`arima.cmd` in the project root auto-builds if the JAR is missing, starts the server, and opens your browser. See the [Arima Notebooks CLI reference](#arima-notebooks-cli-windows) below for all commands.
 
 **Option B: Startup scripts**
 ```bash
@@ -336,19 +336,19 @@ SERVER_PORT=9000 java -jar arima-notebooks.jar
 
 ## AI Assistant Setup
 
-Arima supports three AI providers. Install any one (or all) and select the active provider from the **AI sidebar** switcher or **Settings → AI Provider**.
+Arima Notebooks supports three AI providers. Install any one (or all) and select the active provider from the **AI sidebar** switcher or **Settings → AI Provider**.
 
 ### Claude CLI (default)
 
-No Anthropic API key or account credits required — Arima calls the local Claude CLI.
+No Anthropic API key or account credits required — Arima Notebooks calls the local Claude CLI.
 
 1. Install Claude Code from [claude.ai/code](https://claude.ai/code)
 2. Authenticate: run `claude auth` in a terminal
-3. Start Arima — the AI Assistant is ready
+3. Start Arima Notebooks — the AI Assistant is ready
 
 The Settings tab → Server Status shows **Claude CLI: ✓ Found** when detected.
 
-**Claude CLI on PATH (Windows)** — if Arima shows "CLI not found" after authentication:
+**Claude CLI on PATH (Windows)** — if Arima Notebooks shows "CLI not found" after authentication:
 
 ```cmd
 where claude
@@ -363,12 +363,12 @@ Common install locations checked automatically:
 
 ### GitHub Copilot (SDK)
 
-Arima uses the **GitHub Copilot SDK for Java** (`com.github:copilot-sdk-java`), which drives the local `copilot` CLI in server mode over JSON-RPC. It runs chat-only — the SDK's file-editing tools are denied.
+Arima Notebooks uses the **GitHub Copilot SDK for Java** (`com.github:copilot-sdk-java`), which drives the local `copilot` CLI in server mode over JSON-RPC. It runs chat-only — the SDK's file-editing tools are denied.
 
 1. Install the [GitHub Copilot CLI](https://github.com/github/copilot-cli) (`copilot`, v1.0.55-5 or later)
 2. Authenticate the `copilot` CLI
 3. Verify: `copilot --version` prints a version number
-4. In Arima, open **Settings → AI Provider** and select **Copilot**, or use the toggle in the AI sidebar
+4. In Arima Notebooks, open **Settings → AI Provider** and select **Copilot**, or use the toggle in the AI sidebar
 
 The Settings tab → Server Status shows **Copilot SDK: ✓ copilot CLI found** when the `copilot` binary is detected.
 
@@ -376,11 +376,11 @@ The Settings tab → Server Status shows **Copilot SDK: ✓ copilot CLI found** 
 
 ### Antigravity CLI (`agy`)
 
-Google retired the standalone Gemini CLI on 2026-06-18 and replaced it with the **Antigravity CLI (`agy`)**. Arima calls `agy` via `agy -p "prompt"` (grounded in the repo working directory).
+Google retired the standalone Gemini CLI on 2026-06-18 and replaced it with the **Antigravity CLI (`agy`)**. Arima Notebooks calls `agy` via `agy -p "prompt"` (grounded in the repo working directory).
 
 1. Install the Antigravity CLI from [antigravity.google/docs/cli-install](https://antigravity.google/docs/cli-install)
 2. Sign in: run `agy` once in a terminal (or set `GEMINI_API_KEY` / `ANTIGRAVITY_API_KEY`)
-3. In Arima, open **Settings → AI Provider** and select **Antigravity**, or use the toggle in the AI sidebar
+3. In Arima Notebooks, open **Settings → AI Provider** and select **Antigravity**, or use the toggle in the AI sidebar
 
 The Settings tab → Server Status shows **Antigravity CLI: ✓ Found** when detected. (The provider key remains `gemini_cli` for backward compatibility.)
 
@@ -413,7 +413,7 @@ arima/
 
 ---
 
-## Arima CLI (Windows)
+## Arima Notebooks CLI (Windows)
 
 `arima.cmd` is a full-featured command-line launcher located in the project root.
 
@@ -455,21 +455,21 @@ arima stop
 
 ### Claude AI with the CLI
 
-Ensure `claude auth` has been run once in any terminal before starting Arima.
+Ensure `claude auth` has been run once in any terminal before starting Arima Notebooks.
 The `claude` executable is automatically detected from your PATH and common install locations.
 
 ---
 
 ## MCP Server Setup
 
-Arima runs a built-in MCP (Model Context Protocol) server at `http://localhost:8585/api/mcp/sse`. Any MCP-compatible AI client can connect to it while Arima is running.
+Arima Notebooks runs a built-in MCP (Model Context Protocol) server at `http://localhost:8585/api/mcp/sse`. Any MCP-compatible AI client can connect to it while Arima Notebooks is running.
 
 ### Claude Desktop
 
 1. Open (or create) `claude_desktop_config.json`:
    - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
    - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-2. Add the Arima server entry:
+2. Add the Arima Notebooks server entry:
    ```json
    {
      "mcpServers": {
@@ -479,7 +479,7 @@ Arima runs a built-in MCP (Model Context Protocol) server at `http://localhost:8
      }
    }
    ```
-3. Restart Claude Desktop. Arima tools appear automatically.
+3. Restart Claude Desktop. Arima Notebooks tools appear automatically.
 
 ### Claude Code CLI
 
@@ -638,11 +638,11 @@ First, check which provider is active in the AI sidebar or Settings → AI Provi
 
 **Fix**:
 1. Install a compiler — see the **Setting up C++ support** section above
-2. Restart Arima (PATH is read at server startup)
-3. Verify in Arima: run `cout << __cplusplus << endl;` in a C++ cell — should print `201703`
+2. Restart Arima Notebooks (PATH is read at server startup)
+3. Verify in Arima Notebooks: run `cout << __cplusplus << endl;` in a C++ cell — should print `201703`
 
 **On Windows — compiler detection order:**
-Arima checks for compilers in this order:
+Arima Notebooks checks for compilers in this order:
 1. `g++` on PATH (MinGW-w64 / MSYS2 / WinLibs)
 2. `clang++` on PATH (LLVM)
 3. Visual Studio / Build Tools MSVC (searched automatically, no PATH needed)
@@ -652,7 +652,7 @@ Arima checks for compilers in this order:
 where g++           # should print a path; if missing, PATH is not set
 g++ --version       # should print version info
 ```
-Re-add `C:\msys64\ucrt64\bin` (or your MinGW bin path) to the system PATH and restart Arima.
+Re-add `C:\msys64\ucrt64\bin` (or your MinGW bin path) to the system PATH and restart Arima Notebooks.
 
 **If Visual Studio is installed but not detected**: Ensure the "Desktop development with C++" workload is installed (open Visual Studio Installer → Modify → check the workload).
 
@@ -674,7 +674,7 @@ Re-add `C:\msys64\ucrt64\bin` (or your MinGW bin path) to the system PATH and re
 
 ### C++ compile error line numbers seem off
 
-**Cause**: Arima adjusts line numbers to hide the injected preamble (25 header lines). In rare cases, the offset may differ.
+**Cause**: Arima Notebooks adjusts line numbers to hide the injected preamble (25 header lines). In rare cases, the offset may differ.
 
 **Fix**: The error shows `main.cpp:<line>` — the actual error is at that line in your cell code. Temporarily add `#line 1` at the top of the cell to force line 1 as the reference.
 
@@ -682,17 +682,17 @@ Re-add `C:\msys64\ucrt64\bin` (or your MinGW bin path) to the system PATH and re
 
 **Fix**:
 1. Install the .NET SDK from [dot.net](https://dot.net)
-2. Restart Arima
+2. Restart Arima Notebooks
 3. Verify: `dotnet --version`
 4. Check Settings → Server Status → **.NET** shows ✓ Found
 
-> Arima uses `dotnet run` directly — no `dotnet-script` tool is needed.
+> Arima Notebooks uses `dotnet run` directly — no `dotnet-script` tool is needed.
 
 ### F# cells fail with ".NET SDK not found"
 
 **Fix**:
 1. Install the .NET SDK from [dot.net](https://dot.net)
-2. Restart Arima
+2. Restart Arima Notebooks
 3. Verify: `dotnet fsi --version`
 4. Check Settings → Server Status → **dotnet** shows ✓ Found
 

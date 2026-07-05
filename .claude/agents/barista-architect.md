@@ -1,6 +1,6 @@
 ---
 name: barista-architect
-description: Use proactively when the user proposes a non-trivial change to Arima (anything touching controllers, services, the execution-service split, the orchestration DSL, or the static UI). Reads AGENTS.md + docs/ARCHITECTURE.md and reports whether the change preserves the layered architecture, with specific file:line citations.
+description: Use proactively when the user proposes a non-trivial change to Arima Notebooks (anything touching controllers, services, the execution-service split, the orchestration DSL, or the static UI). Reads AGENTS.md + docs/ARCHITECTURE.md and reports whether the change preserves the layered architecture, with specific file:line citations.
 tools: Glob, Grep, Read, WebFetch
 ---
 

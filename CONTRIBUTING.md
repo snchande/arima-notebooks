@@ -8,21 +8,21 @@ Thank you for your interest in contributing to Arima Notebooks. This document co
 >
 > **Want the big picture?** See the [Product Brochure](docs/brochure/arima-brochure.pdf) — feature set, architecture diagrams, install, and contribution workflow on 12 pages.
 >
-> **Claude Code users:** skills and subagents specific to Arima live under [`.claude/`](.claude/README.md) — `architecture-check`, `add-execution-language`, `add-tutorial`, and `add-rest-endpoint` skills, plus `arima-architect`, `arima-security`, and `arima-tutorial-writer` subagents.
+> **Claude Code users:** skills and subagents specific to Arima Notebooks live under [`.claude/`](.claude/README.md) — `architecture-check`, `add-execution-language`, `add-tutorial`, and `add-rest-endpoint` skills, plus `arima-architect`, `arima-security`, and `arima-tutorial-writer` subagents.
 
 ---
 
 ## Why Contribute?
 
-Arima Notebooks fills a real gap: **Java, C#, and F# developers have never had a first-class notebook environment**. Jupyter supports Python natively; everything else is a workaround. Arima was built to give JVM and .NET developers the same interactive, exploratory workflow.
+Arima Notebooks fills a real gap: **the notebook never modernized for a polyglot, agentic world**. The classic notebook privileges a single language and assumes a human is the only author. Arima Notebooks rethinks it as a shared, cross-platform execution plane where many rich languages are equals and where humans and AI agents collaborate on the same document.
 
 By contributing, you help:
 
-- **Java developers** learn, explore, and prototype faster
-- **C# and F# developers** get a notebook environment without Jupyter or Python
-- **Students** discover these languages through interactive, visual notebooks
-- **Data scientists** who work in Java or .NET gain the same workflow Python developers take for granted
-- **The JVM and .NET ecosystems** become more productive and approachable
+- **Developers across many languages** — JavaScript, TypeScript, C#, F#, C++, Java, and more — learn, explore, and prototype faster in one place
+- **People and agents** work together on the same notebook through the built-in co-pilot and MCP
+- **Students** discover new languages through interactive, visual notebooks
+- **Data scientists** gain the same fluid, exploratory workflow regardless of the language they reach for
+- **The broader ecosystem** get a notebook that treats every language as first-class
 
 This is a young, growing project. Your contributions have outsized impact — there is no huge backlog of existing contributors to compete with. Features you build will be used immediately by real developers.
 
@@ -30,16 +30,16 @@ This is a young, growing project. Your contributions have outsized impact — th
 
 ## Contributing in an Agentic Cycle
 
-Arima is designed to be **reshaped by AI in your own loop, then contributed back through the same loop.** You do not need to spend a Saturday morning learning the codebase by hand. The recommended workflow is:
+Arima Notebooks is designed to be **reshaped by AI in your own loop, then contributed back through the same loop.** You do not need to spend a Saturday morning learning the codebase by hand. The recommended workflow is:
 
-1. **Use Arima.** Notice something missing or wrong.
+1. **Use Arima Notebooks.** Notice something missing or wrong.
 2. **Open your AI CLI inside the repo** — `claude`, `copilot`, `agy` (Antigravity), whichever you have authenticated.
 3. **Describe what you want** in plain English. The AI reads the architecture rules in [`AGENTS.md`](AGENTS.md), edits the right files, runs the build, iterates.
-4. **Try it locally.** Refresh Arima. Confirm it works for you.
+4. **Try it locally.** Refresh Arima Notebooks. Confirm it works for you.
 5. **Ask the same AI to contribute it back:**
    > *"Run `pwsh ./scripts/security-check.ps1`, then package this as a PR back to upstream with a good description."*
 
-That is the contribution path. The same loop that customizes Arima for you produces the PR for everyone else — the bar to do both becomes the same bar.
+That is the contribution path. The same loop that customizes Arima Notebooks for you produces the PR for everyone else — the bar to do both becomes the same bar.
 
 ### Examples of agentic prompts for contributions
 
@@ -89,7 +89,7 @@ If you have an idea that doesn't fit a category above — open a Discussion and 
 
 > **Use JDK 17 or 21** for development. JDK versions above 21 may compile fine but the project targets `--release 21` for compatibility with Spring Boot 3.2.x.
 
-> **For C# / F# work**: install the [.NET SDK](https://dotnet.microsoft.com/download) (6.0 or later). No additional tools are needed — Arima uses `dotnet run` for C# and `dotnet fsi` for F#, both included in the standard SDK.
+> **For C# / F# work**: install the [.NET SDK](https://dotnet.microsoft.com/download) (6.0 or later). No additional tools are needed — Arima Notebooks uses `dotnet run` for C# and `dotnet fsi` for F#, both included in the standard SDK.
 
 ### Fork and Clone
 
@@ -234,7 +234,7 @@ chore(deps): upgrade Spring Boot to 3.2.4
 
 Tutorials are `.vnb` JSON files stored in `notebooks/tutorials/`. The easiest way:
 
-1. Open Arima locally and create the tutorial notebook interactively
+1. Open Arima Notebooks locally and create the tutorial notebook interactively
 2. Save it as a `.vnb` file
 3. Copy it to `notebooks/tutorials/`
 4. Add its metadata to the tutorial registry in `NotebookService.java`
@@ -311,7 +311,7 @@ Steps you took to verify the change works.
 
 When filing a bug, include:
 
-- **Arima version** (shown in the Settings tab or `arima version`)
+- **Arima Notebooks version** (shown in the Settings tab or `arima version`)
 - **OS and Java version** (`java -version`)
 - **Steps to reproduce** — be specific
 - **Expected behavior** vs **actual behavior**

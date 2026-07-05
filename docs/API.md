@@ -229,12 +229,12 @@ Cells can declare dependencies on cells in other notebooks using the annotation 
 //@ depends: notebook:csharp-shared-utils/cs_statistics, cs_loadData
 ```
 
-**How Arima resolves cross-notebook refs at execution time:**
+**How Arima Notebooks resolves cross-notebook refs at execution time:**
 
 | Language | Resolution |
 |----------|-----------|
 | JShell / Java | The foreign cell's source is executed in the current JShell session |
-| C# / F# | Arima builds an **expanded source** (full transitive dep chain, annotation-stripped) and injects it with output suppressed before the current cell's code |
+| C# / F# | Arima Notebooks builds an **expanded source** (full transitive dep chain, annotation-stripped) and injects it with output suppressed before the current cell's code |
 
 Cross-notebook execution is triggered automatically by `execute-with-deps` and `execute-pipeline` when they encounter `notebook:*` references. It can also be triggered manually by `POST /api/shell/execute` when the cell has `//@ depends:` annotations and a session anchor cache is already populated.
 
@@ -477,7 +477,7 @@ Example: `DELETE /api/nuget/Newtonsoft.Json`
 
 ## AI Assistant
 
-Arima supports three AI providers: **Claude CLI**, **GitHub Copilot SDK**, and **Antigravity CLI** (`agy`). All `/api/llm/*` endpoints route to the currently active provider — no change to request format needed when switching.
+Arima Notebooks supports three AI providers: **Claude CLI**, **GitHub Copilot SDK**, and **Antigravity CLI** (`agy`). All `/api/llm/*` endpoints route to the currently active provider — no change to request format needed when switching.
 
 ### Get Active Provider
 ```
@@ -680,7 +680,7 @@ Result is broadcast to all subscribers of `/topic/shell/{sessionId}`.
 
 ## MCP Server (Model Context Protocol)
 
-Arima implements MCP over HTTP+SSE transport (JSON-RPC 2.0). This lets any MCP-compatible AI client (Claude Desktop, Claude Code CLI, custom agents) use Arima as a tool server — executing Java code, reading notebooks, running pipelines, and more.
+Arima Notebooks implements MCP over HTTP+SSE transport (JSON-RPC 2.0). This lets any MCP-compatible AI client (Claude Desktop, Claude Code CLI, custom agents) use Arima Notebooks as a tool server — executing Java code, reading notebooks, running pipelines, and more.
 
 ### Connecting MCP Clients
 
@@ -698,7 +698,7 @@ Add to `claude_desktop_config.json` (see [SETUP.md — MCP section](SETUP.md#mcp
 }
 ```
 
-After saving, restart Claude Desktop. Arima tools appear automatically in every conversation.
+After saving, restart Claude Desktop. Arima Notebooks tools appear automatically in every conversation.
 
 #### Claude Code CLI
 
@@ -733,7 +733,7 @@ Any client that supports MCP HTTP+SSE transport can connect directly:
 
 1. **Open SSE stream**: `GET http://localhost:8585/api/mcp/sse` — the server sends an `endpoint` event with the POST URL
 2. **Handshake**: send `initialize` then listen for `notifications/initialized`
-3. **List tools**: send `tools/list` to discover all Arima tools
+3. **List tools**: send `tools/list` to discover all Arima Notebooks tools
 4. **Call tools**: send `tools/call` with `name` and `arguments`
 
 Example using `curl`:
@@ -745,7 +745,7 @@ curl -s -X POST http://localhost:8585/api/mcp/messages \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
-Arima must be running (`arima start` or `mvn spring-boot:run`) before connecting.
+Arima Notebooks must be running (`arima start` or `mvn spring-boot:run`) before connecting.
 
 ---
 

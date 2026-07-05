@@ -44,7 +44,7 @@ We follow [coordinated vulnerability disclosure](https://en.wikipedia.org/wiki/C
 
 - The **Anthropic API key** and **GitHub Token** you configure are stored in `data/settings.json` on your local machine.
 - This file is listed in `.gitignore` and should **never be committed** to version control.
-- Arima serves on `localhost` only by default. Do not expose port 8585 to the public internet without adding authentication.
+- Arima Notebooks serves on `localhost` only by default. Do not expose port 8585 to the public internet without adding authentication.
 
 ### Local-only by default
 
@@ -52,4 +52,4 @@ Arima Notebooks is designed to run **locally** on your development machine. It i
 
 ### Dependency vulnerabilities
 
-Run `mvn dependency-check:check` to scan for known CVEs in Arima's Java dependencies. Report any high-severity findings via the process above.
+Run `mvn dependency-check:check` to scan for known CVEs in Arima Notebooks' Java dependencies. Report any high-severity findings via the process above.

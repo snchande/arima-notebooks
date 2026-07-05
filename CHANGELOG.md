@@ -5,7 +5,15 @@ Dates are in `YYYY-MM-DD` format.
 
 ---
 
-## [3.3.0] — 2026-07-03
+## [Unreleased]
+
+### Repositioning — "the notebook, modernized for the agentic era"
+- **Product story realigned across all docs.** Arima Notebooks is now consistently positioned as a ground-up *modernization of the notebook* — a **cross-platform execution plane** where people and AI agents collaborate on the same code — rather than as a Java/JVM-first notebook. Messaging is built around two shifts (real work is polyglot; code is a team sport with AI), **every language first-class** (JavaScript, TypeScript, C#, F#, C++, Java, JShell — with more to come), humans-and-agents on a shared artifact, local-first, and **open source built to be reshaped**.
+- **Positioned within the platform.** Arima Notebooks is now introduced as **part of the Arima platform** (Arima being the broader product); product docs describe Arima Notebooks specifically and no longer use bare "Arima" to mean the notebook.
+- Removed "Java developers were second-class citizens" / "built from the ground up for Java" framing; languages are now presented as equals.
+- Updated: `README.md` (hero + "Why Arima Notebooks?"), `CONTRIBUTING.md` ("Why Contribute?"), `docs/WELCOME.md`, `docs/ARCHITECTURE.md` (overview framing), `docs/view/index.html`, `docs/brochure/arima-brochure.html` (+ rebuilt PDF), and `articles/medium-article.md` / `articles/linkedin-article.md` (+ rebuilt PDFs). Agent guardrail files inherit the description via `docs/WELCOME.md`.
+
+---
 
 ### Interactive input for every language + runaway-execution guards + attention bell
 - **Interactive stdin in all seven languages.** Reading from standard input now prompts the user inline in the cell — `Scanner`/`System.in` (JShell, compiled Java), `readline`/`process.stdin` (JavaScript, TypeScript), `Console.ReadLine()` (C#, F#), and `std::cin` (C++). A new shared `InteractiveProcessRunner` streams subprocess output and, when a program blocks on stdin, flushes what it printed and shows the same inline terminal prompt JShell already used; the typed line is sent back over the existing STOMP channel. Pipelines and MCP runs stay non-interactive (unchanged).

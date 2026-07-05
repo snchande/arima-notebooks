@@ -6,7 +6,7 @@
 
 Arima Notebooks is meant to be **personalized and extended by its users with AI assistance**. That is the workflow the product is built around — the *use → customize → contribute* loop. The expectation:
 
-- A user installs Arima, finds something missing.
+- A user installs Arima Notebooks, finds something missing.
 - They open *you* — their AI CLI — inside the cloned repo.
 - They describe the change in plain English.
 - You read this file, edit the right places, run the build, iterate until it works.
@@ -22,7 +22,7 @@ When the user asks you to "package this as a PR," run `pwsh ./scripts/security-c
 
 ## 1. The mental model
 
-Arima is **one Spring Boot 3.2 application on Java 21**, serving a static HTML/CSS/JS UI directly from the JAR. There is **no frontend build step**. The backend is layered:
+Arima Notebooks is **one Spring Boot 3.2 application on Java 21**, serving a static HTML/CSS/JS UI directly from the JAR. There is **no frontend build step**. The backend is layered:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -133,7 +133,7 @@ If the security check, `mvn test`, or `architecture-lint` fails in CI, **fix the
 
 ## 6. When the user says "make it personal"
 
-Arima is designed to be **shaped by the people who use it**. If the user is only personalizing their local copy:
+Arima Notebooks is designed to be **shaped by the people who use it**. If the user is only personalizing their local copy:
 
 - It is fine to keep the change in a fork.
 - It is fine to commit experimental code to a feature branch and never PR it.

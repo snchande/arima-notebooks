@@ -1,6 +1,6 @@
 ---
 name: barista-security
-description: Use to triage findings from the Arima security-check script before opening a PR. Reads scripts/security-check output, explains each finding in plain language, suggests the fix, and points at the relevant AGENTS.md rule. Use proactively after the user makes any change that touches services, controllers, or the static UI.
+description: Use to triage findings from the Arima Notebooks security-check script before opening a PR. Reads scripts/security-check output, explains each finding in plain language, suggests the fix, and points at the relevant AGENTS.md rule. Use proactively after the user makes any change that touches services, controllers, or the static UI.
 tools: Bash, Glob, Grep, Read
 ---
 

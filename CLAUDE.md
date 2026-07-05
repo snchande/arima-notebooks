@@ -9,10 +9,10 @@
 When a user starts working in this repo — greets you, asks "what can I do / how do I start", or seems new — act as the **`arima` agent** ([`.claude/agents/barista.md`](.claude/agents/barista.md)) and deliver the common welcome from [`docs/WELCOME.md`](docs/WELCOME.md). Present the three paths and let them pick:
 
 1. **Open the UI** — offer to run `arima start` (or `arima open` if already running) → http://localhost:8585.
-2. **Drive Arima over MCP** — Arima exposes an MCP server at `/api/mcp/sse` + `/api/mcp/messages` with tools `barista_execute_code`, `barista_list_notebooks`, `barista_read_notebook`, `barista_run_pipeline`, `barista_search_cells`, `barista_load_module`, `barista_create_notebook`, `barista_append_cell`. Offer to help connect an MCP client.
-3. **Personalize & extend** — *your* differentiator: you can change Arima itself (add a language, theme tweak, tutorial, bug fix) following the guardrails below, then package a PR.
+2. **Drive Arima Notebooks over MCP** — Arima Notebooks exposes an MCP server at `/api/mcp/sse` + `/api/mcp/messages` with tools `barista_execute_code`, `barista_list_notebooks`, `barista_read_notebook`, `barista_run_pipeline`, `barista_search_cells`, `barista_load_module`, `barista_create_notebook`, `barista_append_cell`. Offer to help connect an MCP client.
+3. **Personalize & extend** — *your* differentiator: you can change Arima Notebooks itself (add a language, theme tweak, tutorial, bug fix) following the guardrails below, then package a PR.
 
-Always offer to open docs (`arima docs` or read the relevant file). **Key difference to state:** the plain `arima` CLI operates/automates Arima (incl. MCP) but cannot change its code; an agentic CLI like you can also personalize and extend it. Same welcome is delivered by the `arima welcome` command for terminal users.
+Always offer to open docs (`arima docs` or read the relevant file). **Key difference to state:** the plain `arima` CLI operates/automates Arima Notebooks (incl. MCP) but cannot change its code; an agentic CLI like you can also personalize and extend it. Same welcome is delivered by the `arima welcome` command for terminal users.
 
 ## Project Overview
 Arima Notebooks is a Java-based interactive notebook environment (similar to Jupyter) powered by
@@ -27,10 +27,10 @@ managing Maven, npm, and NuGet packages, and using Claude/Copilot/Antigravity AI
 - **Subprocess runtimes**: Node.js (JS/TS), .NET SDK (C#/F#), MSVC/GCC/Clang (C++)
 - **Real-time**: STOMP over WebSocket (SockJS)
 - **Frontend**: Vanilla HTML/CSS/JavaScript (no build step required)
-- **AI**: Three providers — Claude, GitHub Copilot, Antigravity — Claude & Antigravity invoked as **local CLI subprocesses** via `ProcessBuilder`; GitHub Copilot via the **GitHub Copilot SDK** (drives the local `copilot` CLI). No HTTP API key managed by Arima
+- **AI**: Three providers — Claude, GitHub Copilot, Antigravity — Claude & Antigravity invoked as **local CLI subprocesses** via `ProcessBuilder`; GitHub Copilot via the **GitHub Copilot SDK** (drives the local `copilot` CLI). No HTTP API key managed by Arima Notebooks
 - **Package Managers**: Maven Central (JShell classpath), npm registry (`data/npm-modules/` for JS/TS), NuGet.org (`#r "nuget:"` for C#/F#)
 - **Auth**: Spring Security with two modes — `local` (default, OS username, no login) and `oauth` (OAuth2 social login via `data/oauth-config.json`)
-- **MCP**: Built-in Model Context Protocol server (HTTP+SSE, JSON-RPC 2.0) at `/api/mcp` exposing Arima as a tool server
+- **MCP**: Built-in Model Context Protocol server (HTTP+SSE, JSON-RPC 2.0) at `/api/mcp` exposing Arima Notebooks as a tool server
 - **Data Science**: XChart, Apache Commons Math, Tablesaw, OpenCSV — bundled, auto-imported in JShell
 - **Storage**: JSON files on disk (`notebooks/` and `data/` directories)
 
@@ -59,7 +59,7 @@ java --add-opens=jdk.jshell/jdk.jshell=ALL-UNNAMED \
 mvn test
 ```
 
-### Quick Start — Arima CLI (recommended)
+### Quick Start — Arima Notebooks CLI (recommended)
 The cross-platform `arima` CLI handles build, start, stop, status, and browser-open in one command.
 All three launchers accept the same subcommands: `start [--bg] · stop · status · build · rebuild · open · logs · version · help`.
 ```bash
@@ -170,7 +170,7 @@ arima/
 7. **No `Runtime.exec(String)`**: build subprocesses with `ProcessBuilder(List<String>)` only — command injection is blocked by `scripts/security-check`
 
 ## AI Provider Configuration
-Arima does **not** store an API key for AI. All three providers run locally, using whatever auth the
+Arima Notebooks does **not** store an API key for AI. All three providers run locally, using whatever auth the
 underlying CLI already has. Claude and Antigravity are invoked as **CLI subprocesses**; GitHub Copilot
 runs through the **GitHub Copilot SDK** (`com.github:copilot-sdk-java`), which drives the local
 `copilot` CLI in server mode (chat-only — the SDK's file-editing tools are denied via a REJECT-all

@@ -1,6 +1,6 @@
-# Notebooks for the Agentic Era: Why I Built Arima to Be Reshaped, Not Just Used
+# Notebooks for the Agentic Era: Why I Built Arima Notebooks to Be Reshaped, Not Just Used
 
-### A multi-language, browser-based notebook with MCP, CLI-native AI, and a single rule: if you can describe what you want, your AI should be able to build it into the product itself in under an hour.
+### A ground-up modernization of the notebook as a shared, cross-platform execution plane for code — multi-language, MCP-native, local-first, and built so humans and AI agents can reshape it together.
 
 *By Suresh Chande · ~10 min read · Tags: Notebooks, MCP, Agentic AI, Developer Tools, Open Source*
 
@@ -16,17 +16,17 @@ I have loved Jupyter for years. It taught a whole generation of engineers and sc
 
 This article isn't about replacing any of that.
 
-It's about a simple observation: most of the tools we use every day — IDEs, notebooks, package managers, even our shells — were designed for a world where **the developer was the only intelligent agent in the room.** They optimized for *me typing into them*. They didn't optimize for *me, plus an AI, plus a CLI, plus an agent loop, all collaborating on the same artifact*.
+It's about a simple observation: the notebook — write code, run it, see results instantly — is one of software's best ideas, but it barely evolved while the world around it changed. Real work is now polyglot, moving across strong, statically typed and systems languages in the same day. And code is now a team sport with AI: humans and agents need to build on the same artifact, not trade snippets across panels.
 
-That world is over. The agentic era needs tools designed for it. Not as replacements — as additions.
+That world needs a modernized notebook. Not a replacement for everything that came before — an addition built for what work looks like now.
 
-So I built one, called it **Arima Notebooks**, and open-sourced it. This is the story of *why* and the few decisions I'd want anyone building a modern developer tool to consider.
+So I built one, called it **Arima Notebooks**, part of the Arima platform, and open-sourced it. This is the story of *why* and the few decisions I'd want anyone building a modern developer tool to consider.
 
 ---
 
-![Arima Notebooks UI — Welcome notebook with multiple JShell cells](../docs/screenshots/01-hero-welcome.png)
+![Arima Notebooks UI — Welcome notebook with live executable cells](../docs/screenshots/01-hero-welcome.png)
 
-*The Arima UI: tabs across the top for Notebook · Console · Packages · Settings · Docs; cells with anchors and pipeline metadata; live status bar showing the active JShell session.*
+*The Arima Notebooks UI: tabs across the top for Notebook · Console · Packages · Settings · Docs; cells with anchors and pipeline metadata; live status bar showing the active execution session.*
 
 ---
 
@@ -39,30 +39,30 @@ Walk through almost any tool you opened today and ask: *what was this designed a
 - **Your notebook** was designed around a human running one cell at a time
 - **Your package manager** was designed around a human deciding what to install
 
-These are good designs — for that user. But that user has a new partner now: an AI that can read the whole file, run a sequence of commands, run every cell, and decide what to install — all in the same loop, on the same artifact, in real time.
+These are good designs — for that user. But two shifts have changed the job. First, real software work is polyglot: JavaScript, TypeScript, C#, F#, C++, Java, JShell, and more all show up in serious workflows. Second, that user now has a partner: an AI that can read the whole file, run a sequence of commands, run every cell, and decide what to install — all in the same loop, on the same artifact, in real time.
 
 If a tool wasn't designed with that collaborator in mind, two things tend to be true:
 
 1. The AI sits *outside* the tool, in a separate panel, copy-pasting code in and out
 2. Customizing the tool itself still requires the old workflow — fork, learn the codebase, write code by hand, submit PR, wait
 
-Arima is an experiment in flipping both. The AI sits *inside* the tool, and the tool itself is designed to be reshaped by an AI, by you, in under an hour.
+Arima Notebooks is an experiment in flipping both. The AI sits *inside* the tool, and the tool itself is designed to be reshaped by an AI, by you, in under an hour.
 
 ---
 
-## What Arima Actually Is
+## What Arima Notebooks Actually Is
 
-A locally-hosted, browser-based notebook. One command to start, one URL to open. Seven languages run side by side in the same notebook:
+A locally-hosted, browser-based notebook. One command to start, one URL to open. Think of it as a shared, cross-platform execution plane for code: seven first-class execution paths run side by side in the same notebook today, with more to come:
 
-- **Java (JShell)** — official JDK REPL, state shared across cells
-- **Java (full)** — per-cell `javac` compile + run
 - **JavaScript** — Node.js subprocess
 - **TypeScript** — Node 22.6+ type-stripping, optional `tsc --noEmit`
 - **C#** — `dotnet run` with NuGet
 - **F#** — `dotnet fsi` with inline `#r "nuget:"` directives
 - **C++** — MSVC / GCC / Clang auto-detected
+- **Java (full)** — per-cell `javac` compile + run
+- **Java (JShell)** — official JDK REPL, state shared across cells
 
-Maven, npm, and NuGet are first-class. Notebooks are JSON files on disk. Nothing is sent to a cloud — ever. None of that is the interesting part.
+Every language is first-class: real compilation or execution, real dependencies, real tooling. Maven, npm, and NuGet are built in. Notebooks are JSON files on disk. Nothing is sent to a cloud — ever. No cloud account required. None of that is the interesting part.
 
 The interesting part is the three design decisions below.
 
@@ -72,7 +72,7 @@ The interesting part is the three design decisions below.
 
 Most "AI in the editor" experiences ask you for an API key and route through a vendor backend. That introduces a second relationship to manage, a second bill to pay, and a second data-flow path your security team has to bless.
 
-Arima takes a different route. It shells out to whatever AI CLI you already have authenticated on your machine:
+Arima Notebooks takes a different route. It shells out to whatever AI CLI you already have authenticated on your machine:
 
 - **Claude Code CLI**
 - **GitHub Copilot SDK** (drives the local `copilot` CLI)
@@ -80,24 +80,24 @@ Arima takes a different route. It shells out to whatever AI CLI you already have
 
 Switch providers in Settings. The AI runs as a local subprocess, using your existing CLI auth. No second API key. No second vendor. No exfiltration path that wasn't already there.
 
-![Arima TypeScript notebook with execution output](../docs/screenshots/03-typescript-notebook.png)
+![Arima Notebooks TypeScript notebook with execution output](../docs/screenshots/03-typescript-notebook.png)
 
-*A TypeScript notebook running in Arima — anchored cells, live output streaming, and the same look-and-feel whether the cell runs as Java, TypeScript, or C++.*
+*A TypeScript notebook running in Arima Notebooks — anchored cells, live output streaming, and the same look-and-feel whether the cell runs as JavaScript, TypeScript, C++, Java, or anything else the notebook supports.*
 
-This is a small architectural choice with a large practical consequence. It means **the AI in Arima has the same powers as the AI in your terminal** — and we lean into that hard in Decision 3.
+This is a small architectural choice with a large practical consequence. It means **the AI in Arima Notebooks has the same powers as the AI in your terminal** — and we lean into that hard in Decision 3.
 
 ---
 
-## Decision 2 — Arima Is an MCP Server. The Whole Thing.
+## Decision 2 — Arima Notebooks Is an MCP Server. The Whole Thing.
 
 This is the one I'm most excited about.
 
-[MCP](https://modelcontextprotocol.io) — Model Context Protocol — is the standard that lets agents talk to tools in a structured way. Arima doesn't just *consume* MCP; it *publishes* itself as one.
+[MCP](https://modelcontextprotocol.io) — Model Context Protocol — is the standard that lets agents talk to tools in a structured way. Arima Notebooks doesn't just *consume* MCP; it *publishes* itself as one.
 
 That means: every notebook, every cell, every execution engine, every package install, every pipeline — is exposed as MCP tools. So you can:
 
-- Open Arima in your browser and work in it directly, **or**
-- Stay in Claude Code / Claude Desktop / any MCP-aware agent and drive Arima from there
+- Open Arima Notebooks in your browser and work in it directly, **or**
+- Stay in Claude Code / Claude Desktop / any MCP-aware agent and drive Arima Notebooks from there
 - Or do both, on the same notebook, at the same time
 
 ```mermaid
@@ -124,11 +124,11 @@ flowchart LR
     style Arima fill:#1e293b,stroke:#06b6d4,color:#fff
 ```
 
-This unlocks something specific: **the agent can prepare a notebook for you while you sleep.** You tell Claude Code "build me an exploration notebook for the new pricing API, with cells that load sample requests, validate the schema, and chart latency distributions" — and when you sit down in the morning, the notebook exists in Arima, every cell already populated, ready to run.
+This unlocks something specific: **the agent can prepare a notebook for you while you sleep.** You tell Claude Code "build me an exploration notebook for the new pricing API, with cells that load sample requests, validate the schema, and chart latency distributions across the languages I care about" — and when you sit down in the morning, the notebook exists in Arima Notebooks, every cell already populated, ready to run.
 
-Conversely, **you can sit in the Arima UI and pull the agent's context** — "AI, here's the cell I'm staring at, why is the latency spike here?" — and it answers using the same provider, the same auth, the same context window.
+Conversely, **you can sit in the Arima Notebooks UI and pull the agent's context** — "AI, here's the cell I'm staring at, why is the latency spike here?" — and it answers using the same provider, the same auth, the same context window.
 
-The notebook becomes the shared artifact. You and the AI are both first-class users of it.
+The notebook becomes the shared artifact — the living document where people and agents collaborate on the same code, outputs, dependencies, and next steps. You and the AI are both first-class users of it.
 
 ---
 
@@ -138,13 +138,13 @@ This is the philosophical core.
 
 Most products say: *here is what we built; submit a feature request and we'll consider it.*
 
-Arima says: *here is what we built; if you need something else, ask your AI to add it, and it should take less than an hour.*
+Arima Notebooks says: *here is what we built; if you need something else, ask your AI to add it, and it should take less than an hour.*
 
 This isn't a slogan. It's the result of specific choices:
 
 - **No build step on the frontend.** Plain HTML/CSS/vanilla JS. Edit a file, refresh the browser, see the change. Your AI doesn't need to know Webpack, Vite, or React.
-- **Plain Java backend, no Lombok, no magic.** Standard Spring Boot. Any agent that can read Java can extend it.
-- **Subprocess-per-language.** Adding a new language means writing one `*ExecutionService.java` file modeled on the existing six.
+- **Plain Java backend, no Lombok, no magic.** Standard Spring Boot. Any agent that can read straightforward code can extend it.
+- **Subprocess-per-language.** Adding a new language means writing one focused execution service modeled on the existing engines.
 - **Tiny conventions, not frameworks.** Notebook format is JSON. Cell metadata uses `//@` annotations. The MCP surface mirrors the REST surface 1:1.
 
 The result: if you want a new chart type, a new language, a new export format, a custom keybinding, a different theme — you open a Claude Code session in the arima repo, describe what you want, and it ships.
@@ -161,26 +161,26 @@ The same CLI that built your local change can prepare the contribution. The bar 
 
 ## Interoperability Over Tribalism
 
-A question I get asked: *"So should I use Arima or Jupyter?"*
+A question I get asked: *"So should I use Arima Notebooks or Jupyter?"*
 
 Wrong question. The right question is: *"What's the friction cost of moving between them?"*
 
-I'd like that cost to be zero. There's no good reason a notebook authored in Arima shouldn't open in Jupyter, or vice versa. The artifact is JSON. The cells are code. The execution model differs, but the *content* is portable.
+I'd like that cost to be zero. There's no good reason a notebook authored in Arima Notebooks shouldn't open in Jupyter, or vice versa. The artifact is JSON. The cells are code. The execution model differs, but the *content* is portable.
 
-**To be clear: this isn't shipped yet.** Arima today reads and writes its own `.vnb` format — `.ipynb` round-tripping is coming in the next update, and it's a great first contribution for anyone who wants to dip in. The point isn't that any one notebook tool should "win." The point is that the developer should be free to pick whichever tool fits the moment, and move their work between them without ceremony — and we should be building toward that, not away from it.
+**To be clear: this isn't shipped yet.** Arima Notebooks today reads and writes its own `.vnb` format — `.ipynb` round-tripping is coming in the next update, and it's a great first contribution for anyone who wants to dip in. The point isn't that any one notebook tool should "win." The point is that the developer should be free to pick whichever tool fits the moment, and move their work between them without ceremony — and we should be building toward that, not away from it.
 
-The same applies to AI providers. Same applies to languages. Same applies to package ecosystems. **The era of "pick your tool and live inside it forever" is over.** The era of "compose what you need, swap when you want, shape what doesn't fit" is here.
+The same applies to AI providers. Same applies to languages. Same applies to package ecosystems. No language should be a plugin or an afterthought; no agent should be forced to watch from outside the artifact. **The era of "pick your tool and live inside it forever" is over.** The era of "compose what you need, swap when you want, shape what doesn't fit" is here.
 
 ---
 
 ## What This Looks Like In Practice
 
-A normal afternoon with Arima, for me, looks like this:
+A normal afternoon with Arima Notebooks, for me, looks like this:
 
 1. Open a notebook from yesterday. Half the cells are JShell, two are TypeScript (for some npm package I wanted to try), one is C++ (for a perf comparison).
-2. Realize I want a chart type Arima doesn't have. Open Claude Code in the repo. *"Add a violin plot helper to the JavaScript helpers module."* Eighteen minutes later, it works.
+2. Realize I want a chart type Arima Notebooks doesn't have. Open Claude Code in the repo. *"Add a violin plot helper to the JavaScript helpers module."* Eighteen minutes later, it works.
 3. Use the new helper in the notebook.
-4. Ask Claude (in the AI panel inside Arima, attached to the cell) why my numbers look off. It explains. I fix.
+4. Ask Claude (in the AI panel inside Arima Notebooks, attached to the cell) why my numbers look off. It explains. I fix.
 5. *"Package this morning's helper change as a PR with a good description."* Done.
 6. Close the laptop.
 
@@ -204,21 +204,21 @@ The CLI builds the JAR, starts the server on port 8585, and opens your browser. 
 
 If you want to drive it from an agent instead, add the MCP server config to Claude Code or Claude Desktop — see the repo's `docs/MCP.md`.
 
-![MCP-driven workflow — Claude Desktop creating a Arima notebook via MCP tools](../docs/screenshots/08-mcp-claude.png)
+![MCP-driven workflow — Claude Desktop creating a notebook via MCP tools](../docs/screenshots/08-mcp-claude.png)
 
-*Two surfaces, one artifact: Claude Desktop on the left calling `barista.create_notebook`, `barista.add_cell`, `barista.execute_cell` over MCP — Arima on the right showing the resulting notebook ready to inspect.*
+*Two surfaces, one artifact: Claude Desktop on the left calling `barista.create_notebook`, `barista.add_cell`, `barista.execute_cell` over MCP — Arima Notebooks on the right showing the resulting notebook ready to inspect.*
 
 ---
 
 ## An Invitation
 
-I built Arima because I wanted a notebook that fit the way I — and my AI — actually work together now. I open-sourced it because I'm sure other people will want different things, and the most exciting outcome is *not* that Arima stays the way I built it.
+I built Arima Notebooks because I wanted a notebook that fit the way real work happens now: many languages, one local artifact, humans and AI agents working together. I open-sourced it because I'm sure other people will want different things, and the most exciting outcome is *not* that Arima Notebooks stays the way I built it.
 
 The most exciting outcome is that someone clones it tonight, asks their AI to add a feature I never imagined, ships that feature in 40 minutes, and pushes the PR back upstream — and a week later someone else benefits.
 
 That loop — *use, reshape, contribute, repeat* — is what I think open source should feel like in 2026. Tools that bend toward the person using them, not the other way around.
 
-Jupyter taught us to think in cells. Arima is one attempt to extend that thinking into the agentic era. If it sparks even one better idea in someone else's hands, it'll have been worth the weekends.
+Jupyter taught us to think in cells. Arima Notebooks is one attempt to extend that thinking into the agentic era. If it sparks even one better idea in someone else's hands, it'll have been worth the weekends.
 
 ---
 
@@ -233,4 +233,4 @@ If this resonates, a 👏 helps it reach others thinking about the same question
 
 ---
 
-*Built with Spring Boot, JShell, MCP, and the conviction that the tools of the next decade will be the ones that let their users reshape them.*
+*Built with Spring Boot, MCP, seven first-class language engines, and the conviction that the tools of the next decade will be the ones that let their users reshape them.*

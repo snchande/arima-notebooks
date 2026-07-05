@@ -2,14 +2,14 @@
 
 ## Design Principles (Built for the Agentic Era)
 
-Arima is designed to be **reshaped by AI** — by the user themselves, in their own loop, with their own AI CLI. Every architectural decision below is in service of that goal. Read these before reading the rest:
+Arima Notebooks is designed to be **reshaped by AI** — by the user themselves, in their own loop, with their own AI CLI. Every architectural decision below is in service of that goal. Read these before reading the rest:
 
 - **No build step on the frontend.** Plain HTML/CSS/vanilla JS served from the JAR. Any AI agent that can read HTML can extend the UI. No Webpack, no Vite, no React, no TypeScript transpile pipeline.
 - **Plain Java backend, no Lombok, no annotation magic.** Standard Spring Boot. Any agent that can read Java can extend it. Models are POJOs with manual builders.
 - **Subprocess-per-language.** Adding a new language = one new `*ExecutionService.java` file modeled on the existing seven. The pattern is deliberately copy-pasteable.
 - **Small conventions, not big frameworks.** Notebook format is plain JSON (`.vnb`). Cell metadata uses `//@ anchor` / `//@ depends` annotations. The MCP tool surface mirrors the REST API 1:1.
 - **One Spring Boot JAR, one port (8585).** No microservices, no databases, no message queues. There is exactly one place for an agent to look.
-- **MCP-native.** The whole system is exposed as MCP tools so external agents (Claude Code, Claude Desktop, custom) can drive Arima identically to how the UI does.
+- **MCP-native.** The whole system is exposed as MCP tools so external agents (Claude Code, Claude Desktop, custom) can drive Arima Notebooks identically to how the UI does.
 
 > If a proposed change would force a new build step, a new framework, a new layer, or a new outbound dependency — the answer is almost always **no**. The simplicity is the feature: it's what makes the *use → customize → contribute* cycle take an hour instead of a weekend.
 
@@ -19,7 +19,7 @@ See [`AGENTS.md`](../AGENTS.md) for the hard rules every AI contributor must fol
 
 ## Overview
 
-Arima Notebooks is a **single-server Java application** that serves a browser-based notebook UI and exposes REST and WebSocket APIs for interactive code execution across **six runtimes**: JShell, Java, JavaScript, C#, F#, and C++. There is no frontend build step — the browser loads static HTML/CSS/JS directly from Spring Boot's static resource handler.
+Arima Notebooks is a modern notebook rethought as a **cross-platform execution plane** — one place where many languages run side by side and where humans and AI agents collaborate on the same notebook. Under the hood it is a **single-server Java application** that serves a browser-based notebook UI and exposes REST and WebSocket APIs for interactive code execution across **seven runtimes**: JShell, Java, JavaScript, TypeScript, C#, F#, and C++. There is no frontend build step — the browser loads static HTML/CSS/JS directly from Spring Boot's static resource handler.
 
 ```
 Browser                          Arima Server (Spring Boot 3.2, Java 21)
@@ -174,14 +174,14 @@ js/
 ### C++ (`g++` / `clang++`)
 
 - Each cell is compiled by `g++` or `clang++` (auto-detected on PATH) with `-std=c++17 -Wall`
-- Cells run in **notebook mode** by default — Arima wraps the code in `main()` automatically; no boilerplate required
+- Cells run in **notebook mode** by default — Arima Notebooks wraps the code in `main()` automatically; no boilerplate required
 - If the cell contains `int main(`, it is compiled as a **complete program** with the preamble prepended
-- **Preamble** injected into every cell: 25 standard headers (`<iostream>` through `<chrono>`) + `using namespace std;` + Arima helper functions
+- **Preamble** injected into every cell: 25 standard headers (`<iostream>` through `<chrono>`) + `using namespace std;` + Arima Notebooks helper functions
 - **Declaration splitting**: lines/blocks that look like class, struct, function, or template definitions are extracted to global scope; statements go inside `main()`
 - **Pipeline dependency injection** (same `//@ anchor:` / `//@ depends:` DSL as C#/F#):
   - Ancestor **declarations** injected at global scope before current cell's declarations
   - Ancestor **statements** injected inside `main()` with stdout suppressed via `__BaristaNullBuf`
-- **Arima helpers** available in every cell:
+- **Arima Notebooks helpers** available in every cell:
   ```cpp
   baristaHtml("...");              // outputs BARISTA_HTML: sentinel → rendered HTML
   baristaDisplay(value);           // cout << value
@@ -263,7 +263,7 @@ sessionAnchorSources: Map<sessionId, Map<anchorKey, sourceCode>>
 
 ## Real-time Output (WebSocket)
 
-Arima uses **STOMP over SockJS** for streaming cell output.
+Arima Notebooks uses **STOMP over SockJS** for streaming cell output.
 
 | Direction | Destination | Payload | Purpose |
 |-----------|-------------|---------|---------|
@@ -357,8 +357,8 @@ Cell `mode` values: `jshell` · `java` · `nodejs` · `typescript` · `csharp` �
 ## Security Model
 
 - **Local only**: no authentication by default. Bind to `127.0.0.1` only (default Spring Boot behaviour).
-- **No API keys in transit**: all three AI providers (Claude, Copilot, Antigravity) run locally — Claude & Antigravity as CLI subprocesses, Copilot via the GitHub Copilot SDK driving the local `copilot` CLI — no credentials leave the machine through Arima.
-- **Code execution**: JShell, Java, Node.js, `dotnet run`, `dotnet fsi`, and `g++`/MSVC all run with the same OS-user permissions as the Arima server process. Do **not** expose Arima to untrusted network access.
+- **No API keys in transit**: all three AI providers (Claude, Copilot, Antigravity) run locally — Claude & Antigravity as CLI subprocesses, Copilot via the GitHub Copilot SDK driving the local `copilot` CLI — no credentials leave the machine through Arima Notebooks.
+- **Code execution**: JShell, Java, Node.js, `dotnet run`, `dotnet fsi`, and `g++`/MSVC all run with the same OS-user permissions as the Arima Notebooks server process. Do **not** expose Arima Notebooks to untrusted network access.
 - **CORS**: configured for `localhost` only. Restrict further in production.
 
 ---

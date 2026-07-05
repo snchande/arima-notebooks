@@ -1,6 +1,6 @@
 ---
 name: add-tutorial
-description: Create a new Arima tutorial notebook (.vnb) that conforms to the built-in tutorial library format. Use when the user wants to ship a new lesson — JShell-301, TS-501, etc. Generates a properly-shaped .vnb JSON, registers it with NotebookService, and updates README.md tutorial table.
+description: Create a new Arima Notebooks tutorial notebook (.vnb) that conforms to the built-in tutorial library format. Use when the user wants to ship a new lesson — JShell-301, TS-501, etc. Generates a properly-shaped .vnb JSON, registers it with NotebookService, and updates README.md tutorial table.
 ---
 
 # add-tutorial — author a built-in tutorial notebook
@@ -22,7 +22,7 @@ The `.vnb` is a JSON file matching `com.barista.model.Notebook`. Look at `notebo
 
 1. **Read-only** — tutorials open in read-only mode in the UI. Users fork them into their personal notebook collection if they want to edit.
 2. **Progressive** — each cell builds on the previous one. No "skip this if confused."
-3. **Self-contained** — no external package installs required beyond what Arima ships pre-loaded.
+3. **Self-contained** — no external package installs required beyond what Arima Notebooks ships pre-loaded.
 4. **Markdown headers** between code cells explain the *why*. Code cells carry the *what* via clear identifiers.
 5. **No emojis** in code or markdown unless the user explicitly asks.
 6. **Mode tagged** — every code cell carries the correct `mode` (`jshell` / `java` / `nodejs` / `typescript` / `csharp` / `fsharp` / `cpp`).
@@ -35,7 +35,7 @@ The `.vnb` is a JSON file matching `com.barista.model.Notebook`. Look at `notebo
 3. Write the `.vnb` JSON under `notebooks/tutorials/`. Use unique cell IDs (UUIDs or `<id>-cell-N`).
 4. Register the tutorial in `NotebookService` (look for the tutorial registry).
 5. Add a row to the tutorial table in `README.md`.
-6. Increment the tutorial count in `README.md` ("Arima ships with N built-in tutorials") and in the brochure (`docs/brochure/arima-brochure.html`).
+6. Increment the tutorial count in `README.md` ("Arima Notebooks ships with N built-in tutorials") and in the brochure (`docs/brochure/arima-brochure.html`).
 7. Run `arima rebuild && arima start` and verify the tutorial appears in **Notebook Browser → Arima Tutorials** and renders end-to-end.
 
 ## Quality bar

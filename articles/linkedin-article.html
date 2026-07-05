@@ -50,17 +50,17 @@
 </style>
 </head>
 <body><h1>Our Developer Tools Were Built for a Pre-AI World. It&#39;s Time to Rethink Them.</h1>
-<h3>Why I built Arima Notebooks — an MCP-native, CLI-AI-integrated, multi-language notebook designed to be reshaped by you and your AI in under an hour.</h3>
+<h3>Why I built Arima Notebooks — a ground-up modernization of the notebook as a local, MCP-native, multi-language execution plane shared by people and AI agents.</h3>
 <p><em>By Suresh Chande · ~5 min read</em></p>
 <hr>
 <p><img src="../docs/screenshots/00-banner-linkedin.png" alt="Arima Notebooks — Developer Tools Built for an AI-Native World"></p>
 <hr>
 <h2>A Quick Acknowledgement</h2>
 <p>Jupyter is one of the great open-source achievements of the last fifteen years. I have used it, taught with it, and built on it. Nothing in this article is about replacing it.</p>
-<p>This is about something different: <strong>most of the tools we open every day were designed before AI agents existed as collaborators.</strong> That doesn&#39;t make them bad. It makes them ready for a new generation of tools that take everything the previous ones taught us, embed modern architectures, and assume an AI partner is part of the workflow from day one.</p>
-<p>That&#39;s the thesis. Below is one experiment in that direction — open-source, free, and built to be reshaped.</p>
+<p>This is about something different: the notebook — write code, run it, see results instantly — is one of software&#39;s best ideas, but it barely evolved while the world changed around it. Two shifts now matter: real work is deeply polyglot, and code is becoming a team sport with AI agents working beside humans on the same artifact.</p>
+<p>That&#39;s the thesis. The experiment is <strong>Arima Notebooks</strong>, part of the Arima platform: open-source, free, local-first, and built to be reshaped.</p>
 <hr>
-<h2>The Shift Most Teams Haven&#39;t Adjusted To</h2>
+<h2>The Two Shifts Most Teams Haven&#39;t Adjusted To</h2>
 <p>Look at any developer tool on your machine and ask: <em>what assumption was it built around?</em></p>
 <ul>
 <li>Your IDE assumes a human reading one file at a time</li>
@@ -68,7 +68,7 @@
 <li>Your notebook assumes a human running one cell at a time</li>
 <li>Your package manager assumes a human deciding what to install</li>
 </ul>
-<p>These are good designs — for the user they had in mind. But that user now has a partner: an AI that can read the whole file, run a sequence of commands, run every cell, and decide what to install — concurrently, on the same artifact.</p>
+<p>These are good designs — for the user they had in mind. But that user now works across many strong languages and has a partner: an AI that can read the whole file, run a sequence of commands, run every cell, and decide what to install — concurrently, on the same artifact.</p>
 <p>If a tool wasn&#39;t built with that partner in mind, two limitations tend to show up:</p>
 <ol>
 <li><strong>The AI sits outside the tool</strong> — copy-pasting code through a side panel</li>
@@ -77,7 +77,7 @@
 <p>The agentic era demands tools where both of those are different.</p>
 <hr>
 <h2>What Arima Notebooks Is</h2>
-<p><strong>Arima</strong> is a locally-hosted, browser-based, multi-language notebook environment — MIT-licensed and on GitHub. It runs seven languages side-by-side in the same notebook:</p>
+<p><strong>Arima Notebooks</strong> is a locally-hosted, browser-based, multi-language notebook environment — MIT-licensed and on GitHub. Think of it as a shared, cross-platform execution plane for code. It runs seven first-class language paths side-by-side in the same notebook today, with more to come:</p>
 <table>
 <thead>
 <tr>
@@ -86,14 +86,6 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Java (JShell)</strong></td>
-<td>JDK&#39;s official REPL — shared state across cells</td>
-</tr>
-<tr>
-<td><strong>Java (full)</strong></td>
-<td>Per-cell <code>javac</code> compile + run</td>
-</tr>
-<tr>
 <td><strong>JavaScript</strong></td>
 <td>Node.js subprocess</td>
 </tr>
@@ -113,45 +105,53 @@
 <td><strong>C++</strong></td>
 <td>MSVC / GCC / Clang auto-detected</td>
 </tr>
+<tr>
+<td><strong>Java (full)</strong></td>
+<td>Per-cell <code>javac</code> compile + run</td>
+</tr>
+<tr>
+<td><strong>Java (JShell)</strong></td>
+<td>JDK&#39;s official REPL — shared state across cells</td>
+</tr>
 </tbody></table>
-<p>Built on Spring Boot, with a vanilla HTML/JS frontend (no build step), and stored as plain JSON files on disk. Nothing leaves the machine.</p>
-<p>The interesting part isn&#39;t the language list. It&#39;s three design decisions that came out of asking &quot;what would a notebook look like if it assumed AI from day one?&quot;</p>
+<p>Every language gets real execution, real dependencies, and real tooling; none is a plugin or an afterthought. Built on Spring Boot, with a vanilla HTML/JS frontend (no build step), and stored as plain JSON files on disk. Nothing leaves the machine. No cloud account required.</p>
+<p>The interesting part isn&#39;t the language list. It&#39;s three design decisions that came out of asking &quot;what would a notebook look like if it assumed polyglot work and AI collaboration from day one?&quot;</p>
 <hr>
 <p><img src="../docs/screenshots/01-hero-welcome.png" alt="Arima Notebooks UI"></p>
-<p><em>The Arima UI: notebook cells with pipeline anchors, live status bar, tabs for Console, Packages, Settings, and Docs. Dark theme by default.</em></p>
+<p><em>The Arima Notebooks UI: notebook cells with pipeline anchors, live status bar, tabs for Console, Packages, Settings, and Docs. Dark theme by default.</em></p>
 <hr>
 <h2>Decision 1 — AI in the Loop, Through Your Own CLI</h2>
-<p>Arima runs AI as a local subprocess via whatever CLI you have authenticated:</p>
+<p>Arima Notebooks runs AI as a local subprocess via whatever CLI you have authenticated:</p>
 <ul>
 <li>Claude Code CLI</li>
 <li>GitHub Copilot SDK (drives the local <code>copilot</code> CLI)</li>
 <li>Antigravity CLI (<code>agy</code>)</li>
 </ul>
-<p>No second API key. No second vendor relationship. No new exfiltration path. If your security team has already cleared one of these CLIs for your developers, Arima inherits that posture exactly.</p>
-<p>The practical effect: <strong>the AI inside Arima has the same powers as the AI in your terminal</strong> — and we lean into that.</p>
+<p>No second API key. No second vendor relationship. No new exfiltration path. If your security team has already cleared one of these CLIs for your developers, Arima Notebooks inherits that posture exactly.</p>
+<p>The practical effect: <strong>the AI inside Arima Notebooks has the same powers as the AI in your terminal</strong> — and we lean into that.</p>
 <hr>
 <h2>Decision 2 — The Entire System is an MCP Server</h2>
-<p><a href="https://modelcontextprotocol.io">Model Context Protocol</a> is the standard that lets AI agents drive tools in a structured way. Arima doesn&#39;t just consume it — <strong>it publishes itself as one.</strong></p>
+<p><a href="https://modelcontextprotocol.io">Model Context Protocol</a> is the standard that lets AI agents drive tools in a structured way. Arima Notebooks doesn&#39;t just consume it — <strong>it publishes itself as one.</strong></p>
 <p>Every notebook, cell, execution, package install, and pipeline is exposed as an MCP tool. So you can:</p>
 <ul>
-<li>Work in the Arima browser UI directly, <strong>or</strong></li>
-<li>Drive Arima from Claude Code / Claude Desktop / any MCP-aware agent, <strong>or</strong></li>
+<li>Work in the Arima Notebooks browser UI directly, <strong>or</strong></li>
+<li>Drive Arima Notebooks from Claude Code / Claude Desktop / any MCP-aware agent, <strong>or</strong></li>
 <li>Both, on the same notebook, simultaneously</li>
 </ul>
 <div class="mermaid-svg"><p><svg id="mmd-0" width="100%" xmlns="http://www.w3.org/2000/svg" style="max-width: 757.78125px;" viewBox="-8 -8 757.78125 256" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mmd-0{font-family:&quot;trebuchet ms&quot;,verdana,arial,sans-serif;font-size:16px;fill:#333;}#mmd-0 .error-icon{fill:#552222;}#mmd-0 .error-text{fill:#552222;stroke:#552222;}#mmd-0 .edge-thickness-normal{stroke-width:2px;}#mmd-0 .edge-thickness-thick{stroke-width:3.5px;}#mmd-0 .edge-pattern-solid{stroke-dasharray:0;}#mmd-0 .edge-pattern-dashed{stroke-dasharray:3;}#mmd-0 .edge-pattern-dotted{stroke-dasharray:2;}#mmd-0 .marker{fill:#333333;stroke:#333333;}#mmd-0 .marker.cross{stroke:#333333;}#mmd-0 svg{font-family:&quot;trebuchet ms&quot;,verdana,arial,sans-serif;font-size:16px;}#mmd-0 .label{font-family:&quot;trebuchet ms&quot;,verdana,arial,sans-serif;color:#333;}#mmd-0 .cluster-label text{fill:#333;}#mmd-0 .cluster-label span,#mmd-0 p{color:#333;}#mmd-0 .label text,#mmd-0 span,#mmd-0 p{fill:#333;color:#333;}#mmd-0 .node rect,#mmd-0 .node circle,#mmd-0 .node ellipse,#mmd-0 .node polygon,#mmd-0 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mmd-0 .flowchart-label text{text-anchor:middle;}#mmd-0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mmd-0 .node .label{text-align:center;}#mmd-0 .node.clickable{cursor:pointer;}#mmd-0 .arrowheadPath{fill:#333333;}#mmd-0 .edgePath .path{stroke:#333333;stroke-width:2.0px;}#mmd-0 .flowchart-link{stroke:#333333;fill:none;}#mmd-0 .edgeLabel{background-color:#e8e8e8;text-align:center;}#mmd-0 .edgeLabel rect{opacity:0.5;background-color:#e8e8e8;fill:#e8e8e8;}#mmd-0 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#mmd-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#mmd-0 .cluster text{fill:#333;}#mmd-0 .cluster span,#mmd-0 p{color:#333;}#mmd-0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:&quot;trebuchet ms&quot;,verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#mmd-0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#mmd-0 :root{--mermaid-font-family:&quot;trebuchet ms&quot;,verdana,arial,sans-serif;}</style><g><marker id="mmd-0_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mmd-0_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mmd-0_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mmd-0_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mmd-0_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mmd-0_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"><g class="cluster default flowchart-label" id="Arima"><rect style="fill:#1e293b;stroke:#06b6d4;" rx="0" ry="0" x="327.234375" y="0" width="414.546875" height="220"></rect><g class="cluster-label" transform="translate(534.5078125, 0)"><text style="fill:#fff;"><tspan xml:space="preserve" dy="1em" x="0" class="row">Arima Notebooks (Local)</tspan></text></g></g><g class="cluster default flowchart-label" id="You"><rect style="fill:#0f172a;stroke:#3b82f6;" rx="0" ry="0" x="0" y="4" width="181.703125" height="236"></rect><g class="cluster-label" transform="translate(90.8515625, 4)"><text style="fill:#fff;"><tspan xml:space="preserve" dy="1em" x="0" class="row">You + Your AI Partner</tspan></text></g></g></g><g class="edgePaths"><path d="M116.589,56L127.441,56C138.294,56,159.998,56,182.978,56C205.958,56,230.214,56,254.469,56C278.724,56,302.979,56,318.785,56C334.59,56,341.946,56,345.624,56L349.302,56" id="L-DEV-UI-0" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-DEV LE-UI" style="fill:none;" marker-start="url(#mmd-0_flowchart-pointStart)" marker-end="url(#mmd-0_flowchart-pointEnd)"></path><path d="M162.003,164L165.286,164C168.57,164,175.136,164,190.547,164C205.958,164,230.214,164,254.469,164C278.724,164,302.979,164,318.39,164C333.801,164,340.368,164,343.651,164L346.934,164" id="L-AI-MCP-0" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-AI LE-MCP" style="fill:none;" marker-start="url(#mmd-0_flowchart-pointStart)" marker-end="url(#mmd-0_flowchart-pointEnd)"></path><path d="M446.445,56L451.007,56C455.568,56,464.69,56,480.424,60.503C496.159,65.006,518.505,74.013,529.678,78.516L540.851,83.019" id="L-UI-ENG-0" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-UI LE-ENG" style="fill:none;" marker-end="url(#mmd-0_flowchart-pointEnd)"></path><path d="M448.813,164L452.979,164C457.146,164,465.479,164,480.819,159.497C496.159,154.994,518.505,145.987,529.678,141.484L540.851,136.981" id="L-MCP-ENG-0" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-MCP LE-ENG" style="fill:none;" marker-end="url(#mmd-0_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel" transform="translate(254.46875, 164)"><g class="label" transform="translate(-47.765625, -9.5)"><rect rx="0" ry="0" width="95.53125" height="19"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">MCP protocol</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-UI-2" data-node="true" data-id="UI" transform="translate(400.5234375, 56)"><rect class="basic label-container" style="" rx="0" ry="0" x="-45.921875" y="-17" width="91.84375" height="34"></rect><g class="label" style="" transform="translate(0, -9.5)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Browser UI</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-MCP-3" data-node="true" data-id="MCP" transform="translate(400.5234375, 164)"><rect class="basic label-container" style="" rx="0" ry="0" x="-48.2890625" y="-17" width="96.578125" height="34"></rect><g class="label" style="" transform="translate(0, -9.5)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">MCP Server</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-ENG-4" data-node="true" data-id="ENG" transform="translate(607.796875, 110)"><rect class="basic label-container" style="" rx="0" ry="0" x="-108.984375" y="-25" width="217.96875" height="50"></rect><g class="label" style="" transform="translate(0, -17.5)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">7 Execution Engines</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">Java · JS · TS · C# · F# · C++</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-DEV-0" data-node="true" data-id="DEV" transform="translate(90.8515625, 56)"><rect class="basic label-container" style="" rx="0" ry="0" x="-20.4375" y="-17" width="40.875" height="34"></rect><g class="label" style="" transform="translate(0, -9.5)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">You</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-AI-1" data-node="true" data-id="AI" transform="translate(90.8515625, 164)"><rect class="basic label-container" style="" rx="0" ry="0" x="-65.8515625" y="-41" width="131.703125" height="82"></rect><g class="label" style="" transform="translate(0, -33.5)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">AI Agent</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">(Claude Code,</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">Claude Desktop,</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">custom agent)</tspan></text></g></g></g></g></g></svg></p>
-</div><p>The unlock: <strong>an agent can prepare a notebook for you overnight.</strong> Tell Claude Code &quot;build an exploration notebook for our new pricing API — load sample requests, validate the schema, chart latency distributions&quot; — and the notebook is waiting when you open Arima in the morning.</p>
-<p>Conversely, from inside the Arima UI, you can attach a cell to the AI panel and ask &quot;why is this latency spike here?&quot; — same provider, same auth, same context.</p>
-<p>The notebook is the shared artifact. Both of you are first-class users of it.</p>
+</div><p>The unlock: <strong>an agent can prepare a notebook for you overnight.</strong> Tell Claude Code &quot;build an exploration notebook for our new pricing API — load sample requests, validate the schema, chart latency distributions&quot; — and the notebook is waiting when you open Arima Notebooks in the morning.</p>
+<p>Conversely, from inside the Arima Notebooks UI, you can attach a cell to the AI panel and ask &quot;why is this latency spike here?&quot; — same provider, same auth, same context.</p>
+<p>The notebook is the shared artifact — the living document where people and agents collaborate on the same code, outputs, dependencies, and next steps. Both of you are first-class users of it.</p>
 <hr>
 <h2>Decision 3 — Designed to Be Reshaped in Under an Hour</h2>
 <p>This is the philosophical core, and the one I think matters most for the next decade.</p>
 <p>Most products say: <em>here&#39;s what we built; submit a feature request and we&#39;ll consider it.</em></p>
-<p>Arima says: <em>here&#39;s what we built; if you need something else, ask your AI to add it, and it should take less than an hour.</em></p>
+<p>Arima Notebooks says: <em>here&#39;s what we built; if you need something else, ask your AI to add it, and it should take less than an hour.</em></p>
 <p>That&#39;s possible because of deliberate constraints:</p>
 <ul>
 <li><strong>No build step on the frontend.</strong> Plain HTML/CSS/vanilla JS. No Webpack, no Vite.</li>
-<li><strong>Plain Java backend, no magic.</strong> Standard Spring Boot. Any agent that can read Java can extend it.</li>
-<li><strong>Subprocess-per-language.</strong> Adding a new language = one new service file modeled on the existing six.</li>
+<li><strong>Plain Java backend, no magic.</strong> Standard Spring Boot. Any agent that can read straightforward code can extend it.</li>
+<li><strong>Subprocess-per-language.</strong> Adding a new language = one focused execution service modeled on the existing engines.</li>
 <li><strong>Small conventions, not big frameworks.</strong> Notebook format is JSON. Cell metadata is in <code>//@</code> annotations.</li>
 </ul>
 <p>The loop becomes:</p>
@@ -165,33 +165,33 @@
 <p><img src="../docs/screenshots/09-agentic-loop.png" alt="The Agentic Loop — Use, Reshape, Contribute, Repeat"></p>
 <hr>
 <h2>Freedom &gt; Lock-In</h2>
-<p>A modern developer tool shouldn&#39;t trap your work inside itself. There&#39;s no good reason a notebook authored in Arima shouldn&#39;t open in Jupyter, or vice versa. The artifact is JSON. The cells are code. The execution model differs — but the <em>content</em> should be portable.</p>
-<p><strong>To be transparent: this isn&#39;t shipped yet.</strong> Arima today reads and writes its own <code>.vnb</code> format; <code>.ipynb</code> round-tripping is planned for the next update — and it&#39;s a great first contribution for anyone who wants to try the loop described above. The principle stands: developers should be free to pick whichever tool fits the moment and move work between them without friction.</p>
-<p>Same goes for AI providers. Same for languages. Same for package ecosystems. <strong>The era of &quot;pick a tool and live inside it forever&quot; is closing.</strong> The era of &quot;compose what you need, swap when convenient, shape what doesn&#39;t fit&quot; is here.</p>
+<p>A modern developer tool shouldn&#39;t trap your work inside itself. There&#39;s no good reason a notebook authored in Arima Notebooks shouldn&#39;t open in Jupyter, or vice versa. The artifact is JSON. The cells are code. The execution model differs — but the <em>content</em> should be portable.</p>
+<p><strong>To be transparent: this isn&#39;t shipped yet.</strong> Arima Notebooks today reads and writes its own <code>.vnb</code> format; <code>.ipynb</code> round-tripping is planned for the next update — and it&#39;s a great first contribution for anyone who wants to try the loop described above. The principle stands: developers should be free to pick whichever tool fits the moment and move work between them without friction.</p>
+<p>Same goes for AI providers. Same for languages. Same for package ecosystems. No language should be a plugin or an afterthought; no agent should be forced to watch from outside the artifact. <strong>The era of &quot;pick a tool and live inside it forever&quot; is closing.</strong> The era of &quot;compose what you need, swap when convenient, shape what doesn&#39;t fit&quot; is here.</p>
 <hr>
 <h2>Who Should Care</h2>
 <p>If you lead, hire, or work on a team where any of these are true:</p>
 <ul>
-<li><strong>JVM-heavy engineering</strong> that&#39;s been left behind by Python-first notebook tooling</li>
-<li><strong>Polyglot stacks</strong> mixing Java services, TypeScript frontends, .NET tooling</li>
+<li><strong>Polyglot engineering teams</strong> moving across JavaScript, TypeScript, C#, F#, C++, Java, JShell, and whatever comes next</li>
+<li><strong>Teams adopting AI agents</strong> that need tools agents can drive, not just observe</li>
 <li><strong>Regulated industries</strong> where SaaS notebook tools are non-starters</li>
 <li><strong>DevRel / developer education</strong> that needs executable, shareable content</li>
-<li><strong>AI-forward teams</strong> wanting tools their agents can drive, not just observe</li>
+<li><strong>Open-source contributors</strong> who want a notebook they can extend with their own languages, tools, and workflows</li>
 </ul>
-<p>…Arima is worth ten minutes of your time. And if it doesn&#39;t do what you need, <em>the whole pitch</em> is that it should take you under an hour with an AI CLI to add what&#39;s missing.</p>
+<p>…Arima Notebooks is worth ten minutes of your time. And if it doesn&#39;t do what you need, <em>the whole pitch</em> is that it should take you under an hour with an AI CLI to add what&#39;s missing.</p>
 <hr>
 <h2>Try It</h2>
 <pre><code class="language-bash">git clone https://github.com/snchande/arima-notebooks.git
 cd arima-notebooks
 ./arima       # Windows CMD — also arima.ps1 (PowerShell), arima.sh (mac/Linux)
 </code></pre>
-<p>Builds the JAR, starts the server, opens your browser. About 30 seconds.</p>
-<p>To drive it from an MCP-aware agent (Claude Code, Claude Desktop, custom agents): add the Arima MCP server config — see <code>docs/MCP.md</code> in the repo.</p>
-<p><img src="../docs/screenshots/08-mcp-claude.png" alt="MCP-driven workflow — Claude Desktop and Arima on the same artifact"></p>
-<p><em>Two surfaces, one artifact: Claude Desktop driving Arima via MCP tools (<code>barista.create_notebook</code>, <code>barista.add_cell</code>, <code>barista.execute_cell</code>) while the resulting notebook stays live and inspectable in the Arima UI.</em></p>
+<p>Builds the JAR, starts the server at <code>http://localhost:8585</code>, opens your browser. About 30 seconds.</p>
+<p>To drive it from an MCP-aware agent (Claude Code, Claude Desktop, custom agents): add the Arima Notebooks MCP server config — see <code>docs/MCP.md</code> in the repo.</p>
+<p><img src="../docs/screenshots/08-mcp-claude.png" alt="MCP-driven workflow — Claude Desktop and Arima Notebooks on the same artifact"></p>
+<p><em>Two surfaces, one artifact: Claude Desktop driving Arima Notebooks via MCP tools (<code>barista.create_notebook</code>, <code>barista.add_cell</code>, <code>barista.execute_cell</code>) while the resulting notebook stays live and inspectable in the Arima Notebooks UI.</em></p>
 <hr>
 <h2>What I&#39;d Love To Hear</h2>
-<p>I built Arima because I wanted a notebook that fit the way I — and my AI partner — actually work together now. I open-sourced it because the most valuable outcome isn&#39;t Arima staying the way I built it. It&#39;s other people forking it, asking their AI to add what they need, and (sometimes) contributing those changes back.</p>
+<p>I built Arima Notebooks because I wanted a notebook that fit the way real work happens now: many languages, one local artifact, humans and AI agents working together. I open-sourced it because the most valuable outcome isn&#39;t Arima Notebooks staying the way I built it. It&#39;s other people forking it, asking their AI to add what they need, and (sometimes) contributing those changes back.</p>
 <p>That loop — <strong>use, reshape, contribute, repeat</strong> — is what I believe open source should feel like in 2026. Tools that bend toward their users, not the other way around.</p>
 <p>If this resonates with how you think about your team&#39;s tooling, I&#39;d love to hear what you&#39;d build first.</p>
 <p><strong>Repo:</strong> <a href="https://github.com/snchande/arima-notebooks">github.com/snchande/arima-notebooks</a>
@@ -199,6 +199,6 @@ cd arima-notebooks
 <strong>Docs, MCP setup, tutorials:</strong> all in the repo</p>
 <p>♻️ Repost if you think one of your developers would benefit.</p>
 <hr>
-<p><em>#DeveloperTools #OpenSource #MCP #AgenticAI #DeveloperProductivity #SoftwareEngineering #Java #Notebooks</em></p>
+<p><em>#DeveloperTools #OpenSource #MCP #AgenticAI #DeveloperProductivity #SoftwareEngineering #Notebooks</em></p>
 </body>
 </html>
