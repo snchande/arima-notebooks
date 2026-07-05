@@ -316,6 +316,44 @@ GET /api/shell/{sessionId}/info
 
 ---
 
+## Agents & Skills
+
+An "agent notebook" is a normal notebook with `metadata.kind = "agent" | "skill"`. Its markdown cells,
+concatenated, are the system prompt; `metadata.agent.tools` holds declared tools (agents only). Each
+provider (Claude in v0) knows how to **run** it (invoke the CLI, streaming output over the STOMP topic
+`/topic/shell/{sessionId}` as `partial_output` with `cellId = "__agent_run__"`) and **export** it to that
+CLI's native files. Built-in samples: `agent-101`, `agent-201`, `agent-301`, `skill-101`.
+
+### Provider availability
+```
+GET /api/agents/providers
+```
+**Response 200:** `{ "claude": true }`
+
+### Create an agent/skill notebook
+```
+POST /api/agents/create
+{ "name": "code-reviewer", "kind": "agent" }   // kind: "agent" | "skill"
+```
+Returns the created `Notebook` (pre-seeded with a starter instructions cell).
+
+### Run
+```
+POST /api/agents/run
+{ "notebookId": "agent-201", "task": "Review the diff on my branch", "provider": "claude", "sessionId": "nb-..." }
+```
+**Response 200:** `{ "output": "...", "provider": "claude", "success": true }` — output also streams live via STOMP.
+
+### Export to native files
+```
+POST /api/agents/export
+{ "notebookId": "agent-201", "provider": "claude" }
+```
+**Response 200:** `{ "path": ".claude/agents/code-reviewer.md", "success": true }`
+(skills export to `.claude/skills/<name>/SKILL.md`).
+
+---
+
 ## Package Manager
 
 ### List Installed Packages

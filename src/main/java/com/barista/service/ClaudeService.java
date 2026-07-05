@@ -201,6 +201,11 @@ public class ClaudeService {
         return findClaudeExecutable() != null;
     }
 
+    /** Resolve the local {@code claude} CLI path (or null). Shared with the agent-run path. */
+    public String executable() {
+        return findClaudeExecutable();
+    }
+
     /**
      * Locate the claude CLI executable.
      * Checks common install locations first, then falls back to PATH lookup.
