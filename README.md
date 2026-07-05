@@ -99,6 +99,7 @@ The bar to **customize for yourself** and the bar to **contribute back** become 
 | **Built-in Data Science** | XChart · Commons Math · Tablesaw · simple-statistics · mathjs — pre-installed |
 | **Tutorial Library** | 28 built-in tutorials across JShell, Java, JavaScript, TypeScript, C#, F#, and C++ |
 | **Interactive Console** | Full REPL console with tab completion |
+| **Guided Tour (First Run Experience)** | Interactive spotlight walkthrough of every section on first launch — replay anytime from **Settings → Guided Tour** |
 | **Dark theme** | Easy on the eyes by default |
 
 ---

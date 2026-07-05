@@ -30,6 +30,16 @@ Arima Notebooks has five main tabs:
 
 ---
 
+## First Run Experience (Guided Tour)
+
+The first time you open Arima Notebooks, an interactive **guided tour** walks you through every section — the four workspaces (Notebook, Console, Packages, Settings), the notebook canvas, first-class languages, pipelines with named anchors, and cross-notebook reuse. Each step highlights the actual element it describes, so you learn the layout before you start.
+
+- The tour runs **once automatically** on a fresh install.
+- **Replay it anytime** from **Settings → Guided Tour → Start tour now**.
+- Toggle **"Show the tour on next launch"** to have it relaunch automatically the next time you start.
+
+---
+
 ## Notebook Tab
 
 ### Opening a Notebook

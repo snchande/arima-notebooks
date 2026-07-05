@@ -321,6 +321,16 @@ const SettingsPanel = (() => {
         document.getElementById('btn-save-settings')?.addEventListener('click', saveSettings);
         document.getElementById('btn-refresh-status')?.addEventListener('click', loadServerStatus);
 
+        // Guided Tour (FRE) controls
+        const replayToggle = document.getElementById('s-replay-tour');
+        if (replayToggle && typeof FRE !== 'undefined') {
+            replayToggle.checked = FRE.replayPending();
+            replayToggle.addEventListener('change', () => FRE.setReplayNextLaunch(replayToggle.checked));
+        }
+        document.getElementById('btn-start-tour')?.addEventListener('click', () => {
+            if (typeof FRE !== 'undefined') FRE.replay();
+        });
+
 
         // AI provider radio toggle
         document.getElementById('ai-provider-picker')?.addEventListener('change', e => {

@@ -19,7 +19,7 @@ arima start          # builds if needed, starts the server, opens the browser
 # already running?   ->  arima open
 ```
 
-Then visit **http://localhost:8585**. In the UI you can press **Ctrl+\\** for the AI panel and open the in-app **docs overlay** for guidance without leaving the page.
+Then visit **http://localhost:8585**. On your first visit, an interactive **guided tour** walks you through every section of the workspace (you can replay it anytime from **Settings → Guided Tour**). In the UI you can press **Ctrl+\\** for the AI panel and open the in-app **docs overlay** for guidance without leaving the page.
 
 ### 2 · Drive Arima Notebooks from the CLI via MCP (operate & automate)
 

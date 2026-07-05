@@ -3953,3 +3953,83 @@ table.barista-df th { position: relative; padding-bottom: 14px; }
 .notif-item-text { display: flex; flex-direction: column; gap: 2px; }
 .notif-item-text strong { font-size: 12.5px; font-weight: 600; }
 .notif-item-sub { font-size: 11.5px; color: var(--text-3); }
+
+/* ════════════════════════════════════════════════════════════════
+   First Run Experience (FRE) — guided spotlight tour
+   ════════════════════════════════════════════════════════════════ */
+#fre-block {
+  position: fixed; inset: 0; z-index: 4000;
+  display: none; background: transparent; cursor: default;
+}
+body.fre-on #fre-block { display: block; }
+
+#fre-ring {
+  position: fixed; z-index: 4001; display: none;
+  border-radius: 10px; pointer-events: none;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 9999px rgba(8, 8, 16, .72),
+              0 0 0 4px rgba(124, 142, 247, .35),
+              0 0 22px 2px rgba(124, 142, 247, .45);
+  transition: top .32s cubic-bezier(.4,0,.2,1), left .32s cubic-bezier(.4,0,.2,1),
+              width .32s cubic-bezier(.4,0,.2,1), height .32s cubic-bezier(.4,0,.2,1);
+  animation: fre-ring-pulse 2s ease-in-out infinite;
+}
+@keyframes fre-ring-pulse {
+  0%,100% { box-shadow: 0 0 0 9999px rgba(8,8,16,.72), 0 0 0 4px rgba(124,142,247,.30), 0 0 18px 2px rgba(124,142,247,.35); }
+  50%     { box-shadow: 0 0 0 9999px rgba(8,8,16,.72), 0 0 0 6px rgba(124,142,247,.45), 0 0 26px 4px rgba(124,142,247,.55); }
+}
+
+#fre-tip {
+  position: fixed; z-index: 4002; display: none;
+  width: 340px; max-width: calc(100vw - 28px);
+  background: var(--surface-2);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 18px 50px rgba(0,0,0,.55), 0 0 0 1px rgba(124,142,247,.15);
+  padding: 18px 18px 14px;
+  color: var(--text-1);
+  animation: fre-tip-in .28s cubic-bezier(.2,.8,.2,1);
+}
+body.fre-on #fre-tip { display: block; }
+#fre-tip.fre-centered {
+  left: 50% !important; top: 50% !important;
+  transform: translate(-50%, -50%);
+  width: 460px; padding: 26px 26px 20px;
+}
+@keyframes fre-tip-in { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; } }
+#fre-tip.fre-centered { animation: fre-tip-in-c .3s cubic-bezier(.2,.8,.2,1); }
+@keyframes fre-tip-in-c { from { opacity: 0; } to { opacity: 1; } }
+
+.fre-tip-badge {
+  display: inline-block; font-size: 10.5px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--accent); background: var(--accent-dim);
+  padding: 3px 9px; border-radius: 20px; margin-bottom: 10px;
+}
+.fre-tip-title { margin: 0 0 8px; font-size: 17px; font-weight: 700; color: var(--text-1); line-height: 1.3; }
+#fre-tip.fre-centered .fre-tip-title { font-size: 21px; }
+.fre-tip-body { margin: 0 0 16px; font-size: 13.5px; line-height: 1.62; color: var(--text-2); }
+#fre-tip.fre-centered .fre-tip-body { font-size: 14.5px; }
+.fre-tip-body b, .fre-tip-body strong { color: var(--text-1); font-weight: 650; }
+.fre-tip-body code {
+  background: var(--surface-4); color: #a6e3a1;
+  padding: 1px 5px; border-radius: 4px; font-size: .9em;
+  font-family: 'Consolas','Monaco',monospace;
+}
+.fre-tip-body kbd {
+  background: var(--surface-4); border: 1px solid var(--border);
+  border-bottom-width: 2px; border-radius: 4px;
+  padding: 1px 6px; font-size: .85em; font-family: inherit; color: var(--text-1);
+}
+.fre-tip-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fre-dots { display: flex; gap: 6px; flex-wrap: wrap; }
+.fre-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--surface-5); transition: all .2s; }
+.fre-dot.on { background: var(--accent); width: 18px; border-radius: 3px; }
+.fre-btns { display: flex; gap: 8px; }
+.fre-btns button { font-size: 12.5px; font-weight: 600; padding: 7px 14px; border-radius: var(--radius); cursor: pointer; border: 1px solid transparent; transition: all .15s; }
+.fre-skip { background: transparent; color: var(--text-3); }
+.fre-skip:hover { color: var(--text-1); }
+.fre-back { background: var(--surface-4); color: var(--text-1); border-color: var(--border); }
+.fre-back:hover { background: var(--surface-5); }
+.fre-next { background: var(--accent); color: #0b0b12; }
+.fre-next:hover { background: var(--accent-hover); }
