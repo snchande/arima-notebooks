@@ -1,6 +1,6 @@
 # .claude/ — Arima Notebooks Claude Code Configuration
 
-This directory is the **central registration** for Arima's Claude Code integration: slash commands, skills, subagents, and project settings. Files here are checked into the repo so every contributor gets the same set automatically when they open Arima in Claude Code.
+This directory is the **central registration** for Arima Notebooks' Claude Code integration: slash commands, skills, subagents, and project settings. Files here are checked into the repo so every contributor gets the same set automatically when they open Arima Notebooks in Claude Code.
 
 ## Layout
 
@@ -31,7 +31,7 @@ This directory is the **central registration** for Arima's Claude Code integrati
 ## The `arima` agent (start here)
 
 `arima` is the **primary, full-functionality** agent — the single front door for using, operating,
-documenting, and extending Arima. It delivers the common welcome (open the UI · drive Arima over MCP ·
+documenting, and extending Arima Notebooks. It delivers the common welcome (open the UI · drive Arima Notebooks over MCP ·
 personalize & extend), opens the right docs, and — because it can write code — guides feature changes
 while obeying [`../AGENTS.md`](../AGENTS.md). It delegates focused work to the three specialists
 (`barista-architect`, `barista-security`, `arima-tutorial-writer`).

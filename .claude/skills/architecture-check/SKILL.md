@@ -1,9 +1,9 @@
 ---
 name: architecture-check
-description: Verify a proposed code change respects the Arima layered architecture (AGENTS.md §2). Use BEFORE writing code when a change spans multiple files or touches controllers/services/static UI. Reports layer-crossings, Lombok reintroduction, forbidden frontend deps, new outbound hosts, and execution-service contract violations.
+description: Verify a proposed code change respects the Arima Notebooks layered architecture (AGENTS.md §2). Use BEFORE writing code when a change spans multiple files or touches controllers/services/static UI. Reports layer-crossings, Lombok reintroduction, forbidden frontend deps, new outbound hosts, and execution-service contract violations.
 ---
 
-# architecture-check — Arima layered-architecture verifier
+# architecture-check — Arima Notebooks layered-architecture verifier
 
 Read [`AGENTS.md`](../../../AGENTS.md) and [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) before using this skill.
 

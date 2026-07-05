@@ -1,6 +1,6 @@
 ---
 name: add-rest-endpoint
-description: Scaffold a new REST endpoint following the Arima controller→service pattern. Use when the user asks to add an API for X. Creates the controller method, a service method, a DTO if needed, an integration test, and updates docs/API.md — preserving the layered architecture.
+description: Scaffold a new REST endpoint following the Arima Notebooks controller→service pattern. Use when the user asks to add an API for X. Creates the controller method, a service method, a DTO if needed, an integration test, and updates docs/API.md — preserving the layered architecture.
 ---
 
 # add-rest-endpoint — scaffold a REST endpoint

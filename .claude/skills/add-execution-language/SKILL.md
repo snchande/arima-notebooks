@@ -1,11 +1,11 @@
 ---
 name: add-execution-language
-description: Scaffold a new language execution service in Arima following the existing seven-service pattern. Use when the user asks to add support for a new language (e.g. "add Python support" or "add Kotlin"). Creates the service, wires it into ShellController, adds a CellType mode, and registers the cell badge in the frontend — all preserving the unified ExecutionResult contract.
+description: Scaffold a new language execution service in Arima Notebooks following the existing seven-service pattern. Use when the user asks to add support for a new language (e.g. "add Python support" or "add Kotlin"). Creates the service, wires it into ShellController, adds a CellType mode, and registers the cell badge in the frontend — all preserving the unified ExecutionResult contract.
 ---
 
 # add-execution-language — scaffold a new runtime
 
-This skill walks through the steps needed to add a new language to Arima. Read [`AGENTS.md`](../../../AGENTS.md) first.
+This skill walks through the steps needed to add a new language to Arima Notebooks. Read [`AGENTS.md`](../../../AGENTS.md) first.
 
 ## Prerequisites
 

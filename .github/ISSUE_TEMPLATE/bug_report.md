@@ -27,7 +27,7 @@ If applicable, paste browser console output or server logs here.
 - OS: [e.g. Windows 11, macOS 14, Ubuntu 22.04]
 - Java version: [e.g. JDK 21.0.3]
 - Browser: [e.g. Chrome 124]
-- Arima version / commit: [e.g. 1.0.0 or git SHA]
+- Arima Notebooks version / commit: [e.g. 1.0.0 or git SHA]
 
 ## Additional context
 Any other context about the problem.

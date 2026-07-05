@@ -1,6 +1,6 @@
 # Arima Notebooks - Usage Guide
 
-## Starting Arima (Windows CLI)
+## Starting Arima Notebooks (Windows CLI)
 
 `arima.cmd` in the project root is the quickest way to manage Arima Notebooks on Windows.
 
@@ -12,7 +12,7 @@ arima status        # check if running
 arima help          # full command reference
 ```
 
-See [docs/SETUP.md](SETUP.md#arima-cli-windows) for the complete CLI reference.
+See [docs/SETUP.md](SETUP.md#arima-notebooks-cli-windows) for the complete CLI reference.
 
 ---
 
@@ -65,7 +65,7 @@ Tutorial tracks available: **JShell**, **Java**, **JavaScript**, **TypeScript**,
 
 ### Working with Cells
 
-Arima has four cell types, each visually distinct:
+Arima Notebooks has four cell types, each visually distinct:
 
 | Type | Border | Badge | Purpose |
 |------|--------|-------|---------|
@@ -118,13 +118,13 @@ Every code cell has a **mode button** on its header. Click it to **cycle through
 
 #### AI-powered language conversion
 
-When you switch a cell's language mode, Arima offers to **convert the existing code** to the new language. A banner appears below the cell header:
+When you switch a cell's language mode, Arima Notebooks offers to **convert the existing code** to the new language. A banner appears below the cell header:
 
 ```
 Convert code from Java → C++?    [Convert]  [Keep as-is]
 ```
 
-- Click **Convert** — Arima sends the code to the active AI provider and rewrites it in the target language. The result replaces the cell contents.
+- Click **Convert** — Arima Notebooks sends the code to the active AI provider and rewrites it in the target language. The result replaces the cell contents.
 - Click **Keep as-is** (or wait 15 seconds) — the banner dismisses and the original code stays unchanged.
 
 The mode switch is immediate; conversion is always optional.
@@ -172,7 +172,7 @@ notification (or the bell entry) to jump straight back to the waiting cell with 
 ### Stopping a Cell / Runaway Protection
 
 Every running cell shows a **■ Stop** button that interrupts it immediately — use it to break out of
-a long computation or a prompt you no longer want to answer. Arima also stops cells automatically so
+a long computation or a prompt you no longer want to answer. Arima Notebooks also stops cells automatically so
 a never-ending loop can't wedge your notebook:
 
 - **Execution time limit** (`maxExecutionTimeMs`, default **30s**) — a `while(true){}` is stopped with
@@ -294,13 +294,13 @@ The picker only shows cells that have an anchor name (`//@ anchor: ...`). Cells 
 **Tips:**
 - You can pick multiple references — open the picker again for each additional dependency
 - To remove a cross-notebook dependency, edit the `//@ depends:` line directly in the cell source
-- Run cross-notebook dependencies with **→ Run with deps** (the arrow button) — Arima will execute the foreign cell first and inject its output/state
+- Run cross-notebook dependencies with **→ Run with deps** (the arrow button) — Arima Notebooks will execute the foreign cell first and inject its output/state
 
 ---
 
 ## Data Science
 
-Arima includes a full data science stack pre-loaded in every JShell session. No install required.
+Arima Notebooks includes a full data science stack pre-loaded in every JShell session. No install required.
 
 ### Built-in Libraries
 
@@ -518,11 +518,11 @@ var total = sales.Sum(s => s.Amount);
 Console.WriteLine($"Total: ${total:N0}");
 ```
 
-> **How it works**: When `//@ depends: loadData` is declared, Arima prepends the source code from
+> **How it works**: When `//@ depends: loadData` is declared, Arima Notebooks prepends the source code from
 > `loadData` (with its console output silenced) before compiling and running this cell.
 > All variables and types from ancestor cells are in scope.
 >
-> **Important**: Run ancestor cells first (or use **→ Run with deps**) — Arima caches each
+> **Important**: Run ancestor cells first (or use **→ Run with deps**) — Arima Notebooks caches each
 > anchor's source on first successful run and reuses it for dependent cells.
 
 ---
@@ -589,13 +589,13 @@ byCategory |> List.iter (fun (cat, ts) ->
 
 ## C++ Cells
 
-C++ cells compile and run with C++17. No `main()` function is needed — Arima wraps your code automatically.
+C++ cells compile and run with C++17. No `main()` function is needed — Arima Notebooks wraps your code automatically.
 
-**Supported compilers** (Arima detects automatically, in order):
+**Supported compilers** (Arima Notebooks detects automatically, in order):
 - `g++` / `clang++` on PATH — MinGW-w64, MSYS2, WinLibs, Homebrew, or system package
 - **Visual Studio / Build Tools (MSVC)** — detected automatically on Windows, no PATH setup needed
 
-> **First time?** Just run a C++ cell. If a compiler is found, it executes immediately. If not, Arima shows exact install instructions for your platform.
+> **First time?** Just run a C++ cell. If a compiler is found, it executes immediately. If not, Arima Notebooks shows exact install instructions for your platform.
 
 ### What's available in every C++ cell
 
@@ -636,7 +636,7 @@ cout << "\n";
 
 ### Complete programs
 
-If your cell contains `int main(`, Arima compiles it as a complete program (with the standard headers still prepended):
+If your cell contains `int main(`, Arima Notebooks compiles it as a complete program (with the standard headers still prepended):
 
 ```cpp
 #include <fstream>    // additional headers work fine
@@ -681,7 +681,7 @@ cout << "Mean:  " << sum / data.size() << "\n";
 
 ### Installing C++ (if needed)
 
-If you see "C++ compiler not found", Arima shows platform-specific instructions. Quick reference:
+If you see "C++ compiler not found", Arima Notebooks shows platform-specific instructions. Quick reference:
 
 | Platform | Easiest option |
 |----------|---------------|
@@ -837,7 +837,7 @@ console.log('Std:', ss.standardDeviation(data).toFixed(2));
 2. Enter a **Package ID** (e.g. `Newtonsoft.Json`) and **Version** (e.g. `13.0.3`)
 3. Click **Install**
 
-The package is saved to `data/nuget-packages.json`. On next C# or F# cell execution, Arima prepends:
+The package is saved to `data/nuget-packages.json`. On next C# or F# cell execution, Arima Notebooks prepends:
 ```
 #r "nuget: Newtonsoft.Json, 13.0.3"
 ```
@@ -911,9 +911,9 @@ Click **Generate Notebook** to have the active AI provider create a complete not
 
 ## Agentic Workflows — Use, Customize, Contribute
 
-Arima assumes an AI partner is in your loop and gives you three surfaces to work from. Pick whichever fits the moment.
+Arima Notebooks assumes an AI partner is in your loop and gives you three surfaces to work from. Pick whichever fits the moment.
 
-### Surface 1 — The AI panel inside Arima (use)
+### Surface 1 — The AI panel inside Arima Notebooks (use)
 
 For *this notebook, right now*. Generate cells, explain output, convert between languages, ask why something failed. Attach a cell with the 🤖 button so the AI sees the actual code. Code blocks in responses have an **Insert into notebook** button.
 
@@ -922,9 +922,9 @@ For *this notebook, right now*. Generate cells, explain output, convert between 
 - *"Convert the selected Java cell to TypeScript."* (then **Insert into notebook**)
 - *"Why is the pipeline saying `clean-data` is stale? Look at the dependency chain."*
 
-### Surface 2 — Your AI CLI in the Arima repo (customize)
+### Surface 2 — Your AI CLI in the Arima Notebooks repo (customize)
 
-For *Arima itself*. Open `claude`, `copilot`, or `agy` (Antigravity) inside the cloned repo. The agent reads [`AGENTS.md`](../AGENTS.md) for the architecture rules and edits the right files. Most one-feature changes take under an hour.
+For *Arima Notebooks itself*. Open `claude`, `copilot`, or `agy` (Antigravity) inside the cloned repo. The agent reads [`AGENTS.md`](../AGENTS.md) for the architecture rules and edits the right files. Most one-feature changes take under an hour.
 
 **Try:**
 - *"Add a 'Export as Markdown' button to the notebook toolbar. New endpoint, new UI button, update `docs/API.md`."*
@@ -935,9 +935,9 @@ When you're happy, close the contribution loop with one more prompt:
 
 > *"Run `pwsh ./scripts/security-check.ps1`, then push the branch and open a PR back to upstream with a clear description."*
 
-### Surface 3 — Any MCP-aware agent (drive Arima programmatically)
+### Surface 3 — Any MCP-aware agent (drive Arima Notebooks programmatically)
 
-Arima publishes itself as an [MCP](https://modelcontextprotocol.io) server. Add it to Claude Code, Claude Desktop, or any MCP-aware agent and you can drive notebooks from outside the UI.
+Arima Notebooks publishes itself as an [MCP](https://modelcontextprotocol.io) server. Add it to Claude Code, Claude Desktop, or any MCP-aware agent and you can drive notebooks from outside the UI.
 
 | MCP tool | What it does |
 |---|---|
@@ -948,10 +948,10 @@ Arima publishes itself as an [MCP](https://modelcontextprotocol.io) server. Add 
 | `barista_load_module` | Load `notebookId/anchor` into a session for cross-notebook reuse |
 
 **Try (from inside Claude Desktop, after MCP setup):**
-- *"Create a Arima notebook that explores yesterday's API latency data — one cell to load the parquet, one to plot the p95 over time, one to flag outliers. Run it."*
-- *"Read the `pricing-experiment` notebook in Arima and summarize what each cell does."*
+- *"Create a notebook in Arima Notebooks that explores yesterday's API latency data — one cell to load the parquet, one to plot the p95 over time, one to flag outliers. Run it."*
+- *"Read the `pricing-experiment` notebook in Arima Notebooks and summarize what each cell does."*
 
-The notebook is the shared artifact. You, the Arima UI, the AI panel, the CLI, and any MCP agent are all first-class users of it.
+The notebook is the shared artifact. You, the Arima Notebooks UI, the AI panel, the CLI, and any MCP agent are all first-class users of it.
 
 ---
 

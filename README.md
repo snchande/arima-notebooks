@@ -1,13 +1,13 @@
 # Arima Notebooks
 
-> **Interactive multi-language notebooks in your browser — Java, C++, C#, F#, JavaScript, TypeScript — with AI assistance**
+> **A modern, multi-language notebook for the agentic era — a cross-platform execution plane where people and AI agents collaborate on the same code**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-21%2B-orange.svg)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.3-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Version](https://img.shields.io/badge/version-3.2.0-informational.svg)](CHANGELOG.md)
 
-Arima Notebooks is a **locally-hosted, browser-based notebook environment** for seven languages — JShell, Java, JavaScript, TypeScript, C#, F#, and C++ — with three AI co-pilots (Claude, GitHub Copilot, Antigravity) wired in locally (Claude & Antigravity as CLI subprocesses, Copilot via the GitHub Copilot SDK — no API keys) and the **whole system exposed via MCP** so any agent can drive it programmatically.
+Arima Notebooks is part of the **Arima** platform. It is a **ground-up modernization of the notebook** — a locally-hosted, browser-based environment that treats many rich programming languages as equals and is built for a world where humans and AI agents work on code together. Seven languages run side by side today — JavaScript, TypeScript, C#, F#, C++, Java, and JShell — with more on the way. Three AI co-pilots (Claude, GitHub Copilot, Antigravity) are wired in locally (Claude & Antigravity as CLI subprocesses, Copilot via the GitHub Copilot SDK — no API keys), and the **whole system is exposed via MCP** so any agent can drive it programmatically. The notebook becomes a shared artifact: you, the UI, an AI co-pilot, and any MCP agent are all first-class users of it.
 
 No cloud account. No data sent anywhere. Runs entirely on your machine.
 
@@ -19,26 +19,27 @@ No cloud account. No data sent anywhere. Runs entirely on your machine.
 
 ---
 
-## Why Arima?
+## Why Arima Notebooks?
 
-Java developers have always been second-class citizens in the notebook world. Jupyter supports Python natively; everything else is a plugin or a workaround. Arima was built from the ground up for Java:
+The notebook changed how we explore ideas, prototype, and teach: write a little code, run it, see the result instantly. That tight feedback loop is one of the best ideas in software. But the notebook itself has barely evolved — while the world around it changed completely.
 
-- **JShell-native** — the official Java REPL, not a workaround
-- **Full class compilation** — switch any cell to full `javac` compile+run mode
-- **Maven built in** — install any Maven Central package in seconds; it's immediately on the classpath
-- **Real JVM** — no sandboxing, no limitations — it's your JDK
-- **JavaScript too** — Node.js cells for when you need it
-- **TypeScript built in** — TS cells via Node.js's built-in type-stripping (Node 22.6+); install `tsc` for full type-check diagnostics; shares npm modules with JavaScript
-- **C# and F# support** — .NET cells via `dotnet run` and `dotnet fsi`; install NuGet packages via the NuGet tab or inline `#r` directives
-- **C++ native** — compile and run C++ cells with MSVC, GCC, or Clang; 26 standard headers pre-included
-- **AI in the loop** — Claude, GitHub Copilot, or Antigravity generates, explains, and debugs code inline — locally, no API keys
-- **Offline by default** — your notebooks and code never leave your machine
+**Two shifts, in particular:**
+
+- **Real work is polyglot.** Teams move fluidly across many strong, statically-typed and systems languages — not just one. A notebook that privileges a single language is a notebook that's out of step.
+- **Code is now a team sport with AI.** Software is no longer written by people alone; humans and AI agents build it together, on the same artifact.
+
+Arima Notebooks was rethought from first principles for both. It isn't a single-language tool with others bolted on — it's a **shared, cross-platform execution plane for code**, where many languages run side by side and where people and agents collaborate on the very same living document.
+
+- **Every language is first-class** — JavaScript, TypeScript, C#, F#, C++, Java, and JShell today, with more to come. Real compilation, real dependencies, real tooling for each — none of them a plugin, none an afterthought.
+- **Humans and agents, together** — a built-in AI co-pilot, plus full MCP access, so any external agent can drive the same notebook you're editing. You learn faster, adapt faster, and reach a working result together.
+- **Local-first** — your notebooks and code never leave your machine. No cloud account, no sign-up.
+- **Open source, built to be reshaped** — use it, extend it, add a language, bring your own tools, and contribute back to shape where the notebook goes next.
 
 ---
 
 ## Built for the Agentic Era
 
-Arima is designed to be **used**, **customized**, and **contributed back to** — entirely through agentic prompts. The product, the docs, and the contribution workflow all assume an AI partner is in your loop.
+Arima Notebooks is designed to be **used**, **customized**, and **contributed back to** — entirely through agentic prompts. The product, the docs, and the contribution workflow all assume an AI partner is in your loop.
 
 ### The Agentic Cycle
 
@@ -54,9 +55,9 @@ Three surfaces, one workflow:
 
 | Surface | What you do | How AI helps |
 |---|---|---|
-| **Arima UI** | Write and run cells | The built-in **Arima Agentic Assistant (AAA)** (Claude / Copilot / Antigravity) generates cells, explains errors, converts between languages, and can update the focused cell directly (with one-click Undo) |
-| **Your terminal** | `claude` / `copilot` / `agy` inside the Arima repo | Reshape Arima itself — add a language, change a theme, fix a bug, write a tutorial |
-| **Any MCP-aware agent** | Claude Code, Claude Desktop, custom agents | Drive Arima over MCP — create notebooks, add cells, run pipelines, install packages programmatically |
+| **Arima Notebooks UI** | Write and run cells | The built-in **Arima Agentic Assistant (AAA)** (Claude / Copilot / Antigravity) generates cells, explains errors, converts between languages, and can update the focused cell directly (with one-click Undo) |
+| **Your terminal** | `claude` / `copilot` / `agy` inside the Arima Notebooks repo | Reshape Arima Notebooks itself — add a language, change a theme, fix a bug, write a tutorial |
+| **Any MCP-aware agent** | Claude Code, Claude Desktop, custom agents | Drive Arima Notebooks over MCP — create notebooks, add cells, run pipelines, install packages programmatically |
 
 ### Sample Agentic Prompts
 
@@ -65,7 +66,7 @@ Three surfaces, one workflow:
 - *"Convert this Java stream pipeline to a C# LINQ query."* (then click **Insert into notebook**)
 - *"Why is this cell's output empty? Look at the dependency chain."*
 
-**While customizing Arima itself (in your terminal, inside the repo):**
+**While customizing Arima Notebooks itself (in your terminal, inside the repo):**
 - *"Add an Excel export option for notebooks — a button in the toolbar that downloads the current notebook as `.xlsx`."*
 - *"The dark theme is too contrasty. Tweak `arima.css` so the cell borders are softer."*
 - *"Add a tutorial notebook `java-701.vnb` covering Java 21 virtual threads — five cells, beginner-friendly."*
@@ -94,7 +95,7 @@ The bar to **customize for yourself** and the bar to **contribute back** become 
 | **Pipeline Orchestration** | Chain cells with `//@ depends:` annotations — works across all 7 languages |
 | **Multi-provider AI** | Claude · GitHub Copilot · Antigravity — local (CLI + Copilot SDK), no API key needed |
 | **AI Language Conversion** | Switch a cell's language and AI converts the code automatically |
-| **MCP Server** | Expose Arima as an MCP tool server for Claude Code, Claude Desktop, and custom agents |
+| **MCP Server** | Expose Arima Notebooks as an MCP tool server for Claude Code, Claude Desktop, and custom agents |
 | **Built-in Data Science** | XChart · Commons Math · Tablesaw · simple-statistics · mathjs — pre-installed |
 | **Tutorial Library** | 28 built-in tutorials across JShell, Java, JavaScript, TypeScript, C#, F#, and C++ |
 | **Interactive Console** | Full REPL console with tab completion |
@@ -128,7 +129,7 @@ git clone https://github.com/snchande/arima-notebooks.git
 cd arima-notebooks
 ```
 
-### Step 2 — Start Arima
+### Step 2 — Start Arima Notebooks
 
 Pick the CLI for your shell — all three accept the same subcommands (`start`, `stop`, `status`, `build`, `rebuild`, `open`, `logs`, `version`, `help`):
 
@@ -172,7 +173,7 @@ The `arima` CLI opens this automatically on every platform.
 
 ### Step 4 — (Optional) Enable AI features
 
-Arima supports three AI providers — all local, no API key needed. Claude & Antigravity run as CLI subprocesses; Copilot runs through the **GitHub Copilot SDK**, which drives the local `copilot` CLI:
+Arima Notebooks supports three AI providers — all local, no API key needed. Claude & Antigravity run as CLI subprocesses; Copilot runs through the **GitHub Copilot SDK**, which drives the local `copilot` CLI:
 
 | Provider | Install | Auth |
 |----------|---------|------|
@@ -207,7 +208,7 @@ Each code cell has a **mode button** (top-right of the cell) that cycles between
 | **F#** | `◈ F#` | Runs as an F# script via `dotnet fsi`. Inline `#r "nuget:"` directives supported. |
 | **C++** | `◈ C++` | Compiled and run with MSVC/GCC/Clang. 26 standard headers pre-included. |
 
-When you switch a cell's language, Arima offers to **convert the existing code** using AI.
+When you switch a cell's language, Arima Notebooks offers to **convert the existing code** using AI.
 
 **To run a cell:** Click **Run** or press `Ctrl+Enter`.
 
@@ -298,7 +299,7 @@ Click **Run with Dependencies** on any cell to automatically execute its full de
 
 ## Tutorial Library
 
-Arima ships with 28 built-in tutorials. Open the Notebook Browser and click **Arima Tutorials**.
+Arima Notebooks ships with 28 built-in tutorials. Open the Notebook Browser and click **Arima Tutorials**.
 
 | ID | Title | Mode | Level |
 |----|-------|------|-------|
@@ -335,7 +336,7 @@ Tutorials open in **read-only mode** — your personal notebooks are separate.
 
 ---
 
-## Arima CLI
+## Arima Notebooks CLI
 
 Three launchers sit in the project root — pick whichever matches your shell. They all expose the same subcommands and share the same banner:
 

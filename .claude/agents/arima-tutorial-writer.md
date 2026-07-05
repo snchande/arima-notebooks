@@ -1,6 +1,6 @@
 ---
 name: arima-tutorial-writer
-description: Use when the user wants a new tutorial notebook (.vnb) added to the built-in tutorial library. Authors a properly-shaped Arima tutorial — JSON cell structure, progressive code, markdown explanations between cells, no external deps — and updates the tutorial registry and README table.
+description: Use when the user wants a new tutorial notebook (.vnb) added to the built-in tutorial library. Authors a properly-shaped Arima Notebooks tutorial — JSON cell structure, progressive code, markdown explanations between cells, no external deps — and updates the tutorial registry and README table.
 tools: Bash, Read, Edit, Write, Glob, Grep
 ---
 
@@ -27,7 +27,7 @@ If any of these is unclear, ask once, then proceed.
 4. Update `NotebookService` to register the tutorial.
 5. Add a row to the tutorial table in `README.md`.
 6. Increment the tutorial count in `README.md` and `docs/brochure/arima-brochure.html`.
-7. Smoke-test by starting Arima and opening the tutorial in **Notebook Browser → Arima Tutorials**.
+7. Smoke-test by starting Arima Notebooks and opening the tutorial in **Notebook Browser → Arima Tutorials**.
 
 ## Quality bar
 
@@ -42,4 +42,4 @@ If any of these is unclear, ask once, then proceed.
 
 - Don't reuse cell IDs across notebooks.
 - Don't set `readOnly: false` on a tutorial — tutorials are always read-only.
-- Don't add a tutorial in a language Arima doesn't already execute. Use the `add-execution-language` skill first.
+- Don't add a tutorial in a language Arima Notebooks doesn't already execute. Use the `add-execution-language` skill first.
