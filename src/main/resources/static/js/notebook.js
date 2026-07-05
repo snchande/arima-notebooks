@@ -588,6 +588,8 @@ const NotebookEditor = (() => {
     const container = document.getElementById('cells-container');
     container.innerHTML = '';
     editors = {};
+    // Agent/skill notebooks get an authoring banner + run dock (agent.js); normal notebooks clear it.
+    if (window.Agent) Agent.onNotebookLoaded(notebook);
     if (!notebook?.cells?.length) {
       container.innerHTML = `<div class="empty-state">
         <div class="empty-icon"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="6" width="32" height="36" rx="3" stroke="currentColor" stroke-width="2"/><path d="M16 16h16M16 22h16M16 28h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>

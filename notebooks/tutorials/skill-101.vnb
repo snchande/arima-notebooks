@@ -1,0 +1,28 @@
+{
+  "id" : "skill-101",
+  "name" : "Skill 101 · Commit Message",
+  "description" : "Beginner skill — turns a description of a change into a clean Conventional Commits message. Exports to .claude/skills/.",
+  "metadata" : {
+    "kind" : "skill",
+    "category" : "tutorial",
+    "subcategory" : "Agents & Skills",
+    "language" : "agent",
+    "level" : 101,
+    "agent" : { "provider" : "claude", "tools" : [] }
+  },
+  "cells" : [ {
+    "id" : "s101-role",
+    "type" : "MARKDOWN",
+    "mode" : "jshell",
+    "source" : "# Commit message writer\n\nGiven a description of a change (or a diff), write a single [Conventional Commits](https://www.conventionalcommits.org/) message.\n\nUse it when the user says \"write a commit message\" / \"commit this\".",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "s101-rules",
+    "type" : "MARKDOWN",
+    "mode" : "jshell",
+    "source" : "## Rules\n\n- Format: `type(scope): subject` — scope optional.\n- **type** ∈ feat · fix · docs · refactor · test · chore · perf · build.\n- Subject: imperative mood, lower-case, no trailing period, ≤ 72 chars.\n- Add a body only when the *why* isn't obvious from the subject — wrap at 72 cols.\n- Note breaking changes with a `BREAKING CHANGE:` footer.\n\nOutput only the commit message — no preamble, no code fences.",
+    "output" : "",
+    "executed" : false
+  } ]
+}
