@@ -3549,6 +3549,85 @@ table.barista-df th { position: relative; padding-bottom: 14px; }
   white-space: pre-wrap; word-break: break-word;
 }
 
+/* ── Agents tab (the Arena) ─────────────────────────────────────────── */
+.agents-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.agents-head-actions { display: flex; gap: 8px; flex-shrink: 0; }
+#agents-refresh { padding: 6px 11px; }
+
+.agents-section { margin-top: 22px; }
+.agents-subhead {
+  font-family: var(--font-code); font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 12px;
+}
+.agents-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;
+}
+.agents-empty { color: var(--text-3); font-size: 13px; padding: 8px 0; grid-column: 1 / -1; }
+
+.agent-card {
+  display: flex; flex-direction: column; gap: 9px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-2); padding: 14px; transition: border-color .15s;
+}
+.agent-card:hover { border-color: var(--purple); }
+.agent-card.running { border-color: var(--purple); box-shadow: 0 0 0 1px var(--purple); }
+.agent-card-top { display: flex; align-items: center; gap: 8px; }
+.agent-card-name {
+  font-size: 14px; font-weight: 650; color: var(--text-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.agent-card-desc { font-size: 12.5px; color: var(--text-2); line-height: 1.4; min-height: 18px; }
+.agent-card-desc .muted { color: var(--text-3); font-style: italic; }
+.agent-card-tools { display: flex; flex-wrap: wrap; gap: 5px; }
+.agent-card-tool {
+  font-family: var(--font-code); font-size: 10.5px; color: var(--text-2);
+  background: var(--surface-3); border: 1px solid var(--border); border-radius: 5px; padding: 1px 7px;
+}
+.agent-card-meta {
+  display: flex; align-items: center; gap: 10px; margin-top: auto;
+  font-family: var(--font-code); font-size: 11px; color: var(--text-3);
+}
+.agent-card-prov { color: var(--purple); }
+.agent-card-prov.off { color: var(--text-3); text-decoration: line-through; }
+.agent-card-actions { display: flex; gap: 8px; }
+.agent-card-actions button { flex: 1; padding: 6px 10px; font-size: 12px; }
+
+.agent-card-run-box {
+  border-top: 1px solid var(--border); margin-top: 2px; padding-top: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.agent-card-task {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  background: var(--surface-3); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-1); font-family: var(--font-code); font-size: 12.5px; padding: 8px;
+}
+.agent-card-task:focus { outline: none; border-color: var(--purple); }
+.agent-card-run-actions { display: flex; align-items: center; gap: 8px; }
+.agent-card-run-actions button { padding: 5px 12px; font-size: 12px; }
+.agent-card-status { font-family: var(--font-code); font-size: 11px; color: var(--text-3); margin-left: auto; }
+.agent-card-output {
+  margin: 0; padding: 10px; max-height: 32vh; overflow: auto;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 6px;
+  font-family: var(--font-code); font-size: 12px; color: var(--text-1);
+  white-space: pre-wrap; word-break: break-word;
+}
+
+.agents-running {
+  margin-top: 18px; padding: 12px 14px;
+  border: 1px solid var(--purple); border-radius: 10px; background: rgba(192,132,252,.06);
+}
+.agents-running-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.agents-running-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--font-code); font-size: 12px; color: var(--text-1);
+  background: var(--surface-3); border: 1px solid var(--purple); border-radius: 999px; padding: 3px 12px;
+}
+.agents-run-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--purple);
+  animation: agents-pulse 1s ease-in-out infinite;
+}
+@keyframes agents-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
 /* Notice shown when a very large output is trimmed for display */
 .cell-output-trim-note {
   margin: 0 0 6px; padding: 4px 8px;
