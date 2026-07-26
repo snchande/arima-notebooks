@@ -322,7 +322,11 @@ An "agent notebook" is a normal notebook with `metadata.kind = "agent" | "skill"
 concatenated, are the system prompt; `metadata.agent.tools` holds declared tools (agents only). Each
 provider (Claude in v0) knows how to **run** it (invoke the CLI, streaming output over the STOMP topic
 `/topic/shell/{sessionId}` as `partial_output` with `cellId = "__agent_run__"`) and **export** it to that
-CLI's native files. Built-in samples: `agent-101`, `agent-201`, `agent-301`, `skill-101`.
+CLI's native files. Built-in samples: `agent-101`, `agent-201`, `agent-301`, `agent-401`
+(reviewer in a pipeline), `agent-501` (multi-agent review), `agent-601` (MCP-driven), `skill-101`.
+
+Agents are also reachable over **MCP** — `barista_list_agents` enumerates them and `barista_run_agent`
+runs one by id — so any MCP client can compose the same agents you author here (see the MCP section).
 
 ### Provider availability
 ```
@@ -791,6 +795,8 @@ Handles JSON-RPC 2.0 messages.
 | `barista_load_module` | `notebookRef` | Load `notebookId/anchor` into session |
 | `barista_create_notebook` | `name` | Create new notebook with optional cells |
 | `barista_append_cell` | `notebookId`, `source` | Append a cell, optionally execute |
+| `barista_list_agents` | *(none)* | List agent & skill definitions (yours + samples) |
+| `barista_run_agent` | `agentId`, `task` | Run an agent/skill against a task, return its response |
 
 ---
 

@@ -1,0 +1,35 @@
+{
+  "id" : "agent-601",
+  "name" : "Agent 601 · MCP-driven Agent",
+  "description" : "Capstone — an agent authored in Arima, driven from an external MCP client via barista_list_agents + barista_run_agent. Compose Arima agents from Claude Desktop, Claude Code, or any MCP-aware tool.",
+  "metadata" : {
+    "kind" : "agent",
+    "category" : "tutorial",
+    "subcategory" : "Agents & Skills",
+    "language" : "agent",
+    "level" : 601,
+    "agent" : { "provider" : "claude", "tools" : [] }
+  },
+  "cells" : [ {
+    "id" : "a601-tutorial",
+    "type" : "MARKDOWN",
+    "mode" : "jshell",
+    "source" : "# Agent 601 · MCP-driven Agent\n\nThe first five lessons authored and ran agents **inside** Arima. This capstone shows the other direction: driving an Arima agent **from the outside**, over MCP, so any MCP-aware client (Claude Desktop, Claude Code, a custom agent loop) can list and run the agents you author here.\n\nArima's MCP server exposes two agent tools:\n\n- **`barista_list_agents`** — enumerate every agent & skill (your notebooks + the built-in samples). Each entry returns the `id` to run.\n- **`barista_run_agent`** — run one by `id` against a `task`, returning its response.\n\n### The flow from an external client\n\n```\n1. tools/call  barista_list_agents            → find \"agent-601\"\n2. tools/call  barista_run_agent {\n     \"agentId\": \"agent-601\",\n     \"task\": \"<the content to brief on>\"\n   }                                            → returns this agent's response\n```\n\nBecause an agent is just a notebook, the agent you drive over MCP is the *same* definition you edit in the Agents tab — one source of truth, whether a human or an external agent invokes it. This is the composition seam: an outer agent loop can chain `barista_run_pipeline` → `barista_run_agent` to mix code and reasoning across the boundary.\n\nThe cells below are this agent's system prompt.",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "a601-role",
+    "type" : "MARKDOWN",
+    "mode" : "jshell",
+    "source" : "# Role\n\nYou are a concise technical briefer. You are given some content — a code snippet, a pipeline's output, a diff, or notes — and you produce a short, decision-ready brief for a busy engineer.\n\nAlways:\n- Lead with a one-line **bottom line** — what this is and whether it looks healthy.\n- Give at most three **key points**, each a single sentence.\n- Surface any **risk or follow-up** you'd want a human to check, or say \"none obvious\".\n\nStay under ~120 words. No preamble, no restating the input.",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "a601-format",
+    "type" : "MARKDOWN",
+    "mode" : "jshell",
+    "source" : "## Output format\n\n**Bottom line:** <one sentence>\n\n**Key points:**\n1. …\n2. …\n\n**Risk / follow-up:** <what to check, or \"none obvious\">",
+    "output" : "",
+    "executed" : false
+  } ]
+}
