@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.barista.model.Cell;
 import com.barista.model.ExecutionResult;
 import com.barista.model.Notebook;
+import com.barista.service.AgentService;
 import com.barista.service.NotebookService;
 import com.barista.service.OrchestrationService;
 import com.barista.service.PackageService;
@@ -47,6 +48,8 @@ import java.util.stream.Collectors;
  *   barista_load_module        — Load a named cell module from a notebook into a session
  *   barista_create_notebook    — Create a new notebook, optionally pre-populated with cells
  *   barista_append_cell        — Append a new cell to an existing notebook and optionally execute it
+ *   barista_list_agents        — List agent & skill definitions (user notebooks + built-in samples)
+ *   barista_run_agent          — Run an agent/skill against a task and return its response
  */
 @RestController
 @RequestMapping("/api/mcp")
@@ -65,6 +68,7 @@ public class McpController {
     private final OrchestrationService orchestrationService;
     private final PackageService packageService;
     private final UserService userService;
+    private final AgentService agentService;
     private final ObjectMapper objectMapper;
 
     public McpController(NotebookService notebookService,
@@ -72,12 +76,14 @@ public class McpController {
                           OrchestrationService orchestrationService,
                           PackageService packageService,
                           UserService userService,
+                          AgentService agentService,
                           ObjectMapper objectMapper) {
         this.notebookService = notebookService;
         this.jShellManager = jShellManager;
         this.orchestrationService = orchestrationService;
         this.packageService = packageService;
         this.userService = userService;
+        this.agentService = agentService;
         this.objectMapper = objectMapper;
     }
 
@@ -284,6 +290,24 @@ public class McpController {
                     ),
                     "required", List.of("notebookId", "source")
                 )
+            ),
+            toolDef("barista_list_agents",
+                "List agent & skill definitions available in Arima (the user's own agent notebooks "
+                    + "plus built-in samples). Each entry gives the id to pass to barista_run_agent.",
+                Map.of("type", "object", "properties", Map.of())
+            ),
+            toolDef("barista_run_agent",
+                "Run an Arima agent or skill against a task and return its response. The agentId is a "
+                    + "notebook id or a built-in sample id (e.g. agent-101). Compose agents from any MCP client.",
+                Map.of(
+                    "type", "object",
+                    "properties", Map.of(
+                        "agentId",  Map.of("type", "string", "description", "Agent/skill id (notebook id or sample, e.g. agent-201)"),
+                        "task",     Map.of("type", "string", "description", "The task or input to give the agent"),
+                        "provider", Map.of("type", "string", "description", "AI provider key (default: the agent's own, else claude)")
+                    ),
+                    "required", List.of("agentId", "task")
+                )
             )
         );
         return Map.of("tools", tools);
@@ -309,6 +333,8 @@ public class McpController {
             case "barista_load_module"    -> toolLoadModule(args);
             case "barista_create_notebook" -> toolCreateNotebook(args);
             case "barista_append_cell"    -> toolAppendCell(args);
+            case "barista_list_agents"    -> toolListAgents();
+            case "barista_run_agent"      -> toolRunAgent(args);
             default -> throw new McpException(-32602, "Unknown tool: " + toolName);
         };
 
@@ -634,6 +660,52 @@ public class McpController {
         }
 
         return sb.toString().stripTrailing();
+    }
+
+    @SuppressWarnings("unchecked")
+    private String toolListAgents() {
+        List<Map<String, Object>> agents = agentService.list();
+        if (agents.isEmpty()) {
+            return "No agents or skills found. Create one via the Agents tab or POST /api/agents/create.";
+        }
+        StringBuilder sb = new StringBuilder("Available agents & skills:\n\n");
+        for (Map<String, Object> a : agents) {
+            sb.append("ID:       ").append(a.get("id")).append("\n");
+            sb.append("Name:     ").append(a.get("name")).append("\n");
+            sb.append("Kind:     ").append(a.get("kind")).append("\n");
+            if (a.get("description") != null) {
+                sb.append("Desc:     ").append(a.get("description")).append("\n");
+            }
+            sb.append("Provider: ").append(a.get("provider")).append("\n");
+            Object tools = a.get("tools");
+            if (tools instanceof List<?> l && !l.isEmpty()) {
+                sb.append("Tools:    ").append(l.stream().map(String::valueOf).collect(Collectors.joining(", "))).append("\n");
+            }
+            sb.append("Source:   ").append(a.get("source")).append("\n\n");
+        }
+        return sb.toString().stripTrailing();
+    }
+
+    private String toolRunAgent(Map<String, Object> args) throws McpException {
+        String agentId = (String) args.get("agentId");
+        if (agentId == null || agentId.isBlank()) {
+            throw new McpException(-32602, "Parameter 'agentId' is required");
+        }
+        String task = args.containsKey("task") ? (String) args.get("task") : "";
+        if (task == null || task.isBlank()) {
+            throw new McpException(-32602, "Parameter 'task' is required");
+        }
+        String provider = args.containsKey("provider") ? (String) args.get("provider") : null;
+
+        try {
+            // sessionId null → AgentService streams to the notebook's own topic (no MCP subscriber),
+            // and returns the final response, which is what we hand back to the MCP client.
+            String output = agentService.run(agentId, task, provider, null);
+            return "Agent: " + agentId + "\nStatus: SUCCESS\n\n" + output;
+        } catch (Exception e) {
+            throw new McpException(-32603, "Agent run failed: "
+                    + (e.getMessage() == null ? e.toString() : e.getMessage()));
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
