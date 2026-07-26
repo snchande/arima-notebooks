@@ -1184,6 +1184,17 @@ a:hover { text-decoration: underline; }
   background: rgba(92,207,207,.12); color: var(--teal);
 }
 
+/* Agent invocation cell — purple, matching the agent identity */
+.cell.mode-agent { border-color: rgba(192,132,252,.35); }
+.cell.mode-agent::before { background: var(--purple); }
+.cell.mode-agent .mode-toggle-btn {
+  color: var(--purple); background: rgba(192,132,252,.12);
+  border-color: rgba(192,132,252,.4);
+}
+.cell.mode-agent .cell-badge.code {
+  background: rgba(192,132,252,.14); color: var(--purple);
+}
+
 /* ══════════════════════════════════════════════════════
    PIPELINE CELLS & CELL ORCHESTRATION
    ══════════════════════════════════════════════════════ */

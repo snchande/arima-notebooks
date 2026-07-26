@@ -1,0 +1,54 @@
+{
+  "id" : "agent-401",
+  "name" : "Agent 401 · Reviewer in a Pipeline",
+  "description" : "Interwork — a Java cell feeds an agent cell, which binds its answer back for a final Java cell. Run the pipeline.",
+  "metadata" : {
+    "category" : "tutorial",
+    "subcategory" : "Agents & Skills",
+    "language" : "agent",
+    "level" : 401
+  },
+  "cells" : [ {
+    "id" : "a401-md",
+    "type" : "MARKDOWN",
+    "mode" : "jshell",
+    "source" : "# Agent 401 · Reviewer in a Pipeline\n\nCode and agents are steps in the **same** workflow. Below:\n\n1. a **Java** cell (`sample-code`) prints a snippet,\n2. an **Agent** cell (`review`) runs the `agent-201` Code Reviewer on it — pulling the snippet in with `{{sample-code}}` and binding the answer to a `reviewText` variable,\n3. a **Java** cell (`report`) reads `reviewText`.\n\nRun the **pipeline** cell at the bottom to execute all three in order.",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "a401-code",
+    "type" : "CODE",
+    "mode" : "jshell",
+    "anchor" : "sample-code",
+    "source" : "//@ anchor: sample-code\nString snippet = \"\"\"\n    int sum(int[] xs) {\n        int s = 0;\n        for (int i = 0; i <= xs.length; i++) s += xs[i];  // off-by-one\n        return s;\n    }\n    \"\"\";\nSystem.out.println(snippet);",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "a401-review",
+    "type" : "CODE",
+    "mode" : "agent",
+    "anchor" : "review",
+    "dependsOn" : [ "sample-code" ],
+    "source" : "//@ anchor: review\n//@ depends: sample-code\n//@ agent: agent-201\n//@ bind: reviewText\nReview this Java method for correctness bugs. Be concise.\n\n{{sample-code}}",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "a401-report",
+    "type" : "CODE",
+    "mode" : "jshell",
+    "anchor" : "report",
+    "dependsOn" : [ "review" ],
+    "source" : "//@ anchor: report\n//@ depends: review\nSystem.out.println(\"=== Reviewer findings ===\");\nSystem.out.println(reviewText);",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "a401-pipe",
+    "type" : "PIPELINE",
+    "mode" : "jshell",
+    "anchor" : "review-pipeline",
+    "pipelineSteps" : [ "sample-code", "review", "report" ],
+    "source" : "//@ pipeline: Review Pipeline\n//@ steps: sample-code, review, report",
+    "output" : "",
+    "executed" : false
+  } ]
+}

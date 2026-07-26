@@ -26,7 +26,7 @@ const NotebookEditor = (() => {
 
   /* ── Mode helpers ─────────────────────────────────── */
   function modeLabelFor(mode) {
-    return { jshell:'JShell', java:'Java', nodejs:'JS', typescript:'TS', csharp:'C#', fsharp:'F#', cpp:'C++' }[mode] || 'JShell';
+    return { jshell:'JShell', java:'Java', nodejs:'JS', typescript:'TS', csharp:'C#', fsharp:'F#', cpp:'C++', agent:'Agent' }[mode] || 'JShell';
   }
   function _baseCmMode(mode) {
     if (mode === 'nodejs')     return 'text/javascript';
@@ -34,6 +34,7 @@ const NotebookEditor = (() => {
     if (mode === 'csharp')     return 'text/x-csharp';
     if (mode === 'fsharp')     return 'text/x-fsharp';
     if (mode === 'cpp')        return 'text/x-c++src';
+    if (mode === 'agent')      return 'text/plain';
     return 'text/x-java';
   }
   function cmModeFor(mode) {
@@ -680,7 +681,7 @@ const NotebookEditor = (() => {
         ${(isCode || isPipeline) ? anchorBadge : ''}
         <div class="cell-actions">
           ${isCode ? `
-          <button class="mode-toggle-btn" id="mode-btn-${cell.id}" title="Cycle mode: JShell → Java → JS → TS → C# → F# → C++ → JShell">
+          <button class="mode-toggle-btn" id="mode-btn-${cell.id}" title="Cycle mode: JShell → Java → JS → TS → C# → F# → C++ → Agent → JShell">
             <span class="mode-label">${modeLabelFor(cell.mode)}</span>
           </button>
           <button class="cell-btn run-to-deps-btn" id="run-deps-btn-${cell.id}" title="Run with dependencies — uses cached output for already-run deps" style="display:none">
@@ -1056,7 +1057,7 @@ const NotebookEditor = (() => {
     const modeBtn = div.querySelector(`#mode-btn-${cell.id}`);
     modeBtn?.addEventListener('click', e => {
       e.stopPropagation();
-      const modeOrder = ['jshell', 'java', 'nodejs', 'typescript', 'csharp', 'fsharp', 'cpp'];
+      const modeOrder = ['jshell', 'java', 'nodejs', 'typescript', 'csharp', 'fsharp', 'cpp', 'agent'];
       const oldMode = cell.mode;
       const idx = modeOrder.indexOf(cell.mode);
       cell.mode = modeOrder[(idx + 1) % modeOrder.length];
@@ -1776,6 +1777,7 @@ const NotebookEditor = (() => {
       const result = await Arima.api('POST', '/shell/execute', {
         sessionId,
         code: cell.source, cellId, mode: cell.mode || 'jshell',
+        notebookId: notebook?.id || '',
         stdin: ''
       });
 

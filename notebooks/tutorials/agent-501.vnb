@@ -1,0 +1,63 @@
+{
+  "id" : "agent-501",
+  "name" : "Agent 501 · Multi-Agent Review",
+  "description" : "Two agents on one input — Explain (agent-101) and Review (agent-201) fan out from a Java cell, then a Java cell combines both. Run the pipeline.",
+  "metadata" : {
+    "category" : "tutorial",
+    "subcategory" : "Agents & Skills",
+    "language" : "agent",
+    "level" : 501
+  },
+  "cells" : [ {
+    "id" : "a501-md",
+    "type" : "MARKDOWN",
+    "mode" : "jshell",
+    "source" : "# Agent 501 · Multi-Agent Review\n\nA single input drives **two** agents in parallel steps, then a Java cell merges their answers:\n\n- `code-input` (Java) prints a snippet.\n- `explain` (Agent · agent-101) explains it → binds `explanation`.\n- `review`  (Agent · agent-201) reviews it → binds `reviewNotes`.\n- `combine` (Java) prints both.\n\nRun the **pipeline** to see code and multiple agents interwork in one graph.",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "a501-input",
+    "type" : "CODE",
+    "mode" : "jshell",
+    "anchor" : "code-input",
+    "source" : "//@ anchor: code-input\nString code = \"\"\"\n    boolean isPrime(int n) {\n        if (n < 2) return false;\n        for (int i = 2; i < n; i++) if (n % i == 0) return false;\n        return true;\n    }\n    \"\"\";\nSystem.out.println(code);",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "a501-explain",
+    "type" : "CODE",
+    "mode" : "agent",
+    "anchor" : "explain",
+    "dependsOn" : [ "code-input" ],
+    "source" : "//@ anchor: explain\n//@ depends: code-input\n//@ agent: agent-101\n//@ bind: explanation\nExplain this method in two short sentences:\n\n{{code-input}}",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "a501-review",
+    "type" : "CODE",
+    "mode" : "agent",
+    "anchor" : "review",
+    "dependsOn" : [ "code-input" ],
+    "source" : "//@ anchor: review\n//@ depends: code-input\n//@ agent: agent-201\n//@ bind: reviewNotes\nReview this method for correctness and efficiency, briefly:\n\n{{code-input}}",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "a501-combine",
+    "type" : "CODE",
+    "mode" : "jshell",
+    "anchor" : "combine",
+    "dependsOn" : [ "explain", "review" ],
+    "source" : "//@ anchor: combine\n//@ depends: explain, review\nSystem.out.println(\"--- Explanation ---\\n\" + explanation);\nSystem.out.println(\"\\n--- Review ---\\n\" + reviewNotes);",
+    "output" : "",
+    "executed" : false
+  }, {
+    "id" : "a501-pipe",
+    "type" : "PIPELINE",
+    "mode" : "jshell",
+    "anchor" : "multi-agent-review",
+    "pipelineSteps" : [ "code-input", "explain", "review", "combine" ],
+    "source" : "//@ pipeline: Multi-Agent Review\n//@ steps: code-input, explain, review, combine",
+    "output" : "",
+    "executed" : false
+  } ]
+}
