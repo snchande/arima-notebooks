@@ -3,6 +3,7 @@ package com.barista.controller;
 import com.barista.model.ExecutionResult;
 import com.barista.model.Notebook;
 import com.barista.model.PackageInfo;
+import com.barista.service.AgentService;
 import com.barista.service.CppExecutionService;
 import com.barista.service.DotNetExecutionService;
 import com.barista.service.InteractiveIO;
@@ -63,6 +64,7 @@ public class ShellController {
     private final OrchestrationService orchestrationService;
     private final NotebookService notebookService;
     private final UserService userService;
+    private final AgentService agentService;
     private final SimpMessagingTemplate messagingTemplate;
 
     /** Per-session "stop the running cell" hook, registered while a cell executes. */
@@ -78,6 +80,7 @@ public class ShellController {
                            OrchestrationService orchestrationService,
                            NotebookService notebookService,
                            UserService userService,
+                           AgentService agentService,
                            SimpMessagingTemplate messagingTemplate) {
         this.jShellManager = jShellManager;
         this.packageService = packageService;
@@ -89,6 +92,7 @@ public class ShellController {
         this.orchestrationService = orchestrationService;
         this.notebookService = notebookService;
         this.userService = userService;
+        this.agentService = agentService;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -99,6 +103,8 @@ public class ShellController {
         String code      = body.get("code");
         String cellId    = body.get("cellId");
         String mode      = body.getOrDefault("mode", "jshell");
+        // Optional: host notebook id — lets an agent cell resolve {{anchor}} inputs.
+        String notebookId = body.get("notebookId");
         // Optional stdin: newline-separated lines the user typed in the cell's Stdin panel
         String stdin     = body.getOrDefault("stdin", "");
 
@@ -130,6 +136,16 @@ public class ShellController {
             } else if ("cpp".equals(mode)) {
                 result = runInteractiveSubprocess(sessionId, cellId, stdin,
                         () -> cppExecutionService.execute(sessionId, cellId, code));
+            } else if ("agent".equals(mode)) {
+                // Agent invocation cell — needs a JShell session so //@ bind can inject a variable.
+                if (!jShellManager.hasSession(sessionId)) {
+                    jShellManager.getOrCreateSession(sessionId);
+                    packageService.applyPackagesToSession(sessionId);
+                }
+                Notebook host = notebookId == null ? null
+                        : notebookService.getNotebook(notebookId, userService.getCurrentUser().getId())
+                                .or(() -> notebookService.getTutorial(notebookId)).orElse(null);
+                result = agentService.runAgentCell(host, code, sessionId, cellId);
             } else {
                 boolean isNewSession = !jShellManager.hasSession(sessionId);
                 if (isNewSession) {

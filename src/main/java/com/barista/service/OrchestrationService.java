@@ -55,6 +55,7 @@ public class OrchestrationService {
     private final CppExecutionService cppExecutionService;
     private final NotebookService notebookService;
     private final UserService userService;
+    private final AgentService agentService;
 
     /**
      * Tracks which cross-notebook modules have already been loaded into each session.
@@ -77,7 +78,8 @@ public class OrchestrationService {
                                  DotNetExecutionService dotNetExecutionService,
                                  CppExecutionService cppExecutionService,
                                  NotebookService notebookService,
-                                 UserService userService) {
+                                 UserService userService,
+                                 AgentService agentService) {
         this.jShellManager = jShellManager;
         this.packageService = packageService;
         this.javaCompilerService = javaCompilerService;
@@ -87,6 +89,7 @@ public class OrchestrationService {
         this.cppExecutionService = cppExecutionService;
         this.notebookService = notebookService;
         this.userService = userService;
+        this.agentService = agentService;
     }
 
     // ── Cross-notebook support ─────────────────────────────────────────────
@@ -577,7 +580,9 @@ public class OrchestrationService {
             }
 
             log.info("[Orchestration] Executing: #{} ({})", anchor, cell.getId());
-            ExecutionResult r = executeSingleCell(cell, sessionId, false);
+            ExecutionResult r = executeSingleCell(cell, sessionId, false, notebook);
+            // Keep the in-memory cell output fresh so a downstream agent cell's {{anchor}} sees it.
+            if (r.getOutput() != null) cell.setOutput(r.getOutput());
             executed.add(cell.getId());
             allResults.add(r);
             if (!r.isSuccess()) {
@@ -591,10 +596,14 @@ public class OrchestrationService {
     }
 
     private ExecutionResult executeSingleCell(Cell cell, String sessionId) {
-        return executeSingleCell(cell, sessionId, false);
+        return executeSingleCell(cell, sessionId, false, null);
     }
 
     private ExecutionResult executeSingleCell(Cell cell, String sessionId, boolean forceRun) {
+        return executeSingleCell(cell, sessionId, forceRun, null);
+    }
+
+    private ExecutionResult executeSingleCell(Cell cell, String sessionId, boolean forceRun, Notebook host) {
         if (cell.getType() == CellType.PIPELINE) {
             // Pipeline cells don't execute themselves directly
             return ExecutionResult.builder()
@@ -604,6 +613,10 @@ public class OrchestrationService {
         }
 
         String mode = cell.getMode() != null ? cell.getMode() : "jshell";
+        if ("agent".equals(mode)) {
+            // Agent invocation cell — runs the referenced agent, interworking via {{anchor}} / //@ bind.
+            return agentService.runAgentCell(host, cell.getSource(), sessionId, cell.getId());
+        }
         if ("java".equals(mode)) {
             List<String> cp = packageService.getInstalledPackages().stream()
                     .map(p -> p.getJarPath()).collect(Collectors.toList());
