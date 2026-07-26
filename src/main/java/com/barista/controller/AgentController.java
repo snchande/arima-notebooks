@@ -5,11 +5,13 @@ import com.barista.service.AgentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
  * REST endpoints for authoring, running, and exporting agents & skills.
  *
+ *   GET  /api/agents/list     - list agent/skill definitions (user notebooks + built-in samples)
  *   POST /api/agents/create   - create a new agent/skill notebook (pre-seeded)
  *   POST /api/agents/run      - run the agent/skill against a task (streams via STOMP)
  *   POST /api/agents/export   - write the provider's native files
@@ -28,6 +30,11 @@ public class AgentController {
     @GetMapping("/providers")
     public ResponseEntity<Map<String, Boolean>> providers() {
         return ResponseEntity.ok(agentService.providerStatus());
+    }
+
+    @GetMapping("/list")
+    public ResponseEntity<List<Map<String, Object>>> list() {
+        return ResponseEntity.ok(agentService.list());
     }
 
     @PostMapping("/create")

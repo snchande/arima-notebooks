@@ -65,6 +65,54 @@ public class AgentService {
         return out;
     }
 
+    /**
+     * List every agent/skill definition available to the current user: their own agent notebooks
+     * plus the built-in samples (tutorials/examples). Each entry is a light projection the Agents tab
+     * renders as a card — {@code id, name, description, kind, provider, tools, source, cellCount}.
+     * Source is "mine" for user notebooks and "sample" for built-ins.
+     */
+    public List<Map<String, Object>> list() {
+        String userId = userService.getCurrentUser().getId();
+        List<Map<String, Object>> out = new java.util.ArrayList<>();
+        for (Map<String, Object> m : notebookService.listNotebooks(userId)) {
+            Map<String, Object> card = agentCard(m, "mine");
+            if (card != null) out.add(card);
+        }
+        for (Map<String, Object> m : notebookService.listTutorials()) {
+            Map<String, Object> card = agentCard(m, "sample");
+            if (card != null) out.add(card);
+        }
+        return out;
+    }
+
+    /** Project a notebook-meta map into an agent card, or null if it is not an agent/skill. */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> agentCard(Map<String, Object> meta, String source) {
+        Object nbMetaObj = meta.get("metadata");
+        if (!(nbMetaObj instanceof Map<?, ?> nbMeta)) return null;
+        String kind = str(nbMeta.get("kind"));
+        if (!"agent".equals(kind) && !"skill".equals(kind)) return null;
+
+        String provider = "claude";
+        List<String> tools = List.of();
+        if (nbMeta.get("agent") instanceof Map<?, ?> agent) {
+            if (agent.get("provider") instanceof String p && !p.isBlank()) provider = p;
+            if (agent.get("tools") instanceof List<?> l) {
+                tools = l.stream().map(String::valueOf).filter(s -> !s.isBlank()).collect(Collectors.toList());
+            }
+        }
+        Map<String, Object> card = new LinkedHashMap<>();
+        card.put("id", meta.get("id"));
+        card.put("name", meta.get("name"));
+        card.put("description", meta.get("description"));
+        card.put("kind", kind);
+        card.put("provider", provider);
+        card.put("tools", tools);
+        card.put("source", source);
+        card.put("cellCount", meta.getOrDefault("cellCount", 0));
+        return card;
+    }
+
     /** Create a new agent/skill notebook, pre-seeded with a starter instructions cell. */
     public Notebook create(String name, String kind) {
         String userId = userService.getCurrentUser().getId();
