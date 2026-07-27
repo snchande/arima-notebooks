@@ -116,17 +116,19 @@ const NotebookEditor = (() => {
     const listEl   = document.getElementById('nb-browser-list');
     let personal   = [];
     let tutorials  = [];
-    let activeFolder = null; // null = All, or a folder name string
-    let activeTag    = null; // null = All, or a tag string
+    let activeFolder  = null; // null = All, or a folder name string
+    let activeTag     = null; // null = All, or a tag string
+    let activeTutLang = null; // active tutorial-language tab (null = auto-pick first available)
 
-    const LANG_LABEL = { jshell:'JShell', java:'Java', javascript:'JavaScript', nodejs:'JS', typescript:'TypeScript', csharp:'C#', fsharp:'F#', cpp:'C++' };
-    const LANG_ICON  = { jshell:'☕', java:'♨', javascript:'⬡', nodejs:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙' };
-    const SUBCAT_ORDER = ['Basics & Foundations', 'Advanced', 'Data Science & Analytics', 'Examples & Demos'];
+    const LANG_LABEL = { jshell:'JShell', java:'Java', javascript:'JavaScript', nodejs:'JS', typescript:'TypeScript', csharp:'C#', fsharp:'F#', cpp:'C++', agent:'Agents & Skills' };
+    const LANG_ICON  = { jshell:'☕', java:'♨', javascript:'⬡', nodejs:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙', agent:'🤖' };
+    const TUT_LANG_ORDER = ['jshell','java','javascript','typescript','csharp','fsharp','cpp','agent'];
+    const SUBCAT_ORDER = ['Basics & Foundations', 'Advanced', 'Data Science & Analytics', 'Examples & Demos', 'Agents & Skills'];
 
     document.getElementById('btn-browse-notebooks')?.addEventListener('click', async () => {
       overlay.classList.add('open');
       searchEl.value = '';
-      activeFolder = null; activeTag = null;
+      activeFolder = null; activeTag = null; activeTutLang = null;
       listEl.innerHTML = '<div class="nb-browser-empty">Loading…</div>';
       try {
         [personal, tutorials] = await Promise.all([
@@ -143,7 +145,20 @@ const NotebookEditor = (() => {
     closeBtn?.addEventListener('click',  () => overlay.classList.remove('open'));
     overlay?.addEventListener('click',   e  => { if (e.target === overlay) overlay.classList.remove('open'); });
     searchEl?.addEventListener('input',  ()  => renderBrowser(searchEl.value.toLowerCase()));
-    document.addEventListener('keydown', e  => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+
+    // Full-screen toggle (button + the "F" key while the browser is open and not typing a filter)
+    const fsBtn = document.getElementById('nb-browser-fs');
+    const toggleFullscreen = () => overlay.classList.toggle('fullscreen');
+    fsBtn?.addEventListener('click', toggleFullscreen);
+
+    document.addEventListener('keydown', e  => {
+      if (!overlay.classList.contains('open')) return;
+      if (e.key === 'Escape') { overlay.classList.remove('open'); return; }
+      if ((e.key === 'f' || e.key === 'F') && e.target !== searchEl && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    });
 
     // Helpers to read folder/tags from notebook metadata
     function nbFolder(nb) { return (nb.metadata?.folder || '').trim(); }
@@ -274,21 +289,40 @@ const NotebookEditor = (() => {
           byLang[lang][sub].push(nb);
         });
 
-        ['jshell','java','javascript','typescript','csharp','fsharp','cpp'].forEach(lang => {
-          if (!byLang[lang]) return;
-          html += `<div class="nbb-lang-group">
-            <div class="nbb-lang-hdr">${LANG_ICON[lang]||''} ${LANG_LABEL[lang]||lang}</div>`;
+        // One tab per language that actually has tutorials (in a stable order).
+        const langs = TUT_LANG_ORDER.filter(l => byLang[l]);
+        // Keep the active tab across re-renders; fall back to the first available
+        // if it was filtered away by the current search.
+        if (!activeTutLang || !byLang[activeTutLang]) activeTutLang = langs[0];
 
-          SUBCAT_ORDER.forEach(subcat => {
-            const items = byLang[lang][subcat];
-            if (!items?.length) return;
-            html += `<div class="nbb-subcat">
-              <div class="nbb-subcat-label">${subcat}</div>
-              <div class="nb-browser-card-list">${items.map(nb => cardHtml(nb, true)).join('')}</div>
-            </div>`;
-          });
-          html += `</div>`;
+        html += `<div class="nbb-lang-tabs" role="tablist">`;
+        langs.forEach(lang => {
+          const count  = Object.values(byLang[lang]).reduce((n, a) => n + a.length, 0);
+          const active = lang === activeTutLang ? ' active' : '';
+          html += `<button class="nbb-lang-tab${active}" data-tut-lang="${lang}" role="tab" aria-selected="${lang === activeTutLang}">
+            <span class="nbb-lang-tab-icon">${LANG_ICON[lang] || ''}</span>
+            <span class="nbb-lang-tab-label">${LANG_LABEL[lang] || lang}</span>
+            <span class="nbb-lang-tab-count">${count}</span>
+          </button>`;
         });
+        html += `</div>`;
+
+        // Only the active language's tutorials, grouped by subcategory.
+        const subs = byLang[activeTutLang] || {};
+        const orderedSubs = [
+          ...SUBCAT_ORDER.filter(s => subs[s]),
+          ...Object.keys(subs).filter(s => !SUBCAT_ORDER.includes(s)),
+        ];
+        html += `<div class="nbb-lang-panel" role="tabpanel">`;
+        orderedSubs.forEach(subcat => {
+          const items = subs[subcat];
+          if (!items?.length) return;
+          html += `<div class="nbb-subcat">
+            <div class="nbb-subcat-label">${subcat}</div>
+            <div class="nb-browser-card-list">${items.map(nb => cardHtml(nb, true)).join('')}</div>
+          </div>`;
+        });
+        html += `</div>`;
       }
       html += `</div>`;
 
@@ -301,6 +335,15 @@ const NotebookEditor = (() => {
           if (e.target.closest('.nbb-meta-btn'))   return; // handled by meta handler
           overlay.classList.remove('open');
           loadNotebook(card.dataset.id, card.dataset.tutorial === 'true');
+        });
+      });
+
+      // Bind tutorial language tabs
+      listEl.querySelectorAll('.nbb-lang-tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          e.stopPropagation();
+          activeTutLang = tab.dataset.tutLang;
+          renderBrowser(searchEl.value.toLowerCase());
         });
       });
 
