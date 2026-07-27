@@ -97,7 +97,9 @@ The bar to **customize for yourself** and the bar to **contribute back** become 
 | **AI Language Conversion** | Switch a cell's language and AI converts the code automatically |
 | **MCP Server** | Expose Arima Notebooks as an MCP tool server for Claude Code, Claude Desktop, and custom agents |
 | **Built-in Data Science** | XChart · Commons Math · Tablesaw · simple-statistics · mathjs — pre-installed |
-| **Tutorial Library** | 28 built-in tutorials across JShell, Java, JavaScript, TypeScript, C#, F#, and C++ |
+| **Tutorial Library** | Built-in tutorials across JShell, Java, JavaScript, TypeScript, C#, F#, C++, and Agents & Skills — organized into per-language tabs |
+| **Guided Tutorial Player** | Play any tutorial as a **narrated** walkthrough — hands-free **autopilot** or self-paced **interactive** — and interrupt to ask questions by **voice or text** (browser-native audio, answered by your AI provider) |
+| **Docs reading mode** | One-click distraction-free reading view in the in-app documentation |
 | **Interactive Console** | Full REPL console with tab completion |
 | **Guided Tour (First Run Experience)** | Interactive spotlight walkthrough of every section on first launch — replay anytime from **Settings → Guided Tour** |
 | **Dark theme** | Easy on the eyes by default |

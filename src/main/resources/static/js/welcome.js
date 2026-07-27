@@ -34,6 +34,16 @@
   // "See all releases" view. Keep each item short.
   const RELEASES = [
     {
+      version: "3.2.0", date: "2026-07-26",
+      title: "The Agents Arena + Guided Tutorial Player",
+      items: [
+        "Agents Arena: author, browse, and run agents & skills — a dedicated Agents tab, agent-mode cells in pipelines, and MCP tools (barista_list_agents / barista_run_agent).",
+        "Guided Tutorial Player: play any tutorial as a narrated walkthrough — hands-free Autopilot or self-paced Interactive — and interrupt to ask questions by voice or text.",
+        "Tutorials browser reorganized: Select Notebook vs Tutorials views, per-language tabs, and a full-screen toggle.",
+        "Docs reading mode: a one-click distraction-free reading view."
+      ]
+    },
+    {
       version: "3.1.0", date: "2026-05-25",
       title: "Rebrand — Arima Notebooks, brewed by Barista",
       items: [

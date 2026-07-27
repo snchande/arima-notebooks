@@ -44,21 +44,30 @@ The first time you open Arima Notebooks, an interactive **guided tour** walks yo
 
 ### Opening a Notebook
 
-Click the **folder icon** (or the notebook name in the toolbar) to open the **Notebook Browser**.
+Click the **Tutorials** button (or the notebook name in the toolbar) to open the **Notebook Browser**.
 
-The browser has two sections:
+The browser has a top-level switch between two views:
 
-**My Notebooks** — your personal notebooks.
+**Select Notebook** — your personal notebooks.
 - Click **+ New Notebook** to create a blank notebook
 - Click any card to open it in a new tab
 
-**Arima Tutorials** — built-in read-only notebooks organized by language and level.
-- Tutorials are grouped by: `JShell` / `Java` / `JavaScript` / `TypeScript` / `C#` / `F#` / `C++`
-- Each group is sub-divided: **Basics & Foundations** → **Advanced** → **Data Science & Analytics**
+**Tutorials** — built-in read-only notebooks, organized into **per-language tabs**.
+- One tab per language — `JShell` / `Java` / `JavaScript` / `TypeScript` / `C#` / `F#` / `C++` / `Agents & Skills` — each with a count badge; only the active tab's tutorials are shown
+- Each tab is sub-divided: **Basics & Foundations** → **Advanced** → **Data Science & Analytics**
 - Level badges (`101` → `601`) indicate progression within each language track
-- Tutorial notebooks open in a **read-only** tab (auto-save is disabled)
+- Tutorial notebooks open in a **read-only** tab (auto-save is disabled), or play them with **▶ Guided** (see below)
 
-Use the **search box** at the top of the browser to filter across both sections simultaneously.
+Use the **search box** to filter, and the **⛶ full-screen** toggle (or press **F**) for a roomier layout.
+
+### ▶ Guided Tutorial Player
+
+Click **▶ Guided** on any tutorial card to open a **narrated, multimodal walkthrough**:
+
+- **Two modes, switch anytime** — **Autopilot** narrates each step and auto-advances (hands-free); **Interactive** is self-paced with Prev/Next, narrating each step as you land on it.
+- **Ask questions by voice or text** — at any moment, type a question or click the **🎤 mic** and speak. The question plus the current step's context goes to your active AI provider, and the answer is shown *and read aloud*. In autopilot, asking pauses narration and resumes when the answer finishes.
+- **Shortcuts** — **Space** play/pause · **←/→** prev/next · **Esc** close.
+- Audio and voice are **browser-native** (Web Speech API — best in Chrome); nothing is sent to any external audio service.
 
 **Tutorial track overview:**
 
