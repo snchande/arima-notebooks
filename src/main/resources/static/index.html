@@ -1293,6 +1293,16 @@ dotnet fsi --version  # verify F# Interactive</pre>
           <svg viewBox="0 0 16 16" width="12" height="12" fill="none"><path d="M6 2.5v5M9 3.5v4M3 6.5v2a5 5 0 0 0 10 0V5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> Interactive
         </button>
       </div>
+      <div class="tp-voice-ctl" title="Narration voice &amp; speed">
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden="true"><path d="M8 2v12M4.5 5v6M11.5 5v6M2 7v2M14 7v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <select id="tp-voice" class="tp-voice" title="Narration voice" aria-label="Narration voice"></select>
+        <select id="tp-rate" class="tp-rate" title="Narration speed" aria-label="Narration speed">
+          <option value="0.85">Slow</option>
+          <option value="0.95" selected>Natural</option>
+          <option value="1.05">Brisk</option>
+          <option value="1.2">Fast</option>
+        </select>
+      </div>
       <button id="tp-close" class="tp-close" title="Close (Esc)" aria-label="Close">
         <svg viewBox="0 0 16 16" width="16" height="16"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>

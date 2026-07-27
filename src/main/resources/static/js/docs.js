@@ -706,6 +706,10 @@ At any moment you can **interrupt and ask a question**. Type it in the ask box a
 | 🎤 | — | Ask by voice |
 | Close | **Esc** | Exit the player |
 
+### Choosing a natural voice
+
+Narration uses your browser's built-in voices. The player **auto-selects the most natural voice your system offers** (Windows 11's neural "Natural" voices or Chrome's Google voice), but you can pick any voice and set the speed (Slow / Natural / Brisk / Fast) from the controls in the player header — your choice is remembered. If your default sounds robotic, switch to a "Natural"/"Neural" or "Google" voice in the dropdown for a far more human read.
+
 > **Audio & voice are browser-native** (the Web Speech API) — nothing is sent to any external audio service. Narration and voice input work best in Chrome. If your browser has no speech support, the player still works visually and Q&A still answers in text.
 
 ---

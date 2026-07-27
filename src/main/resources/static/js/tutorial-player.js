@@ -28,6 +28,13 @@ const TutorialPlayer = (function () {
   let history = [];      // running chat history for the AI
   let advanceTimer = null;
   let recog = null;      // active SpeechRecognition instance
+  let active = false;    // player open? hard gate — nothing narrates when false
+
+  // Narration voice + delivery. Chosen from the best voice the browser exposes;
+  // the learner can override in the header. Persisted across sessions.
+  let voices = [];
+  let chosenVoice = null;
+  let rate = parseFloat(localStorage.getItem('arima.tts.rate') || '0.95') || 0.95;
 
   // ── Lifecycle ────────────────────────────────────────────────────────
   async function launch(tutorialId) {
@@ -51,15 +58,18 @@ const TutorialPlayer = (function () {
   }
 
   function open() {
+    active = true;
     const o = document.getElementById('tutorial-player');
     o.classList.add('open');
     o.setAttribute('aria-hidden', 'false');
   }
 
   function close() {
+    active = false;                 // hard gate: nothing may narrate once closed
+    paused = true; asking = false;
+    clearTimeout(advanceTimer); advanceTimer = null;
     stopSpeaking();
     stopRecognition();
-    clearTimeout(advanceTimer);
     const o = document.getElementById('tutorial-player');
     o.classList.remove('open');
     o.setAttribute('aria-hidden', 'true');
@@ -114,24 +124,107 @@ const TutorialPlayer = (function () {
   }
 
   function onNarrationEnd() {
-    if (paused || asking) return;
+    if (!active || paused || asking) return;
     if (mode === 'autopilot' && idx < cells.length - 1) {
-      advanceTimer = setTimeout(() => { if (!paused && !asking) next(true); }, AUTO_ADVANCE_MS);
+      advanceTimer = setTimeout(() => { if (active && !paused && !asking) next(true); }, AUTO_ADVANCE_MS);
     }
   }
 
+  // Speak text one sentence at a time — natural pacing, and it sidesteps the
+  // Chrome long-utterance cutoff. The chosen voice + rate apply to every chunk.
+  let speakToken = 0;
   function speak(text, onend) {
-    if (!synth) { if (onend) onend(); return; }
+    if (!synth || !active) { if (onend) onend(); return; }
     stopSpeaking();
     setCaption(text);
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.0; u.pitch = 1.0;
-    u.onend = () => { if (onend) onend(); };
-    u.onerror = () => { if (onend) onend(); };
-    synth.speak(u);
+    const chunks = chunkSentences(text);
+    const token = ++speakToken;
+    let i = 0;
+    const sayNext = () => {
+      // Stop immediately if superseded, cancelled, or the player has closed.
+      if (token !== speakToken || !active) return;
+      if (i >= chunks.length) { if (onend) onend(); return; }
+      const u = new SpeechSynthesisUtterance(chunks[i++]);
+      if (chosenVoice) u.voice = chosenVoice;
+      u.rate = rate; u.pitch = 1.0; u.volume = 1.0;
+      u.onend = sayNext;
+      u.onerror = sayNext;
+      synth.speak(u);
+    };
+    sayNext();
   }
 
-  function stopSpeaking() { try { synth && synth.cancel(); } catch {} }
+  // Hard stop. Bump the token so any in-flight queue aborts, then cancel — twice,
+  // because Chrome occasionally lets an already-buffered (remote) utterance slip
+  // through a single cancel().
+  function stopSpeaking() {
+    speakToken++;
+    if (!synth) return;
+    try { synth.cancel(); } catch {}
+    setTimeout(() => { try { synth.cancel(); } catch {} }, 40);
+  }
+
+  function chunkSentences(text) {
+    const raw = String(text || '').split(/(?<=[.!?])\s+/);
+    const out = [];
+    let buf = '';
+    for (const s of raw) {
+      if ((buf + ' ' + s).trim().length > 240) { if (buf) out.push(buf.trim()); buf = s; }
+      else buf = buf ? buf + ' ' + s : s;
+    }
+    if (buf.trim()) out.push(buf.trim());
+    return out.length ? out : [String(text || '')];
+  }
+
+  // ── Voice selection ──────────────────────────────────────────────────
+  function loadVoices() {
+    if (!synth) return;
+    voices = synth.getVoices() || [];
+    if (!voices.length) return;
+    const savedName = localStorage.getItem('arima.tts.voice');
+    const saved = savedName && voices.find(v => v.name === savedName);
+    chosenVoice = saved || pickBestVoice(voices);
+    populateVoicePicker();
+  }
+
+  // Rank the available voices so the most natural one wins by default. The big
+  // levers: neural/"Natural" voices and non-local (streamed) voices — both are far
+  // less robotic than the bundled SAPI "Desktop" voices.
+  function rankVoice(v) {
+    const n = (v.name || '').toLowerCase();
+    const lang = (v.lang || '').toLowerCase();
+    let s = 0;
+    if (!/^en\b|^en[-_]/.test(lang)) s -= 120;         // strongly prefer English
+    if (/natural|neural/.test(n))    s += 120;          // Win11 / neural voices — the best
+    if (v.localService === false)    s += 70;           // streamed voices are far smoother
+    if (/google/.test(n))            s += 60;           // Chrome's Google voices
+    if (/online/.test(n))            s += 45;
+    if (/(aria|jenny|guy|ava|emma|sonia|libby|michelle|ryan|natasha|clara|andrew|brian)/.test(n)) s += 30;
+    if (lang === 'en-us')            s += 12;
+    if (/desktop/.test(n))           s -= 60;           // old SAPI desktop voices — robotic
+    if (/(david|zira|mark|hazel|espeak)/.test(n)) s -= 40;
+    return s;
+  }
+  function pickBestVoice(vs) {
+    return vs.slice().sort((a, b) => rankVoice(b) - rankVoice(a))[0] || null;
+  }
+
+  function populateVoicePicker() {
+    const sel = document.getElementById('tp-voice');
+    if (!sel) return;
+    const ranked = voices.slice().sort((a, b) => rankVoice(b) - rankVoice(a));
+    sel.innerHTML = ranked.map(v =>
+      `<option value="${esc(v.name)}"${chosenVoice && v.name === chosenVoice.name ? ' selected' : ''}>` +
+      `${esc(shortVoiceName(v))}</option>`).join('');
+    const rateSel = document.getElementById('tp-rate');
+    if (rateSel) rateSel.value = String(rate);
+  }
+  function shortVoiceName(v) {
+    // Trim the vendor noise so the dropdown reads cleanly.
+    let n = (v.name || '').replace(/^Microsoft\s+/i, '').replace(/\s*\(Natural\)/i, ' · Natural')
+      .replace(/Online\s*/i, '').replace(/Google\s+/i, 'Google ');
+    return `${n} (${v.lang})`;
+  }
 
   // ── Navigation & playback ────────────────────────────────────────────
   function next(fromAuto) {
@@ -303,6 +396,24 @@ const TutorialPlayer = (function () {
     document.getElementById('tp-ask-send')?.addEventListener('click', () =>
       ask(document.getElementById('tp-ask-input').value));
 
+    // Voice + speed pickers.
+    if (synth) {
+      loadVoices();
+      // Voices load asynchronously in Chrome — refresh when they arrive.
+      synth.onvoiceschanged = loadVoices;
+    }
+    document.getElementById('tp-voice')?.addEventListener('change', (e) => {
+      chosenVoice = voices.find(v => v.name === e.target.value) || chosenVoice;
+      try { localStorage.setItem('arima.tts.voice', e.target.value); } catch {}
+      // Preview the newly chosen voice.
+      speak('This is how the narration will sound.', null);
+    });
+    document.getElementById('tp-rate')?.addEventListener('change', (e) => {
+      rate = parseFloat(e.target.value) || 0.95;
+      try { localStorage.setItem('arima.tts.rate', String(rate)); } catch {}
+      speak('This is the new narration speed.', null);
+    });
+
     const input = document.getElementById('tp-ask-input');
     input?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); ask(input.value); }
@@ -322,6 +433,12 @@ const TutorialPlayer = (function () {
       else if (e.key === 'ArrowLeft')  { e.preventDefault(); prev(); }
       else if (e.key === ' ')          { e.preventDefault(); togglePlay(); }
     });
+
+    // Stop narration if the tab is hidden or the page is navigated/closed.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && active) { paused = true; stopSpeaking(); clearTimeout(advanceTimer); updatePlayBtn(); }
+    });
+    window.addEventListener('pagehide', () => { active = false; stopSpeaking(); });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

@@ -563,6 +563,18 @@
   font-size: 12px; font-weight: 600; transition: all .15s;
 }
 .tp-mode.active { background: var(--accent); color: var(--bg-0, #0b0b12); }
+.tp-voice-ctl {
+  display: inline-flex; align-items: center; gap: 6px; color: var(--text-3);
+  padding: 0 4px;
+}
+.tp-voice, .tp-rate {
+  background: var(--surface-3); color: var(--text-1); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 7px; font-family: var(--font-ui); font-size: 11.5px;
+  outline: none; max-width: 190px; cursor: pointer;
+}
+.tp-voice { text-overflow: ellipsis; }
+.tp-voice:focus, .tp-rate:focus { border-color: var(--border-focus); }
+@media (max-width: 720px) { .tp-voice-ctl { display: none; } }
 .tp-close {
   background: none; border: none; color: var(--text-3); cursor: pointer;
   padding: 4px 6px; border-radius: 4px; display: inline-flex;

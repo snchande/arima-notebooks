@@ -136,6 +136,11 @@ const NotebookEditor = (() => {
           Arima.api('GET', '/notebooks'),
           Arima.api('GET', '/notebooks/tutorials')
         ]);
+        // The Tutorials section is tutorials only — loose example/demo notebooks
+        // (e.g. "…-intro", "welcome") are excluded. A tutorial carries a level badge
+        // or a "<lang>-<level>" id like cpp-301; demos have neither.
+        tutorials = tutorials.filter(nb =>
+          nb.metadata?.level != null || /-\d{3}$/.test(nb.id || ''));
         renderBrowser('');
       } catch(e) {
         listEl.innerHTML = '<div class="nb-browser-empty">Could not load notebooks.</div>';
@@ -501,10 +506,24 @@ const NotebookEditor = (() => {
       const sel  = document.getElementById('notebook-selector');
       const cur  = sel.value;
       sel.innerHTML = '<option value="">— select notebook —</option>';
+
+      // Group by notebook type (Agents · Skills · Notebooks) instead of a flat list.
+      const groups = { agent: [], skill: [], notebook: [] };
       list.forEach(nb => {
-        const opt = document.createElement('option');
-        opt.value = nb.id; opt.textContent = nb.name;
-        sel.appendChild(opt);
+        const kind = nb.metadata && nb.metadata.kind;
+        groups[kind === 'agent' ? 'agent' : kind === 'skill' ? 'skill' : 'notebook'].push(nb);
+      });
+      [['agent', '🤖 Agents'], ['skill', '⭐ Skills'], ['notebook', '📓 Notebooks']].forEach(([key, label]) => {
+        const items = groups[key];
+        if (!items.length) return;
+        const og = document.createElement('optgroup');
+        og.label = `${label} (${items.length})`;
+        items.sort((a, b) => a.name.localeCompare(b.name)).forEach(nb => {
+          const opt = document.createElement('option');
+          opt.value = nb.id; opt.textContent = nb.name;
+          og.appendChild(opt);
+        });
+        sel.appendChild(og);
       });
       if (cur) sel.value = cur;
     } catch(e) { console.error('List failed:', e); }
