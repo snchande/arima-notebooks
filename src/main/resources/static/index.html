@@ -1277,6 +1277,65 @@ dotnet fsi --version  # verify F# Interactive</pre>
   </div>
 </div>
 
+<!-- ═══════════════ GUIDED TUTORIAL PLAYER ═══════════════ -->
+<div id="tutorial-player" class="tp-overlay" role="dialog" aria-modal="true" aria-label="Guided tutorial player">
+  <div class="tp-modal">
+    <header class="tp-header">
+      <div class="tp-title">
+        <span class="tp-badge">GUIDED</span>
+        <span id="tp-name">Tutorial</span>
+      </div>
+      <div class="tp-mode-switch" role="tablist" title="Switch between hands-free autopilot and self-paced interactive">
+        <button id="tp-mode-autopilot" class="tp-mode active" role="tab" aria-selected="true">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none"><path d="M5 3.5v9l7-4.5-7-4.5z" fill="currentColor"/></svg> Autopilot
+        </button>
+        <button id="tp-mode-interactive" class="tp-mode" role="tab" aria-selected="false">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none"><path d="M6 2.5v5M9 3.5v4M3 6.5v2a5 5 0 0 0 10 0V5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> Interactive
+        </button>
+      </div>
+      <div class="tp-voice-ctl" title="Narration voice &amp; speed">
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden="true"><path d="M8 2v12M4.5 5v6M11.5 5v6M2 7v2M14 7v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <select id="tp-voice" class="tp-voice" title="Narration voice" aria-label="Narration voice"></select>
+        <select id="tp-rate" class="tp-rate" title="Narration speed" aria-label="Narration speed">
+          <option value="0.85">Slow</option>
+          <option value="0.95" selected>Natural</option>
+          <option value="1.05">Brisk</option>
+          <option value="1.2">Fast</option>
+        </select>
+      </div>
+      <button id="tp-close" class="tp-close" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 16 16" width="16" height="16"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+
+    <div class="tp-progress"><div id="tp-progress-bar" class="tp-progress-bar"></div></div>
+
+    <main class="tp-stage" id="tp-stage"></main>
+
+    <div class="tp-caption" id="tp-caption" aria-live="polite"></div>
+
+    <section class="tp-qa" id="tp-qa" hidden>
+      <div class="tp-qa-log" id="tp-qa-log"></div>
+    </section>
+
+    <footer class="tp-controls">
+      <div class="tp-nav">
+        <button id="tp-prev" class="tp-ctl" title="Previous step (←)" aria-label="Previous">⟨ Prev</button>
+        <button id="tp-play" class="tp-ctl tp-play" title="Play / Pause narration (Space)" aria-label="Play or pause">⏸ Pause</button>
+        <button id="tp-next" class="tp-ctl" title="Next step (→)" aria-label="Next">Next ⟩</button>
+        <span id="tp-step" class="tp-step">1 / 1</span>
+      </div>
+      <div class="tp-ask">
+        <button id="tp-mic" class="tp-mic" title="Ask by voice" aria-label="Ask by voice">
+          <svg viewBox="0 0 16 16" width="15" height="15" fill="none"><rect x="6" y="2" width="4" height="7" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4 7.5v.5a4 4 0 0 0 8 0v-.5M8 12v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </button>
+        <input id="tp-ask-input" class="tp-ask-input" type="text" placeholder="Ask a question about this step… (interrupts autopilot)" />
+        <button id="tp-ask-send" class="tp-ask-send">Ask</button>
+      </div>
+    </footer>
+  </div>
+</div>
+
 <!-- ═══════════════ DOCS OVERLAY ═══════════════ -->
 <!-- ═══════════════ WELCOME / USER GUIDE OVERLAY ═══════════════ -->
 <div class="welcome-overlay hidden" id="welcome-overlay">
@@ -1342,6 +1401,10 @@ dotnet fsi --version  # verify F# Interactive</pre>
         </svg>
         <span>Arima Notebooks — Documentation</span>
       </div>
+      <button class="docs-reading-btn" id="btn-docs-reading" title="Reading mode — hide the sidebar and widen the text for comfortable reading">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M8 3.5C6.5 2 3.5 2 2 2.5v10c1.5-.5 4.5-.5 6 1 1.5-1.5 4.5-1.5 6-1v-10c-1.5-.5-4.5-.5-6 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 3.5v10" stroke="currentColor" stroke-width="1.3"/></svg>
+        Reading mode
+      </button>
       <button class="docs-close-btn" id="btn-docs-close" title="Close (Esc)">
         <svg viewBox="0 0 16 16" width="16" height="16"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         Close
@@ -1499,6 +1562,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
 <script src="/js/notebook.js"></script>
 <script src="/js/agent.js"></script>
 <script src="/js/agents-tab.js"></script>
+<script src="/js/tutorial-player.js"></script>
 <script src="/js/console-tab.js"></script>
 <script src="/js/packages.js"></script>
 <script src="/js/settings.js"></script>

@@ -27,6 +27,7 @@ Arima is a multi-language interactive notebook environment. Write and run code a
    - **+ Pipeline** — a named workflow cell (see Section 5)
 4. **Run a code cell** — press the ▶ button, or press **Shift+Enter** inside the editor
 5. **Save** — press **Ctrl+S** or click **Save**
+6. **Play a tutorial** — click **Tutorials**, then **▶ Guided** on any card for a narrated, hands-free walkthrough you can interrupt and ask questions (voice or text). See the **Tutorials** doc for the full player guide.
 
 ---
 
@@ -672,7 +673,44 @@ Verify internet access to \`repo1.maven.org\`. Check the coordinate format: \`gr
 tutorials: `
 # Tutorial Notebooks
 
-Arima ships with **built-in tutorial notebooks** covering all seven languages, from beginner to expert. Open them from the **Browse** button in the toolbar.
+Arima ships with **built-in tutorial notebooks** covering all seven languages, from beginner to expert. Open them from the **Tutorials** button in the toolbar.
+
+The browser has two views — **Select Notebook** (your own notebooks) and **Tutorials** — and the Tutorials view is organised into **per-language tabs** (JShell · Java · JavaScript · TypeScript · C# · F# · C++ · Agents & Skills). Use the **⛶ full-screen** toggle (or press **F**) for a roomier layout.
+
+---
+
+## ▶ Guided Tutorial Player
+
+Every tutorial can be **played** instead of just read. Click the **▶ Guided** button on any tutorial card to open the player — a narrated, multimodal walkthrough that reads each step aloud and lets you ask questions as you go.
+
+### Two modes (switch anytime)
+
+| Mode | Behaviour |
+|---|---|
+| **▶ Autopilot** | Hands-free. Narrates each step and **auto-advances** to the next. Great for a first pass or listening while you follow along. |
+| **✋ Interactive** | Self-paced. You drive with **Prev / Next**; each step is narrated when you land on it. |
+
+Flip between the two with the toggle in the player header — the switch takes effect immediately from your current step.
+
+### Ask questions — by voice or text
+
+At any moment you can **interrupt and ask a question**. Type it in the ask box and press **Enter**, or click the **🎤 microphone** and speak. Your question — together with the current step as context — goes to your active AI provider (Claude / Copilot / Antigravity), and the answer appears in the Q&A panel **and is read back aloud**. In autopilot, asking pauses narration; once the answer finishes, the walkthrough resumes.
+
+### Controls & shortcuts
+
+| Control | Shortcut | Action |
+|---|---|---|
+| ⏸ / ▶ | **Space** | Pause / resume narration |
+| Next ⟩ | **→** | Next step |
+| ⟨ Prev | **←** | Previous step |
+| 🎤 | — | Ask by voice |
+| Close | **Esc** | Exit the player |
+
+### Choosing a natural voice
+
+Narration uses your browser's built-in voices. The player **auto-selects the most natural voice your system offers** (Windows 11's neural "Natural" voices or Chrome's Google voice), but you can pick any voice and set the speed (Slow / Natural / Brisk / Fast) from the controls in the player header — your choice is remembered. If your default sounds robotic, switch to a "Natural"/"Neural" or "Google" voice in the dropdown for a far more human read.
+
+> **Audio & voice are browser-native** (the Web Speech API) — nothing is sent to any external audio service. Narration and voice input work best in Chrome. If your browser has no speech support, the player still works visually and Q&A still answers in text.
 
 ---
 
@@ -1952,6 +1990,17 @@ Arima is open source. To contribute:
 
     function init() {
         document.getElementById('btn-docs-close')?.addEventListener('click', hide);
+
+        // Reading mode — hide the sidebar and widen the text column for comfortable reading.
+        document.getElementById('btn-docs-reading')?.addEventListener('click', () => {
+            const panel = document.querySelector('.docs-panel');
+            const on = panel?.classList.toggle('reading');
+            try { localStorage.setItem('arima.docs.reading', on ? '1' : '0'); } catch {}
+        });
+        try {
+            if (localStorage.getItem('arima.docs.reading') === '1')
+                document.querySelector('.docs-panel')?.classList.add('reading');
+        } catch {}
 
         document.querySelectorAll('.docs-tab').forEach(tab => {
             tab.addEventListener('click', () => {

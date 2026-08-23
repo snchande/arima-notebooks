@@ -119,6 +119,7 @@ const NotebookEditor = (() => {
     let activeFolder  = null; // null = All, or a folder name string
     let activeTag     = null; // null = All, or a tag string
     let activeTutLang = null; // active tutorial-language tab (null = auto-pick first available)
+    let browserView   = 'mine'; // top-level view: 'mine' (Select Notebook) | 'tutorials'
 
     const LANG_LABEL = { jshell:'JShell', java:'Java', javascript:'JavaScript', nodejs:'JS', typescript:'TypeScript', csharp:'C#', fsharp:'F#', cpp:'C++', agent:'Agents & Skills' };
     const LANG_ICON  = { jshell:'☕', java:'♨', javascript:'⬡', nodejs:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙', agent:'🤖' };
@@ -128,13 +129,18 @@ const NotebookEditor = (() => {
     document.getElementById('btn-browse-notebooks')?.addEventListener('click', async () => {
       overlay.classList.add('open');
       searchEl.value = '';
-      activeFolder = null; activeTag = null; activeTutLang = null;
+      activeFolder = null; activeTag = null; activeTutLang = null; browserView = 'mine';
       listEl.innerHTML = '<div class="nb-browser-empty">Loading…</div>';
       try {
         [personal, tutorials] = await Promise.all([
           Arima.api('GET', '/notebooks'),
           Arima.api('GET', '/notebooks/tutorials')
         ]);
+        // The Tutorials section is tutorials only — loose example/demo notebooks
+        // (e.g. "…-intro", "welcome") are excluded. A tutorial carries a level badge
+        // or a "<lang>-<level>" id like cpp-301; demos have neither.
+        tutorials = tutorials.filter(nb =>
+          nb.metadata?.level != null || /-\d{3}$/.test(nb.id || ''));
         renderBrowser('');
       } catch(e) {
         listEl.innerHTML = '<div class="nb-browser-empty">Could not load notebooks.</div>';
@@ -176,6 +182,20 @@ const NotebookEditor = (() => {
       const allTags    = [...new Set(personal.flatMap(nbTags))].sort();
 
       let html = '';
+
+      // ── Top-level view switch: Select Notebook vs Tutorials ───
+      html += `<div class="nbb-views" role="tablist">
+        <button class="nbb-view-btn${browserView==='mine' ? ' active' : ''}" data-view="mine" role="tab">
+          <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="1.5" width="12" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Select Notebook <span class="nbb-view-count">${personal.length}</span>
+        </button>
+        <button class="nbb-view-btn${browserView==='tutorials' ? ' active' : ''}" data-view="tutorials" role="tab">
+          <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M8 3.5C6.5 2 3.5 2 2 2.5v10c1.5-.5 4.5-.5 6 1 1.5-1.5 4.5-1.5 6-1v-10c-1.5-.5-4.5-.5-6 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 3.5v10" stroke="currentColor" stroke-width="1.3"/></svg>
+          Tutorials <span class="nbb-view-count">${tutorials.length}</span>
+        </button>
+      </div>`;
+
+      if (browserView === 'mine') {
 
       // ── My Notebooks section ──────────────────────────────────
       html += `<div class="nbb-section">
@@ -268,11 +288,15 @@ const NotebookEditor = (() => {
         </div>`;
       }
 
+      } // end view: mine
+
+      if (browserView === 'tutorials') {
+
       // ── Arima Tutorials section ───────────────────────────────
       html += `<div class="nbb-section nbb-tutorials">
         <div class="nbb-section-hdr">
           <span class="nbb-section-title">Arima Tutorials</span>
-          <span class="nbb-section-note">${filtTutorials.length} notebooks · read-only</span>
+          <span class="nbb-section-note">${filtTutorials.length} notebooks · read-only · <strong>▶ Guided</strong> plays with narration</span>
         </div>`;
 
       if (!filtTutorials.length) {
@@ -326,15 +350,36 @@ const NotebookEditor = (() => {
       }
       html += `</div>`;
 
+      } // end view: tutorials
+
       listEl.innerHTML = html;
+
+      // Bind top-level view switch
+      listEl.querySelectorAll('.nbb-view-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          browserView = btn.dataset.view;
+          renderBrowser(searchEl.value.toLowerCase());
+        });
+      });
 
       // Bind card clicks (open notebook)
       listEl.querySelectorAll('.nb-browser-card').forEach(card => {
         card.addEventListener('click', (e) => {
           if (e.target.closest('.nbb-delete-btn')) return; // handled by delete handler
           if (e.target.closest('.nbb-meta-btn'))   return; // handled by meta handler
+          if (e.target.closest('.nbb-guided-btn')) return; // handled by guided handler
           overlay.classList.remove('open');
           loadNotebook(card.dataset.id, card.dataset.tutorial === 'true');
+        });
+      });
+
+      // Bind guided-player launch (tutorials)
+      listEl.querySelectorAll('.nbb-guided-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          overlay.classList.remove('open');
+          if (window.TutorialPlayer) window.TutorialPlayer.launch(btn.dataset.guidedId);
         });
       });
 
@@ -443,9 +488,13 @@ const NotebookEditor = (() => {
         data-meta-tags="${tags.join(',').replace(/"/g,'&quot;')}" title="Manage folder &amp; tags">
         <svg viewBox="0 0 16 16" fill="none" width="11" height="11"><path d="M3 4h2M3 8h6M3 12h4M9 2l4 4-4.5 4.5H5V7L9 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>`;
+      // Guided-player launch (tutorials only) — narrated, autopilot/interactive, ask questions.
+      const guided = isTutorial ? `<button class="nbb-guided-btn" data-guided-id="${nb.id}" title="Play this tutorial with narration &amp; voice Q&amp;A">
+        <svg viewBox="0 0 16 16" fill="none" width="11" height="11"><path d="M5 3.5v9l7-4.5-7-4.5z" fill="currentColor"/></svg> Guided
+      </button>` : '';
       return `<div class="nb-browser-card" data-id="${nb.id}" data-tutorial="${isTutorial}">
         <div class="nb-browser-card-name">${nb.name}${level}${tagHtml}</div>
-        <div class="nb-browser-card-meta">${cells} cell${cells!==1?'s':''} ${lang}${ro}${editMeta}${del}</div>
+        <div class="nb-browser-card-meta">${cells} cell${cells!==1?'s':''} ${lang}${ro}${editMeta}${del}${guided}</div>
       </div>`;
     }
   }
@@ -457,10 +506,24 @@ const NotebookEditor = (() => {
       const sel  = document.getElementById('notebook-selector');
       const cur  = sel.value;
       sel.innerHTML = '<option value="">— select notebook —</option>';
+
+      // Group by notebook type (Agents · Skills · Notebooks) instead of a flat list.
+      const groups = { agent: [], skill: [], notebook: [] };
       list.forEach(nb => {
-        const opt = document.createElement('option');
-        opt.value = nb.id; opt.textContent = nb.name;
-        sel.appendChild(opt);
+        const kind = nb.metadata && nb.metadata.kind;
+        groups[kind === 'agent' ? 'agent' : kind === 'skill' ? 'skill' : 'notebook'].push(nb);
+      });
+      [['agent', '🤖 Agents'], ['skill', '⭐ Skills'], ['notebook', '📓 Notebooks']].forEach(([key, label]) => {
+        const items = groups[key];
+        if (!items.length) return;
+        const og = document.createElement('optgroup');
+        og.label = `${label} (${items.length})`;
+        items.sort((a, b) => a.name.localeCompare(b.name)).forEach(nb => {
+          const opt = document.createElement('option');
+          opt.value = nb.id; opt.textContent = nb.name;
+          og.appendChild(opt);
+        });
+        sel.appendChild(og);
       });
       if (cur) sel.value = cur;
     } catch(e) { console.error('List failed:', e); }
