@@ -456,6 +456,78 @@
 }
 .nbb-tutorials .nb-browser-card { border-left: 3px solid var(--accent); }
 
+/* ── Settings: Languages selector ─────────────────────────────────── */
+.lang-select-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.lang-chip {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  padding: 7px 13px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  background: var(--surface-3); border: 1px solid var(--border); color: var(--text-3);
+  transition: all .15s; user-select: none;
+}
+.lang-chip:hover { color: var(--text-1); border-color: var(--accent-dim); }
+.lang-chip.on { background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: var(--accent); color: var(--accent); }
+.lang-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+.lang-chip-icon { font-size: 14px; }
+.fre-lang-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.fre-lang-grid .lang-chip { font-size: 12px; padding: 5px 10px; }
+
+#languages-card.pulse { animation: langPulse 1.4s ease; }
+@keyframes langPulse {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  30% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
+}
+
+/* ── Settings: Tutorials catalog ──────────────────────────────────── */
+.tut-cat-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--border); padding-bottom: 2px; }
+.tut-cat-tab {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; cursor: pointer;
+  background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  color: var(--text-3); font-family: var(--font-ui); font-size: 12.5px; font-weight: 600; transition: all .15s;
+}
+.tut-cat-tab:hover { color: var(--text-1); }
+.tut-cat-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tut-cat-count { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px;
+  background: var(--surface-4); color: var(--text-3); }
+.tut-cat-tab.active .tut-cat-count { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+.tut-add-langs {
+  margin-left: auto; align-self: center; padding: 5px 12px; cursor: pointer;
+  background: transparent; border: 1px dashed var(--border); border-radius: 999px;
+  color: var(--text-3); font-family: var(--font-ui); font-size: 12px; font-weight: 600; transition: all .15s;
+}
+.tut-add-langs:hover { border-color: var(--accent); color: var(--accent); }
+
+.tut-subcat { margin-bottom: 16px; }
+.tut-subcat-label { font-size: 11px; color: var(--text-3); font-style: italic; margin: 0 0 8px; }
+.tut-row {
+  display: flex; align-items: center; gap: 16px; padding: 12px 14px; margin-bottom: 8px;
+  background: var(--surface-3); border: 1px solid var(--border); border-radius: 10px; transition: border-color .15s;
+}
+.tut-row:hover { border-color: var(--accent-dim); }
+.tut-row-main { flex: 1; min-width: 0; }
+.tut-row-name { font-size: 13.5px; font-weight: 650; color: var(--text-1); }
+.tut-level { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 3px;
+  margin-left: 8px; background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); vertical-align: middle; }
+.tut-row-desc { font-size: 12px; color: var(--text-3); margin: 3px 0 8px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tut-bar { height: 4px; border-radius: 999px; background: var(--surface-1); overflow: hidden; max-width: 420px; }
+.tut-bar-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width .3s; }
+.tut-bar-fill.done { background: var(--green, #6bcf8f); }
+.tut-row-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+.tut-status { font-family: var(--font-code); font-size: 11.5px; font-weight: 600; color: var(--text-2); }
+.tut-status.done { color: var(--green, #6bcf8f); }
+.tut-status.muted { color: var(--text-3); font-weight: 500; }
+.tut-row-actions { display: flex; gap: 6px; }
+.tut-row-actions button { padding: 5px 12px; font-size: 12px; }
+.tut-empty { color: var(--text-3); font-size: 13px; padding: 14px 0; }
+.tut-inline-link { background: none; border: none; color: var(--accent); cursor: pointer;
+  font: inherit; text-decoration: underline; padding: 0; }
+@media (max-width: 640px) {
+  .tut-row { flex-direction: column; align-items: stretch; }
+  .tut-row-side { align-items: stretch; }
+}
+
 /* Tutorial language tabs */
 .nbb-lang-tabs {
   display: flex; flex-wrap: wrap; gap: 4px;
@@ -922,6 +994,8 @@ a:hover { text-decoration: underline; }
   box-shadow: 0 2px 8px rgba(0,0,0,.18);
 }
 .nb-toolbar[data-hidden] { display: none; }
+/* Hide the code-controls toolbar on the notebook landing page (nothing open). */
+.nb-toolbar[data-no-notebook] { display: none; }
 .nb-toolbar-left  { display: flex; align-items: center; gap: 6px; flex: 1; }
 .nb-toolbar-right { display: flex; align-items: center; gap: 8px; }
 
@@ -1740,6 +1814,12 @@ a:hover { text-decoration: underline; }
   flex: 1; overflow-y: auto;
   padding: 24px; max-width: 780px;
   margin: 0 auto; width: 100%;
+}
+/* Agents, Packages, and Settings use the full screen width (no centered column). */
+#panel-agents .tab-scroll,
+#panel-packages .tab-scroll,
+#panel-settings .tab-scroll {
+  max-width: none; padding: 24px 32px;
 }
 .section-head { margin-bottom: 20px; }
 .section-head h2 { font-size: 18px; font-weight: 700; color: var(--text-1); margin-bottom: 4px; }

@@ -183,18 +183,7 @@ const NotebookEditor = (() => {
 
       let html = '';
 
-      // ── Top-level view switch: Select Notebook vs Tutorials ───
-      html += `<div class="nbb-views" role="tablist">
-        <button class="nbb-view-btn${browserView==='mine' ? ' active' : ''}" data-view="mine" role="tab">
-          <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="1.5" width="12" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-          Select Notebook <span class="nbb-view-count">${personal.length}</span>
-        </button>
-        <button class="nbb-view-btn${browserView==='tutorials' ? ' active' : ''}" data-view="tutorials" role="tab">
-          <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M8 3.5C6.5 2 3.5 2 2 2.5v10c1.5-.5 4.5-.5 6 1 1.5-1.5 4.5-1.5 6-1v-10c-1.5-.5-4.5-.5-6 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 3.5v10" stroke="currentColor" stroke-width="1.3"/></svg>
-          Tutorials <span class="nbb-view-count">${tutorials.length}</span>
-        </button>
-      </div>`;
-
+      // Personal notebooks only — tutorials now live in Settings → Tutorials.
       if (browserView === 'mine') {
 
       // ── My Notebooks section ──────────────────────────────────
@@ -353,15 +342,6 @@ const NotebookEditor = (() => {
       } // end view: tutorials
 
       listEl.innerHTML = html;
-
-      // Bind top-level view switch
-      listEl.querySelectorAll('.nbb-view-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          browserView = btn.dataset.view;
-          renderBrowser(searchEl.value.toLowerCase());
-        });
-      });
 
       // Bind card clicks (open notebook)
       listEl.querySelectorAll('.nb-browser-card').forEach(card => {
@@ -552,6 +532,8 @@ const NotebookEditor = (() => {
         readOnly = false;
       }
       nb._readOnly = readOnly;
+      // Learn this notebook's code-cell count for completion tracking.
+      window.Progress?.setTotal(id, (nb.cells || []).filter(c => String(c.type).toUpperCase() === 'CODE').length);
       // Save current state before switching
       if (activeTabId && notebook) { syncSources(); tabStore.set(activeTabId, notebook); }
       // Register new tab
@@ -591,6 +573,8 @@ const NotebookEditor = (() => {
     document.getElementById('notebook-selector').value = id;
     document.getElementById('sb-session').textContent  = `Session: nb-${id}`;
     document.getElementById('empty-state')?.remove();
+    // A notebook is open → reveal the code-controls toolbar.
+    document.getElementById('nb-toolbar')?.removeAttribute('data-no-notebook');
     syncAnnotations();
     render();
     renderTabStrip();
@@ -635,6 +619,8 @@ const NotebookEditor = (() => {
         Arima.state.currentSessionId  = null;
         document.getElementById('notebook-selector').value = '';
         document.getElementById('sb-session').textContent = 'No session';
+        // Back to the landing page → hide the code-controls toolbar.
+        document.getElementById('nb-toolbar')?.setAttribute('data-no-notebook', '');
         const container = document.getElementById('cells-container');
         if (container) container.innerHTML = `<div class="empty-state" id="empty-state">
           <div class="empty-icon"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="6" width="32" height="36" rx="3" stroke="currentColor" stroke-width="2"/><path d="M16 16h16M16 22h16M16 28h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
@@ -2019,6 +2005,7 @@ const NotebookEditor = (() => {
     cell.returnValue    = result.returnValue;
     cell.executed       = true;
     cell.executionCount = result.executionCount;
+    if (result.success) window.Progress?.record(activeTabId, cell.id);
 
     const cnt = document.getElementById(`cnt-${cell.id}`);
     if (cnt) cnt.textContent = `[${result.executionCount}]`;
@@ -2423,6 +2410,7 @@ const NotebookEditor = (() => {
     cell.returnValue    = result.returnValue;
     cell.executed       = true;
     cell.executionCount = result.executionCount;
+    if (result.success) window.Progress?.record(activeTabId, cell.id);
     const _now = new Date();
     cell.lastExecutedAt      = _now.toISOString();
     cell.lastExecutionTimeMs = result.executionTimeMs || 0;

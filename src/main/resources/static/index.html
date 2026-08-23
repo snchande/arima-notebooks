@@ -185,9 +185,9 @@
       <select id="notebook-selector" class="nb-selector" title="Switch notebook">
         <option value="">— select notebook —</option>
       </select>
-      <button class="tb-btn" id="btn-browse-notebooks" title="Open Tutorials & Notebooks">
+      <button class="tb-btn" id="btn-browse-notebooks" title="Browse & manage your notebooks">
         <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 6h14" stroke="currentColor" stroke-width="1.3"/><circle cx="4" cy="4.5" r=".8" fill="currentColor"/><circle cx="6.5" cy="4.5" r=".8" fill="currentColor"/></svg>
-        Tutorials
+        Notebooks
       </button>
       <button class="tb-btn" id="btn-new" title="New notebook (Ctrl+Alt+N)">
         <svg viewBox="0 0 16 16"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -294,22 +294,14 @@
   </div>
 </header>
 
-<!-- ═══════════════ NOTEBOOK TOOLBAR ═══════════════ -->
-<div class="nb-toolbar" id="nb-toolbar">
+<!-- ═══════════════ NOTEBOOK TOOLBAR (shown only when a notebook is open) ═══════════════ -->
+<div class="nb-toolbar" id="nb-toolbar" data-no-notebook>
   <div class="nb-toolbar-left">
     <button class="nb-tool" id="btn-add-code" title="Add code cell">+ Code</button>
     <button class="nb-tool" id="btn-add-md"   title="Add markdown cell">+ Markdown</button>
     <button class="nb-tool nb-tool-pipeline" id="btn-add-pipeline" title="Add pipeline cell — declare a workflow of named cell anchors">
       <svg viewBox="0 0 16 16"><path d="M1 4h14M1 8h14M1 12h14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="4" cy="4" r="1.5" fill="currentColor"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
       + Pipeline
-    </button>
-    <button class="nb-tool nb-tool-agent" id="btn-add-agent" title="New Agent notebook — author, run, and export an agent">
-      <svg viewBox="0 0 16 16" fill="none"><rect x="3" y="5" width="10" height="8" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v3M6 9h.01M10 9h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-      + Agent
-    </button>
-    <button class="nb-tool nb-tool-agent" id="btn-add-skill" title="New Skill notebook — author and export a skill">
-      <svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5l1.8 3.7 4 .6-2.9 2.8.7 4L8 10.8 4.4 12.6l.7-4L2.2 5.8l4-.6L8 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-      + Skill
     </button>
     <button class="nb-tool" id="btn-paste-cell" title="Paste new cell from clipboard (Ctrl+Shift+V)">
       <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><rect x="4" y="4" width="9" height="11" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M6 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M6 8h5M6 10.5h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -717,6 +709,31 @@ dotnet fsi --version  # verify F# Interactive</pre>
         <div class="section-head">
           <h2>Settings</h2>
           <p>Configure Claude AI, editor preferences, and server options.</p>
+        </div>
+
+        <!-- ── Languages ── -->
+        <div class="card" id="languages-card">
+          <div class="card-title">Languages</div>
+          <div class="card-body">
+            <p class="muted" style="margin:0 0 12px;font-size:12.5px;line-height:1.6">
+              Choose the languages you want to work with. The Tutorials below show only these —
+              select or deselect anytime. (Cells can still use any language.)
+            </p>
+            <div class="lang-select-grid" id="lang-select-grid"></div>
+          </div>
+        </div>
+
+        <!-- ── Tutorials ── -->
+        <div class="card" id="tutorials-card">
+          <div class="card-title">Tutorials</div>
+          <div class="card-body">
+            <p class="muted" style="margin:0 0 12px;font-size:12.5px;line-height:1.6">
+              Learn hands-on. Open a tutorial to read and run it, or press <strong>▶ Guided</strong> for a
+              narrated walkthrough. A tutorial is marked <strong>complete</strong> once you've run every code cell.
+            </p>
+            <div class="tut-cat-tabs" id="tut-cat-tabs"></div>
+            <div class="tut-cat-list" id="tut-cat-list"><div class="tut-empty">Loading…</div></div>
+          </div>
         </div>
 
         <div class="card">
@@ -1262,7 +1279,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
           <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
           <path d="M1 6h14" stroke="currentColor" stroke-width="1.3"/>
         </svg>
-        Tutorials &amp; Notebooks
+        My Notebooks
       </h3>
       <input type="search" class="nb-browser-search" id="nb-browser-search" placeholder="Filter notebooks…">
       <button class="nb-browser-fs" id="nb-browser-fs" title="Toggle full screen (F)" aria-label="Toggle full screen">
@@ -1557,12 +1574,14 @@ dotnet fsi --version  # verify F# Interactive</pre>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 
 <script src="/js/app.js"></script>
+<script src="/js/prefs.js"></script>
 <script src="/js/notifications.js"></script>
 <script src="/js/orchestration.js"></script>
 <script src="/js/notebook.js"></script>
 <script src="/js/agent.js"></script>
 <script src="/js/agents-tab.js"></script>
 <script src="/js/tutorial-player.js"></script>
+<script src="/js/tutorials-settings.js"></script>
 <script src="/js/console-tab.js"></script>
 <script src="/js/packages.js"></script>
 <script src="/js/settings.js"></script>

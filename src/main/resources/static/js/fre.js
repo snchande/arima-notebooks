@@ -42,9 +42,16 @@
       before: () => { switchTab('notebook'); openAI(false); }
     },
     {
+      target: null,
+      langPicker: true,
+      title: 'Which languages do you use?',
+      body: 'Arima supports seven languages — but you probably don’t need them all. Pick the ones you work with and we’ll tailor the tutorials to you. You can change this anytime in <b>Settings &rarr; Languages</b>.',
+      before: () => { switchTab('notebook'); openAI(false); }
+    },
+    {
       target: '.tab-nav',
-      title: 'Four workspaces',
-      body: 'Everything lives behind four tabs — <b>Notebook</b> to build, <b>Console</b> for quick REPL experiments, <b>Packages</b> to add libraries, and <b>Settings</b> to configure Arima Notebooks.',
+      title: 'Your workspaces',
+      body: 'Everything lives behind these tabs — <b>Notebook</b> to build, <b>Console</b> for quick REPL experiments, <b>Agents</b> to author and run agents, <b>Packages</b> to add libraries, and <b>Settings</b> (which is also home to your <b>Tutorials</b>).',
       place: 'bottom'
     },
     {
@@ -101,11 +108,11 @@
       place: 'left'
     },
     {
-      target: '#btn-browse-notebooks',
+      target: '#tutorials-card',
       title: 'Learn by example',
-      body: 'The Notebook Browser opens <b>Arima Tutorials</b> — dozens of ready-made notebooks that teach every language and feature hands-on.',
-      before: () => switchTab('notebook'),
-      place: 'bottom'
+      body: 'Find <b>Tutorials</b> in <b>Settings</b> — dozens of ready-made, hands-on lessons for the languages you picked. Press <b>▶ Guided</b> on any one for a narrated walkthrough, and watch your <b>completion %</b> climb as you run the cells.',
+      before: () => switchTab('settings'),
+      place: 'top'
     },
     {
       target: '#fre-tour-setting',
@@ -191,12 +198,39 @@
     setTimeout(() => {
       els.title.innerHTML = step.title;
       els.body.innerHTML  = step.body;
+      if (step.langPicker) injectLangPicker();
       els.back.style.visibility = idx === 0 ? 'hidden' : 'visible';
       els.next.textContent = idx === STEPS.length - 1 ? 'Finish' : 'Next';
       renderDots();
       curTarget = step.target ? document.querySelector(step.target) : null;
       reposition();
     }, 140);
+  }
+
+  // Language picker embedded in the FRE (writes LangPrefs live).
+  function injectLangPicker() {
+    const LABEL = { jshell:'JShell', java:'Java', javascript:'JavaScript', typescript:'TypeScript',
+      csharp:'C#', fsharp:'F#', cpp:'C++' };
+    const ICON = { jshell:'☕', java:'♨', javascript:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙' };
+    const order = (window.LangPrefs && LangPrefs.ALL) || Object.keys(LABEL);
+    // Default everything checked on first run so nothing feels hidden by surprise.
+    const sel = new Set(window.LangPrefs ? LangPrefs.get() : order);
+    const grid = document.createElement('div');
+    grid.className = 'fre-lang-grid';
+    grid.innerHTML = order.map(l => `
+      <label class="lang-chip${sel.has(l) ? ' on' : ''}">
+        <input type="checkbox" value="${l}"${sel.has(l) ? ' checked' : ''}>
+        <span class="lang-chip-icon">${ICON[l] || ''}</span>${LABEL[l] || l}
+      </label>`).join('');
+    grid.addEventListener('change', () => {
+      grid.querySelectorAll('.lang-chip').forEach(c =>
+        c.classList.toggle('on', c.querySelector('input').checked));
+      const chosen = Array.from(grid.querySelectorAll('input:checked')).map(x => x.value);
+      if (window.LangPrefs) LangPrefs.set(chosen);
+    });
+    els.body.appendChild(grid);
+    // Persist the default (all) immediately so the choice is recorded even if unchanged.
+    if (window.LangPrefs && !LangPrefs.isSet()) LangPrefs.set(order);
   }
 
   function reposition() {
