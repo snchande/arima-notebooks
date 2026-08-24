@@ -159,7 +159,7 @@
 <!-- ═══════════════ TOP BAR ═══════════════ -->
 <header class="topbar">
   <div class="topbar-left">
-    <div class="brand">
+    <div class="brand" role="button" tabindex="0" title="Go to Home" onclick="Home && Home.go()" onkeydown="if(event.key==='Enter'){Home && Home.go()}">
       <svg class="brand-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="bpg" cx="36%" cy="30%" r="68%">
@@ -207,6 +207,10 @@
 
   <div class="topbar-center">
     <nav class="tab-nav" role="tablist">
+      <button class="tab-btn" id="btn-home-tab" role="tab" title="Home" onclick="Home && Home.go()">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M2 7l6-5 6 5M4 6.5V14h8V6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Home
+      </button>
       <button class="tab-btn active" data-tab="notebook" role="tab">
         <svg viewBox="0 0 16 16"><rect x="2" y="1" width="12" height="14" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         Notebook
@@ -376,19 +380,9 @@
     <div class="tab-panel active" id="panel-notebook">
       <div id="notebook-tabs-bar" class="notebook-tabs-bar"></div>
       <div class="cells-scroll" id="cells-scroll">
-        <div id="cells-container" class="cells-container">
-          <div class="empty-state" id="empty-state">
-            <div class="empty-icon">
-              <svg viewBox="0 0 48 48" fill="none">
-                <rect x="8" y="6" width="32" height="36" rx="3" stroke="currentColor" stroke-width="2"/>
-                <path d="M16 16h16M16 22h16M16 28h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <h3>No notebook open</h3>
-            <p>Select a notebook from the dropdown, or create a new one.</p>
-            <button class="btn-primary" id="btn-create-first">Create New Notebook</button>
-          </div>
-        </div>
+        <!-- Landing dashboard — shown when no notebook is open (populated by home.js) -->
+        <div id="home-view" class="home-view"></div>
+        <div id="cells-container" class="cells-container"></div>
       </div>
       <!-- Step Navigator — sticky footer inside notebook panel -->
       <div id="step-nav" class="step-nav" style="display:none">
@@ -744,6 +738,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
                 <button class="btn-primary" id="btn-pypi-install">Install</button>
               </div>
               <div id="pypi-pkg-status" class="pkg-status hidden"></div>
+              <pre id="pypi-install-log" class="pkg-install-log" hidden></pre>
               <div class="popular-pkgs">
                 <span class="popular-label">Data Science:</span>
                 <button class="pypi-pill pill" data-pkg="numpy">numpy</button>
@@ -1469,7 +1464,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
       </div>
       <div class="welcome-hero-text">
         <h1>Welcome to <span>Arima Notebooks</span> <em id="welcome-version-tag">v4.0.0</em></h1>
-        <p>A local, browser-based notebook for seven languages — with AI co-pilots and MCP. Pick a quick tour below; reopen anytime from <strong>Help</strong>.</p>
+        <p>A local, browser-based notebook for eight languages — with AI co-pilots and MCP. Pick a quick tour below; reopen anytime from <strong>Help</strong>.</p>
       </div>
     </div>
 
@@ -1671,6 +1666,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
 <script src="/js/agents-tab.js"></script>
 <script src="/js/tutorial-player.js"></script>
 <script src="/js/tutorials-settings.js"></script>
+<script src="/js/home.js"></script>
 <script src="/js/console-tab.js"></script>
 <script src="/js/packages.js"></script>
 <script src="/js/settings.js"></script>
@@ -1776,7 +1772,7 @@ document.addEventListener('keydown', (e) => {
     <div class="about-logo">☕</div>
     <h2 class="about-title">Arima Notebooks</h2>
     <div class="about-version">Version 4.0.0 · brewed by Barista</div>
-    <p class="about-desc">A local, browser-based multi-language notebook for the agentic era — JShell · Java · JavaScript · TypeScript · C# · F# · C++ · Python — with AI co-pilots and MCP. Humans and agents collaborate on the same living code.</p>
+    <p class="about-desc">A local, browser-based multi-language notebook for the agentic era — JShell · Java · JavaScript · TypeScript · C# · F# · C++ · Python · Python — with AI co-pilots and MCP. Humans and agents collaborate on the same living code.</p>
     <div class="about-links">
       <a class="about-link" href="#" onclick="showDocsPanel('usage');AboutUI.close();return false;">📖 Documentation</a>
       <a class="about-link" href="#" onclick="Welcome.openReleaseNotes();AboutUI.close();return false;">✨ What's New</a>

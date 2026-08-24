@@ -48,7 +48,7 @@
 > ```
 > Or install Python 3.8+ manually from [python.org/downloads](https://www.python.org/downloads/) (on Windows, tick **"Add python.exe to PATH"**).
 > Ensure `python`, `python3`, or the Windows `py` launcher is on your `PATH`, then restart Arima. Packages are installed from the **Packages → PyPI** tab via `pip` into an isolated folder (`data/pypi-packages/`) added to `PYTHONPATH` — your system site-packages are left untouched.
-> Without Python, the other seven languages work normally.
+> Without Python, the other eight languages work normally.
 
 ---
 

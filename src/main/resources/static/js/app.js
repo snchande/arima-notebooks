@@ -19,10 +19,12 @@ const Arima = (() => {
 
     btns.forEach(btn => {
       btn.addEventListener('click', () => {
+        // Buttons without a data-tab (e.g. the Home tab) manage their own view — skip.
+        const tab = btn.dataset.tab;
+        if (!tab) return;
         btns.forEach(b => b.classList.remove('active'));
         panels.forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
-        const tab = btn.dataset.tab;
         document.getElementById(`panel-${tab}`)?.classList.add('active');
         // Only show notebook toolbar on notebook tab
         nbToolbar.toggleAttribute('data-hidden', tab !== 'notebook');

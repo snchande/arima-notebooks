@@ -9,6 +9,7 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -48,15 +49,28 @@ public class PyPiService {
     @Value("${barista.data.dir:data}")
     private String dataDir;
 
+    /** STOMP topic pip output streams to; the PyPI tab subscribes to this session. */
+    public static final String INSTALL_SESSION = "pypi-install";
+
     private final PythonExecutionService python;
+    private final SimpMessagingTemplate messaging;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
     private List<PyPiPackageInfo> installedPackages = new ArrayList<>();
 
-    public PyPiService(PythonExecutionService python) {
+    public PyPiService(PythonExecutionService python, SimpMessagingTemplate messaging) {
         this.python = python;
+        this.messaging = messaging;
         this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         this.httpClient = HttpClient.newHttpClient();
+    }
+
+    /** Push a line of install output to the browser (shell-style live log). */
+    private void stream(String text) {
+        try {
+            messaging.convertAndSend("/topic/shell/" + INSTALL_SESSION,
+                    Map.of("type", "partial_output", "cellId", "__pypi__", "text", text));
+        } catch (Exception ignore) {}
     }
 
     @PostConstruct
@@ -103,7 +117,8 @@ public class PyPiService {
         log.info("Installing PyPI package: {}", spec);
         List<String> cmd = new ArrayList<>(py);
         cmd.addAll(List.of("-m", "pip", "install", "--target", site.toString(),
-                "--no-input", "--disable-pip-version-check", "--upgrade", spec));
+                "--no-input", "--disable-pip-version-check", "--progress-bar", "off", "--upgrade", spec));
+        stream("$ pip install " + spec + "\n");
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process process = pb.start();
@@ -111,11 +126,16 @@ public class PyPiService {
         StringBuilder output = new StringBuilder();
         try (BufferedReader r = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
-            while ((line = r.readLine()) != null) output.append(line).append('\n');
+            while ((line = r.readLine()) != null) {
+                output.append(line).append('\n');
+                stream(line + "\n");   // live, shell-style
+            }
         }
-        if (!process.waitFor(240, TimeUnit.SECONDS)) {
+        // Big packages (pandas, numpy, scikit-learn) can pull large wheels — allow up to 10 min.
+        if (!process.waitFor(600, TimeUnit.SECONDS)) {
             process.destroyForcibly();
-            throw new IOException("pip install timed out for: " + spec);
+            stream("✗ pip install timed out after 10 minutes.\n");
+            throw new IOException("pip install timed out for: " + spec + " (10 min). Try again or check your connection.");
         }
         if (process.exitValue() != 0) {
             String msg = output.toString().trim();
@@ -123,6 +143,7 @@ public class PyPiService {
                 msg = "pip is not available for this interpreter. Run:  " + String.join(" ", py) +
                       " -m ensurepip --upgrade\n\n" + msg;
             }
+            stream("✗ install failed (exit " + process.exitValue() + ").\n");
             throw new IOException("pip install failed for " + spec + ":\n" + msg);
         }
 
@@ -136,6 +157,7 @@ public class PyPiService {
         PyPiPackageInfo pkg = new PyPiPackageInfo(name.trim(), actualVersion, LocalDateTime.now(), newPaths);
         installedPackages.add(pkg);
         savePackageList();
+        stream("✓ Installed " + name.trim() + " " + actualVersion + " — import it in a Python cell.\n");
         log.info("Installed PyPI package: {}=={}", name, actualVersion);
         return pkg;
     }

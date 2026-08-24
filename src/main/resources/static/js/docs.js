@@ -13,7 +13,7 @@ const DocsPanel = (() => {
 usage: `
 # Arima Notebooks — User Guide
 
-Arima is a multi-language interactive notebook environment. Write and run code across **seven languages** — JShell, Java, JavaScript, **TypeScript**, C#, F#, and C++ — in cells that live alongside Markdown documentation. Organise work with named Workflows, get AI assistance from Claude, GitHub Copilot, or Antigravity, and expose everything as an API.
+Arima is a multi-language interactive notebook environment. Write and run code across **eight languages** — JShell, Java, JavaScript, **TypeScript**, C#, F#, C++, and Python — in cells that live alongside Markdown documentation. Organise work with named Workflows, get AI assistance from Claude, GitHub Copilot, or Antigravity, and expose everything as an API.
 
 ---
 
@@ -334,7 +334,7 @@ For third-party libraries (Boost, Eigen, nlohmann/json, etc.) install them syste
 
 ## 6. Cell Workflows (Pipelines)
 
-Arima includes a named-cell dependency system that works across all seven languages. See the **Pipelines** tab for the full reference.
+Arima includes a named-cell dependency system that works across all eight languages. See the **Pipelines** tab for the full reference.
 
 **Quick start:**
 1. Click the **+ anchor** badge in a cell header to name a cell (e.g. \`loadData\`)
@@ -348,7 +348,7 @@ Arima includes a named-cell dependency system that works across all seven langua
 
 Open with **Ctrl+\\** or the **AI** button.
 
-- **Chat** — ask anything about code in any of the seven languages; attach cell context with the 🤖 button
+- **Chat** — ask anything about code in any of the eight languages; attach cell context with the 🤖 button
 - **Generate notebook** — click ★, describe your goal, get a full multi-cell notebook
 - **Explain / Fix** — right-click on a cell or use the 🤖 button to explain or fix errors
 - **Insert code** — code blocks in AI responses include **+ Insert into notebook**
@@ -438,7 +438,7 @@ export PATH=$JAVA_HOME/bin:$PATH
 
 Download from [nodejs.org](https://nodejs.org). After install, verify: \`node --version\`
 
-Without Node.js, JavaScript and TypeScript cells will fail. All other languages (JShell, Java, C#, F#, C++) work normally.
+Without Node.js, JavaScript and TypeScript cells will fail. All other languages (JShell, Java, C#, F#, C++, Python) work normally.
 
 ### Optional: TypeScript compiler (\`tsc\`) for type-checking
 
@@ -711,9 +711,9 @@ Verify internet access to \`repo1.maven.org\`. Check the coordinate format: \`gr
 tutorials: `
 # Tutorial Notebooks
 
-Arima ships with **built-in tutorial notebooks** covering all seven languages, from beginner to expert. Open them from the **Tutorials** button in the toolbar.
+Arima ships with **built-in tutorial notebooks** covering all eight languages, from beginner to expert. Open them from the **Tutorials** button in the toolbar.
 
-The browser has two views — **Select Notebook** (your own notebooks) and **Tutorials** — and the Tutorials view is organised into **per-language tabs** (JShell · Java · JavaScript · TypeScript · C# · F# · C++ · Agents & Skills). Use the **⛶ full-screen** toggle (or press **F**) for a roomier layout.
+The browser has two views — **Select Notebook** (your own notebooks) and **Tutorials** — and the Tutorials view is organised into **per-language tabs** (JShell · Java · JavaScript · TypeScript · C# · F# · C++ · Python · Agents & Skills). Use the **⛶ full-screen** toggle (or press **F**) for a roomier layout.
 
 ---
 
@@ -881,7 +881,7 @@ pipeline: `
 
 Arima introduces **named cell orchestration** — a system for naming cells, declaring dependencies between them, and building deterministic, reusable execution workflows.
 
-Workflows work the same way in **all seven execution modes**: JShell, Java, JavaScript, TypeScript, C#, F#, and C++. They also extend **across notebooks**, enabling modular code libraries shared across your entire workspace.
+Workflows work the same way in **all eight execution modes**: JShell, Java, JavaScript, TypeScript, C#, F#, C++, and Python. They also extend **across notebooks**, enabling modular code libraries shared across your entire workspace.
 
 ---
 
@@ -899,7 +899,7 @@ Traditional notebooks number cells by execution order (\`[3]\`). This creates hi
 | Cycle detection | None | Built-in, with full error path |
 | Minimum execution | "Run All Above" (everything) | Transitive closure only |
 | Cross-notebook sharing | None | \`notebook:{id}/{anchor}\` refs |
-| Language support | Single language | All 7 languages |
+| Language support | Single language | All 8 languages |
 
 ---
 
@@ -1090,7 +1090,7 @@ Most MCP servers provide read-only data sources: search results, database querie
 
 When an AI agent connects to Arima, it gains the ability to:
 
-- **Write and execute code** across seven languages (JShell, Java, JavaScript, TypeScript, C#, F#, C++) and see real output
+- **Write and execute code** across eight languages (JShell, Java, JavaScript, TypeScript, C#, F#, C++, Python) and see real output
 - **Create, read, and organise notebooks** — persistent, structured documents with cells, anchors, and dependencies
 - **Trigger named workflows** (pipelines) that execute entire analysis chains in a single tool call
 - **Build cumulative sessions** — load a module once, use it across many code executions
@@ -1291,7 +1291,7 @@ This means Arima is not just a notebook tool for humans. It is a **programmable 
 - **Automated** — run recurring analysis notebooks on a schedule
 - **Tested** — validate notebook behaviour from automated test suites
 
-Every execution engine (JShell, Java, JavaScript, TypeScript, C#, F#, C++), every pipeline workflow, every package manager, and every AI endpoint is accessible via the same REST API the browser uses.
+Every execution engine (JShell, Java, JavaScript, TypeScript, C#, F#, C++, Python), every pipeline workflow, every package manager, and every AI endpoint is accessible via the same REST API the browser uses.
 
 ---
 
@@ -1479,7 +1479,7 @@ No special API parameter is needed — the cross-notebook resolution is automati
 arch: `
 # Architecture
 
-Arima is a **single-server application** — one Spring Boot process serves the static frontend and provides all APIs. There is no separate frontend build, no microservices, no message queue. Everything communicates over HTTP REST and STOMP WebSocket. Seven execution engines (JShell, Java, JavaScript, TypeScript, C#, F#, C++) plug into a single \`ShellController\` route, all reporting back through one unified \`ExecutionResult\`.
+Arima is a **single-server application** — one Spring Boot process serves the static frontend and provides all APIs. There is no separate frontend build, no microservices, no message queue. Everything communicates over HTTP REST and STOMP WebSocket. Eight execution engines (JShell, Java, JavaScript, TypeScript, C#, F#, C++, Python) plug into a single \`ShellController\` route, all reporting back through one unified \`ExecutionResult\`.
 
 ---
 
@@ -1497,7 +1497,7 @@ graph LR
         Storage["File Storage (.vnb)"]
     end
 
-    subgraph Engines["Execution Engines (7 languages)"]
+    subgraph Engines["Execution Engines (8 languages)"]
         JShell["JShell (in-process)"]
         Java["javac + subprocess"]
         Node["node subprocess (JS)"]

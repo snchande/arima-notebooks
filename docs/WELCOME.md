@@ -2,7 +2,7 @@
 
 > This is the **canonical welcome**. The `arima welcome` CLI command and the **arima** AI agent both deliver this same experience — so whether you arrive through the terminal or through an AI co-pilot, you get one consistent starting point.
 
-Arima Notebooks is part of the **Arima** platform. It is a modern, local, browser-based notebook for the agentic era — a **cross-platform execution plane** where people and AI agents collaborate on the same code. **Seven languages** (JavaScript · TypeScript · C# · F# · C++ · Java · JShell, with more to come) run side by side as equals, three AI co-pilots are wired in, and the **whole system is exposed over MCP**. Everything runs on your machine.
+Arima Notebooks is part of the **Arima** platform. It is a modern, local, browser-based notebook for the agentic era — a **cross-platform execution plane** where people and AI agents collaborate on the same code. **Eight languages** (JavaScript · TypeScript · C# · F# · C++ · Python · Java · JShell, with more to come) run side by side as equals, three AI co-pilots are wired in, and the **whole system is exposed over MCP**. Everything runs on your machine.
 
 ---
 

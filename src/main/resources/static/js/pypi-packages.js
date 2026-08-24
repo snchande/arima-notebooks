@@ -9,11 +9,28 @@ const PyPiPackageManager = (() => {
         bindButtons();
     }
 
+    let logSubscribed = false;
+
     // Called by PackageTabUI when the PyPI sub-tab is shown (lazy first load).
     function refresh() {
         checkPythonStatus();
         loadInstalledPackages();
+        ensureLogSubscription();
         started = true;
+    }
+
+    // Subscribe to the pip output stream once (well before any install), so the
+    // live log never misses early lines due to a just-in-time subscription race.
+    function ensureLogSubscription() {
+        if (logSubscribed || !(window.Arima && Arima.subscribeToSession)) return;
+        Arima.subscribeToSession('pypi-install', (msg) => {
+            const log = document.getElementById('pypi-install-log');
+            if (msg && msg.type === 'partial_output' && msg.text && log) {
+                log.textContent += msg.text;
+                log.scrollTop = log.scrollHeight;
+            }
+        });
+        logSubscribed = true;
     }
 
     async function checkPythonStatus() {
@@ -110,8 +127,14 @@ const PyPiPackageManager = (() => {
         const eq = raw.indexOf('==');
         if (eq > 0) { name = raw.substring(0, eq); version = raw.substring(eq + 2); }
 
-        setInstallStatus(`Installing ${name} ${version === 'latest' ? '' : version}… (pip may take a moment)`, 'loading');
+        setInstallStatus(`Installing ${name} ${version === 'latest' ? '' : version}… (live log below)`, 'loading');
         Arima.setStatus('Installing PyPI: ' + name);
+
+        // Live, shell-style pip output streams over STOMP (subscribed on tab open).
+        ensureLogSubscription();
+        const log = document.getElementById('pypi-install-log');
+        if (log) { log.hidden = false; log.textContent = ''; }
+
         try {
             const pkg = await Arima.api('POST', '/pypi/packages/install', { name, version });
             setInstallStatus(`Installed: ${pkg.name} ${pkg.version}`, 'success');
@@ -119,7 +142,7 @@ const PyPiPackageManager = (() => {
             await loadInstalledPackages();
             Arima.setStatus('PyPI installed: ' + pkg.name);
         } catch (e) {
-            setInstallStatus('Install failed: ' + e.message, 'error');
+            setInstallStatus('Install failed — see the log below. ' + (e.message || ''), 'error');
             Arima.setStatus('PyPI install failed');
         }
     }

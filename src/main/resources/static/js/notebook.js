@@ -574,6 +574,7 @@ const NotebookEditor = (() => {
     document.getElementById('notebook-selector').value = id;
     document.getElementById('sb-session').textContent  = `Session: nb-${id}`;
     document.getElementById('empty-state')?.remove();
+    window.Home?.hide();   // a notebook is open → hide the landing dashboard
     // A notebook is open → reveal the code-controls toolbar.
     document.getElementById('nb-toolbar')?.removeAttribute('data-no-notebook');
     syncAnnotations();
@@ -620,13 +621,11 @@ const NotebookEditor = (() => {
         Arima.state.currentSessionId  = null;
         document.getElementById('notebook-selector').value = '';
         document.getElementById('sb-session').textContent = 'No session';
-        // Back to the landing page → hide the code-controls toolbar.
+        // Back to the landing page → hide the code-controls toolbar, show the home dashboard.
         document.getElementById('nb-toolbar')?.setAttribute('data-no-notebook', '');
         const container = document.getElementById('cells-container');
-        if (container) container.innerHTML = `<div class="empty-state" id="empty-state">
-          <div class="empty-icon"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="6" width="32" height="36" rx="3" stroke="currentColor" stroke-width="2"/><path d="M16 16h16M16 22h16M16 28h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
-          <h3>No notebook open</h3><p>Select a notebook from the dropdown, or create a new one.</p>
-          <button class="btn-primary" id="btn-create-first">Create New Notebook</button></div>`;
+        if (container) container.innerHTML = '';
+        window.Home?.show();
         renderTabStrip();
       }
     } else {
