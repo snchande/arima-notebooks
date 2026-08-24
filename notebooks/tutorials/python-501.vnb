@@ -1,0 +1,121 @@
+{
+  "id": "python-501",
+  "name": "Python 501 · Databases",
+  "description": "Databases in Python: SQLite from the standard library (no install), CRUD, parameterized queries, joins & aggregation, transactions, and connecting to other databases via PyPI drivers.",
+  "metadata": {
+    "category": "tutorial",
+    "language": "python",
+    "level": 501,
+    "subcategory": "Advanced"
+  },
+  "cells": [
+    {
+      "id": "py501-md0",
+      "type": "MARKDOWN",
+      "source": "# Python 501 · Databases\n\nPython speaks SQL out of the box. **`sqlite3`** is built into the standard library — a full SQL database in a single file (or in memory), with **no install required**. Everything here runs offline.\n\nAt the end we show how to reach PostgreSQL / MySQL via drivers from the **PyPI** tab.\n\n**Prerequisites:** *Python 301*.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py501-md1",
+      "type": "MARKDOWN",
+      "source": "## 1. Create a database and a table\n\nWe use an **in-memory** database (`:memory:`) so each run starts clean. Since each cell is a fresh process, this tutorial keeps its work in one cell where state must persist; later cells rebuild what they need.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py501-1",
+      "type": "CODE",
+      "mode": "python",
+      "source": "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\ncur = conn.cursor()\ncur.execute(\"\"\"\n    CREATE TABLE employees (\n        id INTEGER PRIMARY KEY,\n        name TEXT NOT NULL,\n        dept TEXT NOT NULL,\n        salary INTEGER\n    )\n\"\"\")\nconn.commit()\nprint(\"Created 'employees' table.\")",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py501-md2",
+      "type": "MARKDOWN",
+      "source": "## 2. Insert rows (parameterized)\n\nAlways use **`?` placeholders** — never string-format values into SQL. `executemany` inserts many rows efficiently and safely.\n\nWe define a reusable `sample_db()` helper here and give the cell an **anchor** so the cells below can build on it via `//@ depends:` — run them as a **pipeline**, or click **→ Run with deps** on any dependent cell.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py501-2",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ anchor: sample-db\nimport sqlite3\n\ndef sample_db():\n    conn = sqlite3.connect(\":memory:\")\n    conn.execute(\"CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER)\")\n    rows = [\n        (1, \"Ada\",   \"Engineering\", 145000),\n        (2, \"Linus\", \"Engineering\", 152000),\n        (3, \"Grace\", \"Research\",    138000),\n        (4, \"Alan\",  \"Research\",    141000),\n        (5, \"Edsger\",\"Engineering\", 149000),\n    ]\n    conn.executemany(\"INSERT INTO employees VALUES (?, ?, ?, ?)\", rows)\n    conn.commit()\n    return conn\n\nconn = sample_db()\ncount = conn.execute(\"SELECT COUNT(*) FROM employees\").fetchone()[0]\nprint(f\"Inserted {count} employees.\")",
+      "output": "",
+      "executionCount": 0,
+      "anchor": "sample-db"
+    },
+    {
+      "id": "py501-md3",
+      "type": "MARKDOWN",
+      "source": "## 3. Query and render as a table\n\nUse a `Row` factory to get dict-like rows, then hand them to `barista.table()` for a clean report.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py501-3",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ depends: sample-db\nimport sqlite3\nconn = sample_db()\nconn.row_factory = sqlite3.Row\n\nrows = conn.execute(\n    \"SELECT name, dept, salary FROM employees WHERE salary > ? ORDER BY salary DESC\",\n    (140000,)\n).fetchall()\n\nbarista.table([dict(r) for r in rows])",
+      "output": "",
+      "executionCount": 0,
+      "dependsOn": ["sample-db"]
+    },
+    {
+      "id": "py501-md4",
+      "type": "MARKDOWN",
+      "source": "## 4. Aggregation & GROUP BY\n\nSQL is superb at summarizing. Compute headcount and average salary per department.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py501-4",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ depends: sample-db\nimport sqlite3\nconn = sample_db()\nconn.row_factory = sqlite3.Row\n\nsummary = conn.execute(\"\"\"\n    SELECT dept,\n           COUNT(*)          AS headcount,\n           ROUND(AVG(salary)) AS avg_salary,\n           MAX(salary)       AS top_salary\n    FROM employees\n    GROUP BY dept\n    ORDER BY avg_salary DESC\n\"\"\").fetchall()\n\nbarista.table([dict(r) for r in summary])",
+      "output": "",
+      "executionCount": 0,
+      "dependsOn": ["sample-db"]
+    },
+    {
+      "id": "py501-md5",
+      "type": "MARKDOWN",
+      "source": "## 5. Transactions\n\nWrap related writes in a transaction — commit on success, **roll back** on error so the database is never left half-updated.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py501-5",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ depends: sample-db\nconn = sample_db()\n\ntry:\n    with conn:  # commits on success, rolls back on exception\n        conn.execute(\"UPDATE employees SET salary = salary + 5000 WHERE dept = 'Research'\")\n        # Uncomment to see a rollback:\n        # raise RuntimeError('simulated failure')\n    print(\"Raise applied.\")\nexcept Exception as e:\n    print(\"Rolled back:\", e)\n\nfor r in conn.execute(\"SELECT name, salary FROM employees WHERE dept='Research'\"):\n    print(r)",
+      "output": "",
+      "executionCount": 0,
+      "dependsOn": ["sample-db"]
+    },
+    {
+      "id": "py501-md6",
+      "type": "MARKDOWN",
+      "source": "## 6. Other databases via PyPI\n\nThe same DB-API 2.0 pattern works for every database — just install the driver from the **PyPI** tab:\n\n| Database | PyPI package | Import |\n|---|---|---|\n| PostgreSQL | `psycopg2-binary` | `import psycopg2` |\n| MySQL / MariaDB | `PyMySQL` | `import pymysql` |\n| Any SQL (ORM) | `SQLAlchemy` | `from sqlalchemy import create_engine` |\n| MongoDB | `pymongo` | `import pymongo` |\n\nExample once `SQLAlchemy` is installed (works on our in-memory SQLite, no server needed):",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py501-6",
+      "type": "CODE",
+      "mode": "python",
+      "source": "try:\n    from sqlalchemy import create_engine, text\nexcept ModuleNotFoundError:\n    print(\"SQLAlchemy not installed — add it from Packages -> PyPI, then re-run.\")\nelse:\n    engine = create_engine(\"sqlite+pysqlite:///:memory:\")\n    with engine.begin() as db:\n        db.execute(text(\"CREATE TABLE t (id INTEGER, label TEXT)\"))\n        db.execute(text(\"INSERT INTO t VALUES (:id, :label)\"), [{\"id\": 1, \"label\": \"hello\"}])\n        row = db.execute(text(\"SELECT * FROM t\")).fetchone()\n    print(\"SQLAlchemy row:\", tuple(row))",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py501-md7",
+      "type": "MARKDOWN",
+      "source": "## Next\n\n**Python 601 · Data Science, Metrics & Reporting** — analyze data and render metrics, tables, and charts using Arima's built-in output plus NumPy, pandas, and matplotlib.",
+      "output": "",
+      "executionCount": 0
+    }
+  ]
+}

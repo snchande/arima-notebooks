@@ -6,7 +6,7 @@ Arima Notebooks is designed to be **reshaped by AI** — by the user themselves,
 
 - **No build step on the frontend.** Plain HTML/CSS/vanilla JS served from the JAR. Any AI agent that can read HTML can extend the UI. No Webpack, no Vite, no React, no TypeScript transpile pipeline.
 - **Plain Java backend, no Lombok, no annotation magic.** Standard Spring Boot. Any agent that can read Java can extend it. Models are POJOs with manual builders.
-- **Subprocess-per-language.** Adding a new language = one new `*ExecutionService.java` file modeled on the existing seven. The pattern is deliberately copy-pasteable.
+- **Subprocess-per-language.** Adding a new language = one new `*ExecutionService.java` file modeled on the existing ones (eight today), a `case` in `ShellController`, a frontend mode entry, and — if it has a package ecosystem — a `<lang>` package service/tab. The pattern is deliberately copy-pasteable; the `add-execution-language` skill scaffolds it.
 - **Small conventions, not big frameworks.** Notebook format is plain JSON (`.vnb`). Cell metadata uses `//@ anchor` / `//@ depends` annotations. The MCP tool surface mirrors the REST API 1:1.
 - **One Spring Boot JAR, one port (8585).** No microservices, no databases, no message queues. There is exactly one place for an agent to look.
 - **MCP-native.** The whole system is exposed as MCP tools so external agents (Claude Code, Claude Desktop, custom) can drive Arima Notebooks identically to how the UI does.
@@ -19,7 +19,7 @@ See [`AGENTS.md`](../AGENTS.md) for the hard rules every AI contributor must fol
 
 ## Overview
 
-Arima Notebooks is a modern notebook rethought as a **cross-platform execution plane** — one place where many languages run side by side and where humans and AI agents collaborate on the same notebook. Under the hood it is a **single-server Java application** that serves a browser-based notebook UI and exposes REST and WebSocket APIs for interactive code execution across **seven runtimes**: JShell, Java, JavaScript, TypeScript, C#, F#, and C++. There is no frontend build step — the browser loads static HTML/CSS/JS directly from Spring Boot's static resource handler.
+Arima Notebooks is a modern notebook rethought as a **cross-platform execution plane** — one place where many languages run side by side and where humans and AI agents collaborate on the same notebook. Under the hood it is a **single-server Java application** that serves a browser-based notebook UI and exposes REST and WebSocket APIs for interactive code execution across **eight runtimes**: JShell, Java, JavaScript, TypeScript, C#, F#, C++, and Python. There is no frontend build step — the browser loads static HTML/CSS/JS directly from Spring Boot's static resource handler.
 
 ```
 Browser                          Arima Server (Spring Boot 3.2, Java 21)
@@ -91,6 +91,8 @@ com.barista/
 │   ├── TypeScriptExecutionService TS cells via `node --experimental-strip-types`; optional `tsc --noEmit` type-check
 │   ├── DotNetExecutionService C# (dotnet run) + F# (dotnet fsi) — see §DotNet below
 │   ├── CppExecutionService   C++ compile (g++/clang++) + run; anchor/depends injection
+│   ├── PythonExecutionService Python (python3) subprocess; PyPI on PYTHONPATH; anchor/depends injection
+│   ├── PyPiService           PyPI package install/remove (pip --target) + PyPI JSON lookup
 │   ├── NuGetService          NuGet package list management (data/nuget-packages.json)
 │   ├── OrchestrationService  Dependency graph, topological sort, cross-notebook refs
 │   ├── ClaudeService         Claude CLI integration (local subprocess, no API key stored)
@@ -191,6 +193,16 @@ js/
 - **Error normalisation**: temp file paths are replaced with `main.cpp`; line numbers are adjusted to subtract the preamble line count
 - **Timeout**: 60 seconds (compile + run combined)
 - **Prerequisite**: `g++` (MinGW-w64 on Windows, `build-essential` on Linux, Xcode CLI on macOS) or `clang++` on PATH
+
+### Python (`python3`)
+
+- Each cell runs in a fresh `python -u -X utf8` subprocess (interpreter auto-detected: `python`, `python3`, or the Windows `py -3` launcher)
+- **Preamble** injected into every cell: a `barista` helper object — `table()`, `stats()`, `html()`, `image()` (matplotlib figure/PNG → data-URI via the `BARISTA_HTML` sentinel), `display()`
+- **PyPI packages**: `PyPiService` installs to `data/pypi-packages/site` via `pip install --target`; that directory is put on `PYTHONPATH` for every Python cell, so `import <pkg>` resolves without touching system site-packages. Uninstall deletes exactly the files the install added (tracked via a before/after diff, since `pip uninstall` doesn't support `--target`).
+- **Pipeline dependency injection** (same `//@ anchor:` / `//@ depends:` DSL as C#/F#): ancestor cell sources (transitive closure) are written to a side file and `exec()`'d into the cell's `globals()` with stdout redirected to devnull, so their variables/functions are in scope before the current cell runs
+- **Error normalisation**: temp paths replaced with `script.py`; `File "script.py", line N` numbers shifted to subtract the injected preamble
+- **Timeout / runaway guard**: shared `InteractiveProcessRunner` (output-line + time limits), same as the other subprocess languages
+- **Prerequisite**: Python 3.8+ on PATH
 
 ---
 

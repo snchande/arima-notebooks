@@ -53,7 +53,7 @@ Arima Notebooks is **one Spring Boot 3.2 application on Java 21**, serving a sta
 
 These are load-bearing decisions. Do not change them in a feature PR:
 
-- The seven execution-service split (`JShellManager`, `JavaCompilerService`, `NodeJsExecutionService`, `TypeScriptExecutionService`, `DotNetExecutionService`, `CppExecutionService`, plus `OrchestrationService`).
+- The execution-service split — one service per language (`JShellManager`, `JavaCompilerService`, `NodeJsExecutionService`, `TypeScriptExecutionService`, `DotNetExecutionService`, `CppExecutionService`, `PythonExecutionService`), plus `OrchestrationService`. Adding a language is additive: new `<Lang>ExecutionService` + a `case` in `ShellController` + a mode entry in the frontend + a `<lang>-packages` manager if it has one (see the `add-execution-language` skill).
 - The unified `ExecutionResult` shape — all runtimes return the same DTO.
 - The `//@ anchor` / `//@ depends` orchestration DSL — the syntax is identical across all seven languages, by design.
 - The local-first guarantee — no telemetry, no analytics, no auto-update calls.
@@ -66,7 +66,7 @@ If a change requires modifying any of these, open an issue first and tag `@sncha
 
 - **Never commit secrets.** `data/settings.json` is `.gitignore`-d for a reason. So is `oauth-config.json`. Do not add new files under `data/` to git.
 - **Never construct shell commands from user-controlled strings.** Use `ProcessBuilder` with an explicit argv list. The `scripts/security-check` pipeline blocks PRs that introduce `Runtime.exec(String)`.
-- **Never add a new outbound HTTP host** beyond the allow-list (Maven Central, npm registry, NuGet.org, the AI CLI subprocess). The security check enforces this.
+- **Never add a new outbound HTTP host** beyond the allow-list (Maven Central, npm registry, NuGet.org, PyPI (pypi.org), the AI CLI subprocess). The security check enforces this.
 - **Never silently weaken `--add-opens` / `--add-exports`** JVM flags. JShell needs the existing set; do not remove any.
 
 ### 2.4 Frontend rules

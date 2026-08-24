@@ -36,6 +36,9 @@ const TutorialPlayer = (function () {
   let chosenVoice = null;
   let rate = parseFloat(localStorage.getItem('arima.tts.rate') || '0.95') || 0.95;
 
+  // The player walks a list of "slides": an objective intro first, then one per cell.
+  let slides = [];
+
   // ── Lifecycle ────────────────────────────────────────────────────────
   async function launch(tutorialId) {
     try {
@@ -49,12 +52,61 @@ const TutorialPlayer = (function () {
     cells = (nb.cells || []).filter(c => (c.source || '').trim().length);
     if (!cells.length) { Arima.setStatus('This notebook has no content to present.'); return; }
 
+    // Slide 0 is a synthesized objective overview; the rest are the cells.
+    slides = [{ kind: 'intro' }].concat(cells.map(c => ({ kind: 'cell', cell: c })));
+
     idx = 0; mode = 'autopilot'; paused = false; asking = false; history = [];
     document.getElementById('tp-name').textContent = nb.name || 'Tutorial';
     setModeUI('autopilot');
     open();
     renderStep(0);
     startNarration();
+  }
+
+  // Pull section headings from the markdown cells → "what you'll learn" bullets.
+  function learningPoints() {
+    const pts = [];
+    cells.forEach(c => {
+      if (String(c.type).toUpperCase() !== 'MARKDOWN') return;
+      (c.source || '').split('\n').forEach(line => {
+        const m = line.match(/^#{1,3}\s+(.+)/);
+        if (!m) return;
+        let t = m[1].replace(/[*_`]/g, '').replace(/^\d+[.)]\s*/, '').trim();
+        if (!t) return;
+        if (nb.name && t.toLowerCase() === nb.name.toLowerCase()) return; // skip the title
+        if (/^(next|you did it|you'?re all set|recap|prerequisites?)/i.test(t)) return;
+        pts.push(t);
+      });
+    });
+    // De-dupe, cap to keep the intro tight.
+    return [...new Set(pts)].slice(0, 6);
+  }
+
+  function introHtml() {
+    const pts = learningPoints();
+    const desc = (nb.description || '').trim();
+    const learn = pts.length
+      ? `<div class="tp-intro-learn-label">By the end, you'll be able to:</div>
+         <ul class="tp-intro-learn">${pts.map(p => `<li>${esc(p)}</li>`).join('')}</ul>`
+      : '';
+    return `<div class="tp-intro">
+      <div class="tp-intro-eyebrow">🎧 Guided tutorial</div>
+      <h1 class="tp-intro-title">${esc(nb.name || 'Tutorial')}</h1>
+      ${desc ? `<p class="tp-intro-obj">${esc(desc)}</p>` : ''}
+      ${learn}
+      <div class="tp-intro-meta">${cells.length} step${cells.length === 1 ? '' : 's'} ·
+        narrated hands-free in <b>Autopilot</b>, or drive it yourself in <b>Interactive</b> ·
+        ask a question any time.</div>
+    </div>`;
+  }
+
+  function introNarration() {
+    const pts = learningPoints();
+    let s = `Welcome to ${nb.name || 'this tutorial'}. `;
+    if (nb.description) s += stripMd(nb.description) + ' ';
+    if (pts.length) s += `By the end, you'll be able to: ${pts.slice(0, 5).join('; ')}. `;
+    s += `There are ${cells.length} steps. Let's begin.`;
+    return s;
   }
 
   function open() {
@@ -77,55 +129,102 @@ const TutorialPlayer = (function () {
 
   // ── Rendering ────────────────────────────────────────────────────────
   function renderStep(i) {
-    idx = Math.max(0, Math.min(i, cells.length - 1));
-    const cell = cells[idx];
+    idx = Math.max(0, Math.min(i, slides.length - 1));
+    const slide = slides[idx];
     const stage = document.getElementById('tp-stage');
-    const isMd = String(cell.type).toUpperCase() === 'MARKDOWN';
 
-    let body;
-    if (isMd) {
-      body = `<div class="tp-md">${safeMarked(cell.source)}</div>`;
+    if (slide.kind === 'intro') {
+      stage.innerHTML = introHtml();
     } else {
-      const lang = LANG_LABEL[cell.mode] || cell.mode || 'code';
-      const out = (cell.output || '').trim();
-      body = `<div class="tp-code-wrap">
-        <div class="tp-code-lang">${esc(lang)}${cell.anchor ? ' · ' + esc(cell.anchor) : ''}</div>
-        <pre class="tp-code"><code>${esc(cell.source)}</code></pre>
-        ${out ? `<div class="tp-out-label">Output</div><pre class="tp-out">${esc(out)}</pre>` : ''}
-      </div>`;
+      const cell = slide.cell;
+      const isMd = String(cell.type).toUpperCase() === 'MARKDOWN';
+      if (isMd) {
+        stage.innerHTML = `<div class="tp-md">${safeMarked(cell.source)}</div>`;
+      } else {
+        const lang = LANG_LABEL[cell.mode] || cell.mode || 'code';
+        const out = (cell.output || '').trim();
+        stage.innerHTML = `<div class="tp-code-wrap">
+          <div class="tp-code-lang">${esc(lang)}${cell.anchor ? ' · ' + esc(cell.anchor) : ''}</div>
+          <pre class="tp-code" id="tp-code-block"><code>${esc(stripAnnotations(cell.source))}</code></pre>
+          ${out ? `<div class="tp-out-label">Output</div><pre class="tp-out">${esc(out)}</pre>` : ''}
+        </div>`;
+      }
     }
-    stage.innerHTML = body;
     stage.scrollTop = 0;
 
-    document.getElementById('tp-step').textContent = `${idx + 1} / ${cells.length}`;
+    document.getElementById('tp-step').textContent =
+      idx === 0 ? 'Overview' : `${idx} / ${cells.length}`;
     document.getElementById('tp-progress-bar').style.width =
-      `${((idx + 1) / cells.length) * 100}%`;
+      `${((idx + 1) / slides.length) * 100}%`;
     document.getElementById('tp-prev').disabled = idx === 0;
-    document.getElementById('tp-next').disabled = idx === cells.length - 1;
+    document.getElementById('tp-next').disabled = idx === slides.length - 1;
   }
 
-  // Build the spoken narration for the current cell.
-  function narrationFor(cell) {
-    const isMd = String(cell.type).toUpperCase() === 'MARKDOWN';
-    if (isMd) return mdToSpeech(cell.source);
+  // Build the spoken narration for the current slide.
+  function narrationFor(i) {
+    const slide = slides[i];
+    if (slide.kind === 'intro') return introNarration();
+    const cell = slide.cell;
+    if (String(cell.type).toUpperCase() === 'MARKDOWN') return mdToSpeech(cell.source);
+
+    // Code cell — describe what the code does, drawing on its own comments.
     const lang = LANG_LABEL[cell.mode] || 'code';
+    const desc = codeDescription(cell.source);
     const out = (cell.output || '').trim();
-    let s = `Here is a ${lang} code cell. Ask me to explain it if you'd like.`;
-    if (out) s += ' It produces some output shown below the code.';
-    return s;
+    let s = `Now look at this ${lang} code. `;
+    if (desc) s += desc + ' ';
+    else s += 'Read through the highlighted code — ask me to explain any part. ';
+    if (out) s += 'Below the code, you can see the output it produces.';
+    return s.trim();
+  }
+
+  // Derive a spoken description of a code cell from its //@ description annotation
+  // or its leading comment lines (so we refer to what the code actually does).
+  function codeDescription(source) {
+    const lines = (source || '').split('\n');
+    for (const line of lines) {                       // //@ description: ...
+      const m = line.trim().match(/^\/\/@\s*description:\s*(.+)/i);
+      if (m) return m[1].trim();
+    }
+    const comments = [];
+    for (const raw of lines) {
+      const t = raw.trim();
+      if (t.startsWith('//@')) continue;              // annotation, not prose
+      const m = t.match(/^(#|\/\/)\s?(.*)/);          // # …  or  // …
+      if (m && m[2].trim()) comments.push(m[2].trim());
+      else if (t && !m) break;                        // stop at first real code line
+    }
+    if (comments.length) return comments.slice(0, 3).join('. ') + '.';
+    return '';
+  }
+
+  // Strip leading //@ anchor/depends/description annotation lines from displayed code.
+  function stripAnnotations(source) {
+    const lines = (source || '').split('\n');
+    let i = 0;
+    while (i < lines.length && lines[i].trim().startsWith('//@')) i++;
+    return lines.slice(i).join('\n');
   }
 
   // ── Narration (TTS) ──────────────────────────────────────────────────
   function startNarration() {
-    if (!synth) { setCaption('Narration needs a browser with speech support (try Chrome).'); return; }
     paused = false;
     updatePlayBtn();
-    speak(narrationFor(cells[idx]), onNarrationEnd);
+    const text = narrationFor(idx);
+    highlightCode(slides[idx].kind === 'cell'); // pulse the code block while we talk about it
+    if (!synth) { setCaption(text); return; }    // no speech → still show the teleprompter text
+    speak(text, onNarrationEnd);
+  }
+
+  // Add/remove a "being discussed" highlight on the current code block.
+  function highlightCode(on) {
+    const block = document.getElementById('tp-code-block');
+    if (block) block.classList.toggle('tp-code-speaking', !!on);
   }
 
   function onNarrationEnd() {
     if (!active || paused || asking) return;
-    if (mode === 'autopilot' && idx < cells.length - 1) {
+    if (mode === 'autopilot' && idx < slides.length - 1) {
       advanceTimer = setTimeout(() => { if (active && !paused && !asking) next(true); }, AUTO_ADVANCE_MS);
     }
   }
@@ -136,15 +235,17 @@ const TutorialPlayer = (function () {
   function speak(text, onend) {
     if (!synth || !active) { if (onend) onend(); return; }
     stopSpeaking();
-    setCaption(text);
     const chunks = chunkSentences(text);
+    setCaptionChunks(chunks, -1);
     const token = ++speakToken;
     let i = 0;
     const sayNext = () => {
       // Stop immediately if superseded, cancelled, or the player has closed.
       if (token !== speakToken || !active) return;
-      if (i >= chunks.length) { if (onend) onend(); return; }
-      const u = new SpeechSynthesisUtterance(chunks[i++]);
+      if (i >= chunks.length) { setCaptionChunks(chunks, -1); if (onend) onend(); return; }
+      const cur = i++;
+      setCaptionChunks(chunks, cur);   // teleprompter: highlight the sentence being spoken
+      const u = new SpeechSynthesisUtterance(chunks[cur]);
       if (chosenVoice) u.voice = chosenVoice;
       u.rate = rate; u.pitch = 1.0; u.volume = 1.0;
       u.onend = sayNext;
@@ -229,7 +330,7 @@ const TutorialPlayer = (function () {
   // ── Navigation & playback ────────────────────────────────────────────
   function next(fromAuto) {
     clearTimeout(advanceTimer);
-    if (idx >= cells.length - 1) { if (!fromAuto) stopSpeaking(); return; }
+    if (idx >= slides.length - 1) { if (!fromAuto) stopSpeaking(); return; }
     renderStep(idx + 1);
     if (!paused) startNarration(); else setCaption('');
   }
@@ -293,12 +394,16 @@ const TutorialPlayer = (function () {
     log.scrollTop = log.scrollHeight;
     document.getElementById('tp-ask-input').value = '';
 
-    const cell = cells[idx];
+    const slide = slides[idx];
+    const cell = slide && slide.kind === 'cell' ? slide.cell : null;
+    const context = cell
+      ? `They are on step ${idx} of ${cells.length}. The current cell ` +
+        `(${cell.type}${cell.mode ? '/' + cell.mode : ''}) contains:\n\n${cell.source}\n\n`
+      : `They are on the overview slide (what the tutorial covers).\n\n`;
     const systemPrompt =
       `You are a friendly, concise tutorial guide inside Arima Notebooks. The learner is working ` +
-      `through the tutorial "${nb.name}". They are on step ${idx + 1} of ${cells.length}. ` +
-      `The current cell (${cell.type}${cell.mode ? '/' + cell.mode : ''}) contains:\n\n${cell.source}\n\n` +
-      `Answer their question about this step clearly and briefly (2-4 sentences unless they ask for more). ` +
+      `through the tutorial "${nb.name}". ` + context +
+      `Answer their question clearly and briefly (2-4 sentences unless they ask for more). ` +
       `Plain prose suitable to be read aloud — avoid long code dumps.`;
 
     try {
@@ -357,6 +462,16 @@ const TutorialPlayer = (function () {
 
   // ── Helpers ──────────────────────────────────────────────────────────
   function setCaption(t) { const c = document.getElementById('tp-caption'); if (c) c.textContent = t || ''; }
+  // Teleprompter: show the whole narration with the sentence being spoken highlighted.
+  function setCaptionChunks(chunks, activeIdx) {
+    const c = document.getElementById('tp-caption');
+    if (!c) return;
+    c.innerHTML = chunks.map((chunk, i) =>
+      i === activeIdx ? `<span class="tp-cap-active">${esc(chunk)}</span>` : esc(chunk)
+    ).join(' ');
+    const active = c.querySelector('.tp-cap-active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  }
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

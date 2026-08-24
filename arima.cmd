@@ -55,7 +55,7 @@ REM ================================================================
 echo.
 echo !ESC![93m        .        !ESC![0m!ESC![97m  A R I M A   N O T E B O O K S!ESC![0m
 echo !ESC![93m       /^|\       !ESC![0m!ESC![90m  ─────────────────────────────!ESC![0m
-echo !ESC![93m      ( @ )      !ESC![0m!ESC![96m  Java ^| JS ^| TS ^| C# ^| F# ^| C++!ESC![0m
+echo !ESC![93m      ( @ )      !ESC![0m!ESC![96m  Java ^| JS ^| TS ^| C# ^| F# ^| C++ ^| Python!ESC![0m
 echo !ESC![93m     /^|\_/^|\     !ESC![0m!ESC![90m  Brewed by Barista · JShell + Spring Boot!ESC![0m
 echo !ESC![93m    / ^|   ^| \    !ESC![0m!ESC![90m  Port: 8585!ESC![0m
 echo !ESC![93m   /__^|   ^|__\   !ESC![0m
@@ -99,6 +99,14 @@ if %ERRORLEVEL% == 0 (
     for /f "tokens=*" %%v in ('dotnet --version') do echo !ESC![90m  .NET:     %%v (C# and F# cells enabled)!ESC![0m
 ) else (
     echo !ESC![93m  .NET:     not found -- C#/F# cells disabled (install from https://dot.net)!ESC![0m
+)
+
+REM Check Python (optional — Python cells + PyPI)
+python --version >nul 2>&1
+if %ERRORLEVEL% == 0 (
+    for /f "tokens=*" %%v in ('python --version 2^>^&1') do echo !ESC![90m  Python:   %%v (Python cells + PyPI enabled)!ESC![0m
+) else (
+    echo !ESC![93m  Python:   not found -- Python cells disabled (install from https://www.python.org/downloads/)!ESC![0m
 )
 
 REM Show AI co-pilot readiness (context env already exported at top of script)
@@ -180,6 +188,9 @@ if %ERRORLEVEL% neq 0 echo !ESC![93m  Node.js:  not found -- JS/TS cells disable
 dotnet --version >nul 2>&1
 if %ERRORLEVEL% == 0 for /f "tokens=*" %%v in ('dotnet --version') do echo !ESC![90m  .NET:     %%v  -- C# / F# cells enabled!ESC![0m
 if %ERRORLEVEL% neq 0 echo !ESC![93m  .NET:     not found -- C# / F# cells disabled, install from https://dot.net!ESC![0m
+python --version >nul 2>&1
+if %ERRORLEVEL% == 0 for /f "tokens=*" %%v in ('python --version 2^>^&1') do echo !ESC![90m  Python:   %%v  -- Python cells + PyPI enabled!ESC![0m
+if %ERRORLEVEL% neq 0 echo !ESC![93m  Python:   not found -- Python cells disabled, install from https://www.python.org/downloads/!ESC![0m
 
 call :detect_copilots
 if defined BARISTA_AI_COPILOTS echo !ESC![90m  AI:       !BARISTA_AI_COPILOTS!  co-pilot ready -- run: arima agents!ESC![0m
@@ -194,7 +205,7 @@ REM ================================================================
 :cmd_welcome
 call :banner
 echo !ESC![97m  Welcome to Arima Notebooks!ESC![0m
-echo !ESC![90m  A local notebook for Java ^| JS ^| TS ^| C# ^| F# ^| C++ -- with AI co-pilots and MCP.!ESC![0m
+echo !ESC![90m  A local notebook for Java ^| JS ^| TS ^| C# ^| F# ^| C++ ^| Python -- with AI co-pilots and MCP.!ESC![0m
 echo.
 echo !ESC![96m  PICK HOW YOU WANT TO WORK!ESC![0m
 echo !ESC![90m  ──────────────────────────────────────!ESC![0m
@@ -435,7 +446,7 @@ REM ================================================================
 echo.
 echo !ESC![93m        .        !ESC![0m!ESC![97m  Arima Notebooks CLI!ESC![0m
 echo !ESC![93m       /^|\       !ESC![0m!ESC![90m  ──────────────────────────────────────!ESC![0m
-echo !ESC![93m      ( @ )      !ESC![0m!ESC![96m  Java ^| JS ^| TS ^| C# ^| F# ^| C++!ESC![0m
+echo !ESC![93m      ( @ )      !ESC![0m!ESC![96m  Java ^| JS ^| TS ^| C# ^| F# ^| C++ ^| Python!ESC![0m
 echo !ESC![93m     /^|\_/^|\     !ESC![0m
 echo !ESC![93m    / ^|   ^| \    !ESC![0m!ESC![96m  USAGE!ESC![0m
 echo !ESC![93m   /__^|   ^|__\   !ESC![0m!ESC![90m    arima [command] [options]!ESC![0m

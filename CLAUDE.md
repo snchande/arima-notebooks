@@ -17,18 +17,19 @@ Always offer to open docs (`arima docs` or read the relevant file). **Key differ
 ## Project Overview
 Arima Notebooks is a Java-based interactive notebook environment (similar to Jupyter) powered by
 JShell (Java's interactive REPL). It runs as a local Spring Boot web server with a single-page
-web UI for writing and executing code in **seven languages** — Java/JShell, JavaScript (Node.js),
-TypeScript (Node.js type-stripping + optional `tsc`), C# / F# (.NET SDK), and C++ (MSVC/GCC/Clang) —
-managing Maven, npm, and NuGet packages, and using Claude/Copilot/Antigravity AI assistance.
+web UI for writing and executing code in **eight languages** — Java/JShell, JavaScript (Node.js),
+TypeScript (Node.js type-stripping + optional `tsc`), C# / F# (.NET SDK), C++ (MSVC/GCC/Clang), and
+Python (python3 subprocess) — managing Maven, npm, NuGet, and PyPI packages, and using
+Claude/Copilot/Antigravity AI assistance.
 
 ## Technology Stack
 - **Backend**: Java 21 + Spring Boot 3.2.x
 - **REPL Engine**: JDK JShell API (`jdk.jshell` module)
-- **Subprocess runtimes**: Node.js (JS/TS), .NET SDK (C#/F#), MSVC/GCC/Clang (C++)
+- **Subprocess runtimes**: Node.js (JS/TS), .NET SDK (C#/F#), MSVC/GCC/Clang (C++), Python 3 (Python)
 - **Real-time**: STOMP over WebSocket (SockJS)
 - **Frontend**: Vanilla HTML/CSS/JavaScript (no build step required)
 - **AI**: Three providers — Claude, GitHub Copilot, Antigravity — Claude & Antigravity invoked as **local CLI subprocesses** via `ProcessBuilder`; GitHub Copilot via the **GitHub Copilot SDK** (drives the local `copilot` CLI). No HTTP API key managed by Arima Notebooks
-- **Package Managers**: Maven Central (JShell classpath), npm registry (`data/npm-modules/` for JS/TS), NuGet.org (`#r "nuget:"` for C#/F#)
+- **Package Managers**: Maven Central (JShell classpath), npm registry (`data/npm-modules/` for JS/TS), NuGet.org (`#r "nuget:"` for C#/F#), PyPI (`data/pypi-packages/` on `PYTHONPATH` for Python)
 - **Auth**: Spring Security with two modes — `local` (default, OS username, no login) and `oauth` (OAuth2 social login via `data/oauth-config.json`)
 - **MCP**: Built-in Model Context Protocol server (HTTP+SSE, JSON-RPC 2.0) at `/api/mcp` exposing Arima Notebooks as a tool server
 - **Data Science**: XChart, Apache Commons Math, Tablesaw, OpenCSV — bundled, auto-imported in JShell
@@ -122,6 +123,8 @@ arima/
 │   │   ├── TypeScriptExecutionService #   TS via Node type-stripping + optional tsc
 │   │   ├── DotNetExecutionService     #   C# (dotnet run) + F# (dotnet fsi)
 │   │   ├── CppExecutionService        #   C++ via MSVC/GCC/Clang
+│   │   ├── PythonExecutionService     #   Python via python3 subprocess (+ anchor injection)
+│   │   ├── PyPiService                #   PyPI package management for Python (pip --target)
 │   │   ├── OrchestrationService       #   Pipeline DAG: topo-sort, cycle detection, deps
 │   │   ├── ClaudeService / GitHubCopilotService / CopilotCliService / GeminiService  # AI providers (Copilot→SDK; Gemini slot→Antigravity agy)
 │   │   ├── OAuthConfigService / UserService  # Auth
@@ -152,6 +155,8 @@ arima/
 - `src/main/java/com/barista/service/TypeScriptExecutionService.java` - TypeScript executor (Node type-stripping + optional `tsc`)
 - `src/main/java/com/barista/service/DotNetExecutionService.java` - C# + F# executor
 - `src/main/java/com/barista/service/CppExecutionService.java` - C++ executor (auto-detects MSVC/GCC/Clang)
+- `src/main/java/com/barista/service/PythonExecutionService.java` - Python executor (python3 subprocess, PyPI on PYTHONPATH)
+- `src/main/java/com/barista/service/PyPiService.java` - PyPI package management (pip `--target`)
 - `src/main/java/com/barista/service/ClaudeService.java` - Claude integration via the local `claude` CLI subprocess
 - `src/main/java/com/barista/service/OrchestrationService.java` - Pipeline/dependency-graph engine
 - `src/main/java/com/barista/controller/McpController.java` - MCP server (HTTP+SSE, JSON-RPC 2.0)

@@ -3,6 +3,7 @@ package com.barista.controller;
 import com.barista.model.BaristaSettings;
 import com.barista.service.CopilotCliService;
 import com.barista.service.CppExecutionService;
+import com.barista.service.PythonExecutionService;
 import com.barista.service.DotNetExecutionService;
 import com.barista.service.GeminiService;
 import com.barista.service.SettingsService;
@@ -36,6 +37,7 @@ public class SettingsController {
     private final GeminiService geminiService;
     private final CppExecutionService cppExecutionService;
     private final TypeScriptExecutionService typeScriptExecutionService;
+    private final PythonExecutionService pythonExecutionService;
     private final ConfigurableApplicationContext applicationContext;
 
     @Value("${barista.auth.mode:local}")
@@ -54,6 +56,7 @@ public class SettingsController {
                               GeminiService geminiService,
                               CppExecutionService cppExecutionService,
                               TypeScriptExecutionService typeScriptExecutionService,
+                              PythonExecutionService pythonExecutionService,
                               ConfigurableApplicationContext applicationContext) {
         this.settingsService = settingsService;
         this.userService = userService;
@@ -62,6 +65,7 @@ public class SettingsController {
         this.geminiService = geminiService;
         this.cppExecutionService = cppExecutionService;
         this.typeScriptExecutionService = typeScriptExecutionService;
+        this.pythonExecutionService = pythonExecutionService;
         this.applicationContext = applicationContext;
     }
 
@@ -108,6 +112,8 @@ public class SettingsController {
         status.put("typescriptAvailable", typeScriptExecutionService.isAvailable());
         status.put("typescriptDetail", typeScriptExecutionService.getStatusDetail());
         status.put("tscAvailable", typeScriptExecutionService.isTscAvailable());
+        status.put("pythonAvailable", pythonExecutionService.isPythonAvailable());
+        status.put("pythonVersion", pythonExecutionService.pythonVersion());
         return ResponseEntity.ok(status);
     }
 

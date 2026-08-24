@@ -7,7 +7,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.3-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Version](https://img.shields.io/badge/version-3.2.0-informational.svg)](CHANGELOG.md)
 
-Arima Notebooks is part of the **Arima** platform. It is a **ground-up modernization of the notebook** — a locally-hosted, browser-based environment that treats many rich programming languages as equals and is built for a world where humans and AI agents work on code together. Seven languages run side by side today — JavaScript, TypeScript, C#, F#, C++, Java, and JShell — with more on the way. Three AI co-pilots (Claude, GitHub Copilot, Antigravity) are wired in locally (Claude & Antigravity as CLI subprocesses, Copilot via the GitHub Copilot SDK — no API keys), and the **whole system is exposed via MCP** so any agent can drive it programmatically. The notebook becomes a shared artifact: you, the UI, an AI co-pilot, and any MCP agent are all first-class users of it.
+Arima Notebooks is part of the **Arima** platform. It is a **ground-up modernization of the notebook** — a locally-hosted, browser-based environment that treats many rich programming languages as equals and is built for a world where humans and AI agents work on code together. Eight languages run side by side today — JavaScript, TypeScript, C#, F#, C++, Java, JShell, and Python — with more on the way. Three AI co-pilots (Claude, GitHub Copilot, Antigravity) are wired in locally (Claude & Antigravity as CLI subprocesses, Copilot via the GitHub Copilot SDK — no API keys), and the **whole system is exposed via MCP** so any agent can drive it programmatically. The notebook becomes a shared artifact: you, the UI, an AI co-pilot, and any MCP agent are all first-class users of it.
 
 No cloud account. No data sent anywhere. Runs entirely on your machine.
 
@@ -85,11 +85,12 @@ The bar to **customize for yourself** and the bar to **contribute back** become 
 
 | Feature | Description |
 |---------|-------------|
-| **Seven execution modes** | JShell · Java · JavaScript (Node.js) · TypeScript · C# · F# · C++ |
+| **Eight execution modes** | JShell · Java · JavaScript (Node.js) · TypeScript · C# · F# · C++ · Python |
 | **Real-time output** | Console output streams live via WebSocket — no polling |
 | **Maven Package Manager** | Install/uninstall Maven packages; auto-injected into JShell classpath |
 | **npm Package Manager** | Install npm packages for JavaScript *and* TypeScript cells with one click |
 | **NuGet Package Manager** | Install NuGet packages for C# and F# cells with one click |
+| **PyPI Package Manager** | Find, install, and use any package from the Python Package Index in Python cells — isolated on `PYTHONPATH` |
 | **C++ Built-in Headers** | 26 standard headers pre-included; MSVC, GCC, and Clang auto-detected |
 | **TypeScript Type-checking** | Optional `tsc --noEmit` pass before each cell — type errors with proper line numbers |
 | **Pipeline Orchestration** | Chain cells with `//@ depends:` annotations — works across all 7 languages |
@@ -199,7 +200,7 @@ Switch providers any time in **Settings → AI Provider**.
 
 ### Running Code
 
-Each code cell has a **mode button** (top-right of the cell) that cycles between all seven languages:
+Each code cell has a **mode button** (top-right of the cell) that cycles between all eight languages:
 
 | Mode | Badge | What it does |
 |------|-------|-------------|
@@ -210,6 +211,7 @@ Each code cell has a **mode button** (top-right of the cell) that cycles between
 | **C#** | `◈ C#` | Compiled as a C# 9+ top-level program via `dotnet run`. NuGet packages auto-injected. |
 | **F#** | `◈ F#` | Runs as an F# script via `dotnet fsi`. Inline `#r "nuget:"` directives supported. |
 | **C++** | `◈ C++` | Compiled and run with MSVC/GCC/Clang. 26 standard headers pre-included. |
+| **Python** | `🐍 Python` | Runs via the system `python` 3. Install any library from the **PyPI** tab and `import` it. Helpers: `barista.table()`, `barista.stats()`, `barista.html()`, `barista.image()`. |
 
 When you switch a cell's language, Arima Notebooks offers to **convert the existing code** using AI.
 

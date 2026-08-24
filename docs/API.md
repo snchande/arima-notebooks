@@ -477,6 +477,20 @@ Example: `DELETE /api/nuget/Newtonsoft.Json`
 ```
 **Response 404:** Package not installed.
 
+### PyPI (Python)
+
+Manage packages for Python cells. Installed into `data/pypi-packages/site` (added to `PYTHONPATH`).
+
+```
+GET    /api/pypi/packages              # list installed
+POST   /api/pypi/packages/install      # { "name": "requests", "version": "latest" }
+DELETE /api/pypi/packages/{name}       # remove
+GET    /api/pypi/packages/search?q=    # look up a package on PyPI (exact name)
+GET    /api/pypi/status                # { "available": true, "version": "Python 3.12.4" }
+```
+
+**Install response 200:** `{ "name": "requests", "version": "2.31.0", "installedAt": "...", "paths": [...] }`
+
 ---
 
 ## AI Assistant

@@ -11,9 +11,9 @@
  */
 const TutorialsSettings = (function () {
   const LANG_LABEL = { jshell:'JShell', java:'Java', javascript:'JavaScript', typescript:'TypeScript',
-    csharp:'C#', fsharp:'F#', cpp:'C++' };
-  const LANG_ICON  = { jshell:'☕', java:'♨', javascript:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙' };
-  const ORDER = ['jshell', 'java', 'javascript', 'typescript', 'csharp', 'fsharp', 'cpp'];
+    csharp:'C#', fsharp:'F#', cpp:'C++', python:'Python' };
+  const LANG_ICON  = { jshell:'☕', java:'♨', javascript:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙', python:'🐍' };
+  const ORDER = ['jshell', 'java', 'javascript', 'typescript', 'csharp', 'fsharp', 'cpp', 'python'];
   const SUBCAT_ORDER = ['Basics & Foundations', 'Advanced', 'Data Science & Analytics'];
 
   let tutorials = null;     // cached catalog (demos filtered out)
@@ -154,7 +154,8 @@ const TutorialsSettings = (function () {
   }
 
   function open(id) {
-    if (window.NotebookEditor) {
+    // NotebookEditor is a top-level module const (not on window) — reference it by name.
+    if (typeof NotebookEditor !== 'undefined') {
       NotebookEditor.loadNotebook(id, true);
       document.querySelector('.tab-btn[data-tab="notebook"]')?.click();
     }

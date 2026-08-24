@@ -26,7 +26,7 @@ const NotebookEditor = (() => {
 
   /* ── Mode helpers ─────────────────────────────────── */
   function modeLabelFor(mode) {
-    return { jshell:'JShell', java:'Java', nodejs:'JS', typescript:'TS', csharp:'C#', fsharp:'F#', cpp:'C++', agent:'Agent' }[mode] || 'JShell';
+    return { jshell:'JShell', java:'Java', nodejs:'JS', typescript:'TS', csharp:'C#', fsharp:'F#', cpp:'C++', python:'Python', agent:'Agent' }[mode] || 'JShell';
   }
   function _baseCmMode(mode) {
     if (mode === 'nodejs')     return 'text/javascript';
@@ -34,6 +34,7 @@ const NotebookEditor = (() => {
     if (mode === 'csharp')     return 'text/x-csharp';
     if (mode === 'fsharp')     return 'text/x-fsharp';
     if (mode === 'cpp')        return 'text/x-c++src';
+    if (mode === 'python')     return 'text/x-python';
     if (mode === 'agent')      return 'text/plain';
     return 'text/x-java';
   }
@@ -121,9 +122,9 @@ const NotebookEditor = (() => {
     let activeTutLang = null; // active tutorial-language tab (null = auto-pick first available)
     let browserView   = 'mine'; // top-level view: 'mine' (Select Notebook) | 'tutorials'
 
-    const LANG_LABEL = { jshell:'JShell', java:'Java', javascript:'JavaScript', nodejs:'JS', typescript:'TypeScript', csharp:'C#', fsharp:'F#', cpp:'C++', agent:'Agents & Skills' };
-    const LANG_ICON  = { jshell:'☕', java:'♨', javascript:'⬡', nodejs:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙', agent:'🤖' };
-    const TUT_LANG_ORDER = ['jshell','java','javascript','typescript','csharp','fsharp','cpp','agent'];
+    const LANG_LABEL = { jshell:'JShell', java:'Java', javascript:'JavaScript', nodejs:'JS', typescript:'TypeScript', csharp:'C#', fsharp:'F#', cpp:'C++', python:'Python', agent:'Agents & Skills' };
+    const LANG_ICON  = { jshell:'☕', java:'♨', javascript:'⬡', nodejs:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙', python:'🐍', agent:'🤖' };
+    const TUT_LANG_ORDER = ['jshell','java','javascript','typescript','csharp','fsharp','cpp','python','agent'];
     const SUBCAT_ORDER = ['Basics & Foundations', 'Advanced', 'Data Science & Analytics', 'Examples & Demos', 'Agents & Skills'];
 
     document.getElementById('btn-browse-notebooks')?.addEventListener('click', async () => {
@@ -767,7 +768,7 @@ const NotebookEditor = (() => {
     div.innerHTML = `
       <div class="cell-header">
         <span class="cell-badge ${cell.type.toLowerCase()}${isCode ? ' mode-'+cell.mode : ''}" id="badge-${cell.id}">${
-          isPipeline ? '⬡ Pipeline' : isCode ? (({ cpp:'⚙', nodejs:'⬡', typescript:'◆', jshell:'☕', java:'♨' }[cell.mode] || '◈') + ' ' + modeLabelFor(cell.mode)) : '✎ Markdown'}</span>
+          isPipeline ? '⬡ Pipeline' : isCode ? (({ cpp:'⚙', nodejs:'⬡', typescript:'◆', jshell:'☕', java:'♨', python:'🐍' }[cell.mode] || '◈') + ' ' + modeLabelFor(cell.mode)) : '✎ Markdown'}</span>
         <span class="cell-count" id="cnt-${cell.id}">${cell.executionCount ? `[${cell.executionCount}]` : '[ ]'}</span>
         <span class="cell-timing" id="timing-${cell.id}">${cell.executionTimeMs ? `✓ ${cell.executionTimeMs}ms` : ''}</span>
         ${(isCode || isPipeline) ? anchorBadge : ''}
@@ -1149,7 +1150,7 @@ const NotebookEditor = (() => {
     const modeBtn = div.querySelector(`#mode-btn-${cell.id}`);
     modeBtn?.addEventListener('click', e => {
       e.stopPropagation();
-      const modeOrder = ['jshell', 'java', 'nodejs', 'typescript', 'csharp', 'fsharp', 'cpp', 'agent'];
+      const modeOrder = ['jshell', 'java', 'nodejs', 'typescript', 'csharp', 'fsharp', 'cpp', 'python', 'agent'];
       const oldMode = cell.mode;
       const idx = modeOrder.indexOf(cell.mode);
       cell.mode = modeOrder[(idx + 1) % modeOrder.length];
@@ -1158,7 +1159,7 @@ const NotebookEditor = (() => {
 
       const badge = document.getElementById(`badge-${cell.id}`);
       if (badge) {
-        badge.textContent = ({ cpp:'⚙', nodejs:'⬡', typescript:'◆', jshell:'☕', java:'♨' }[cell.mode] || '◈') + ' ' + modeLabelFor(cell.mode);
+        badge.textContent = ({ cpp:'⚙', nodejs:'⬡', typescript:'◆', jshell:'☕', java:'♨', python:'🐍' }[cell.mode] || '◈') + ' ' + modeLabelFor(cell.mode);
         badge.className = `cell-badge code mode-${cell.mode}`;
       }
       const cellDiv = document.getElementById(`cell-${cell.id}`);

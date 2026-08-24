@@ -55,7 +55,7 @@ function Show-Banner {
     Write-Host ''
     Write-Host '        .         ' -ForegroundColor Yellow -NoNewline; W-Title  '  A R I M A   N O T E B O O K S'
     Write-Host '       /|\        ' -ForegroundColor Yellow -NoNewline; W-Dim    '  -----------------------------'
-    Write-Host '      ( @ )       ' -ForegroundColor Yellow -NoNewline; W-Info   '  Java | JS | TS | C# | F# | C++'
+    Write-Host '      ( @ )       ' -ForegroundColor Yellow -NoNewline; W-Info   '  Java | JS | TS | C# | F# | C++ | Python'
     Write-Host '     /|\_/|\      ' -ForegroundColor Yellow -NoNewline; W-Dim    '  Brewed by Barista · JShell + Spring Boot'
     Write-Host '    / |   | \     ' -ForegroundColor Yellow -NoNewline; W-Dim    "  Port: $Port"
     Write-Host '   /__|   |__\    ' -ForegroundColor Yellow
@@ -207,6 +207,15 @@ function Cmd-Start {
         W-Warn '  .NET:    not found  (C#/F# cells disabled -- install from https://dot.net)'
     }
 
+    $pyCmd = if (Get-Command python -ErrorAction SilentlyContinue) { 'python' }
+             elseif (Get-Command python3 -ErrorAction SilentlyContinue) { 'python3' }
+             elseif (Get-Command py -ErrorAction SilentlyContinue) { 'py' } else { $null }
+    if ($pyCmd) {
+        W-Dim  "  Python:  $(& $pyCmd --version 2>&1)  (Python cells + PyPI enabled)"
+    } else {
+        W-Warn '  Python:  not found  (Python cells disabled -- install from https://www.python.org/downloads/)'
+    }
+
     # Wire the AI co-pilot context before launching the JVM so the in-UI AI
     # panel (and any CLI it spawns) inherits the guardrails + skills + agents.
     $copilots = Set-BaristaAiContext
@@ -310,6 +319,10 @@ function Cmd-Status {
         W-Warn '  .NET:     not found (C# / F# cells disabled)'
     }
 
+    if (Get-Command python -ErrorAction SilentlyContinue) { W-Dim "  Python:   $(python --version 2>&1)" }
+    elseif (Get-Command python3 -ErrorAction SilentlyContinue) { W-Dim "  Python:   $(python3 --version 2>&1)" }
+    else { W-Warn '  Python:   not found (Python cells disabled)' }
+
     $copilots = Get-AiCopilots
     if ($copilots.Count -gt 0) {
         W-Dim  "  AI:       $($copilots.Keys -join ' · ')  (co-pilot ready -- run: ./arima.ps1 agents)"
@@ -390,6 +403,8 @@ function Cmd-Version {
     if (Get-Command node   -ErrorAction SilentlyContinue) { W-Dim "  Node.js:  $(node --version)" }
     else { W-Warn '  Node.js:  not installed' }
     if (Get-Command dotnet -ErrorAction SilentlyContinue) { W-Dim "  .NET:     $(dotnet --version)" }
+    if (Get-Command python -ErrorAction SilentlyContinue) { W-Dim "  Python:   $(python --version 2>&1)" }
+    elseif (Get-Command python3 -ErrorAction SilentlyContinue) { W-Dim "  Python:   $(python3 --version 2>&1)" }
     if (Get-Command mvn    -ErrorAction SilentlyContinue) {
         $m = (mvn --version 2>&1 | Select-String 'Apache Maven' | Select-Object -First 1)
         if ($m) { W-Dim "  Maven:    $($m.Line.Trim())" }
@@ -402,7 +417,7 @@ function Cmd-Help {
     Write-Host ''
     Write-Host '        .         ' -ForegroundColor Yellow -NoNewline; W-Title '  Arima Notebooks CLI (PowerShell)'
     Write-Host '       /|\        ' -ForegroundColor Yellow -NoNewline; W-Dim   '  --------------------------------------'
-    Write-Host '      ( @ )       ' -ForegroundColor Yellow -NoNewline; W-Info  '  Java | JS | TS | C# | F# | C++'
+    Write-Host '      ( @ )       ' -ForegroundColor Yellow -NoNewline; W-Info  '  Java | JS | TS | C# | F# | C++ | Python'
     Write-Host '     /|\_/|\      ' -ForegroundColor Yellow
     Write-Host '    / |   | \     ' -ForegroundColor Yellow -NoNewline; W-Info  '  USAGE'
     Write-Host '   /__|   |__\    ' -ForegroundColor Yellow -NoNewline; W-Dim   '    ./arima.ps1 [command] [-Bg]'
@@ -440,7 +455,7 @@ function Cmd-Welcome {
     $copilots = Set-BaristaAiContext
     Show-Banner
     W-Title  '  Welcome to Arima Notebooks'
-    W-Dim    '  A local notebook for Java | JS | TS | C# | F# | C++ — with AI co-pilots and MCP.'
+    W-Dim    '  A local notebook for Java | JS | TS | C# | F# | C++ | Python — with AI co-pilots and MCP.'
     Write-Host ''
     W-Info   '  PICK HOW YOU WANT TO WORK'
     W-Dim    '  --------------------------------------'

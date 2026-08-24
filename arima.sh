@@ -52,7 +52,7 @@ banner() {
     echo
     printf '%s        .         %s%s  A R I M A   N O T E B O O K S%s\n' "$C_YELLOW" "$C_RESET" "$C_WHITE" "$C_RESET"
     printf '%s       /|\\        %s%s  ─────────────────────────────%s\n'  "$C_YELLOW" "$C_RESET" "$C_DIM"   "$C_RESET"
-    printf '%s      ( @ )       %s%s  Java | JS | TS | C# | F# | C++%s\n' "$C_YELLOW" "$C_RESET" "$C_CYAN"  "$C_RESET"
+    printf '%s      ( @ )       %s%s  Java | JS | TS | C# | F# | C++ | Python%s\n' "$C_YELLOW" "$C_RESET" "$C_CYAN"  "$C_RESET"
     printf '%s     /|\\_/|\\      %s%s  Brewed by Barista · JShell + Spring Boot%s\n' "$C_YELLOW" "$C_RESET" "$C_DIM" "$C_RESET"
     printf '%s    / |   | \\     %s%s  Port: %d%s\n' "$C_YELLOW" "$C_RESET" "$C_DIM" "$PORT" "$C_RESET"
     printf '%s   /__|   |__\\    %s\n' "$C_YELLOW" "$C_RESET"
@@ -198,6 +198,14 @@ cmd_start() {
         warn '  .NET:    not found  (C#/F# cells disabled -- install from https://dot.net)'
     fi
 
+    if have python3; then
+        dim  "  Python:  $(python3 --version 2>&1)  (Python cells + PyPI enabled)"
+    elif have python; then
+        dim  "  Python:  $(python --version 2>&1)  (Python cells + PyPI enabled)"
+    else
+        warn '  Python:  not found  (Python cells disabled -- install from https://www.python.org/downloads/)'
+    fi
+
     # Wire the AI co-pilot context before launching the JVM so the in-UI AI
     # panel (and any CLI it spawns) inherits the guardrails + skills + agents.
     set_ai_context
@@ -302,6 +310,9 @@ cmd_status() {
 
     if have dotnet; then dim  "  .NET:     $(dotnet --version)"
     else warn '  .NET:     not found (C# / F# cells disabled)'; fi
+    if have python3;  then dim  "  Python:   $(python3 --version 2>&1)"
+    elif have python; then dim  "  Python:   $(python --version 2>&1)"
+    else warn '  Python:   not found (Python cells disabled)'; fi
 
     local ai_names
     ai_names=$(detect_copilots | cut -d= -f1 | tr '\n' ' ')
@@ -318,7 +329,7 @@ cmd_welcome() {
     set_ai_context
     banner
     title '  Welcome to Arima Notebooks'
-    dim   '  A local notebook for Java | JS | TS | C# | F# | C++ — with AI co-pilots and MCP.'
+    dim   '  A local notebook for Java | JS | TS | C# | F# | C++ | Python — with AI co-pilots and MCP.'
     echo
     info  '  PICK HOW YOU WANT TO WORK'
     dim   '  ──────────────────────────────────────'
@@ -525,7 +536,7 @@ cmd_help() {
     echo
     printf '%s        .         %s%s  Arima Notebooks CLI (bash)%s\n' "$C_YELLOW" "$C_RESET" "$C_WHITE" "$C_RESET"
     printf '%s       /|\\        %s%s  ──────────────────────────────────────%s\n' "$C_YELLOW" "$C_RESET" "$C_DIM" "$C_RESET"
-    printf '%s      ( @ )       %s%s  Java | JS | TS | C# | F# | C++%s\n' "$C_YELLOW" "$C_RESET" "$C_CYAN" "$C_RESET"
+    printf '%s      ( @ )       %s%s  Java | JS | TS | C# | F# | C++ | Python%s\n' "$C_YELLOW" "$C_RESET" "$C_CYAN" "$C_RESET"
     printf '%s     /|\\_/|\\      %s\n' "$C_YELLOW" "$C_RESET"
     printf '%s    / |   | \\     %s%s  USAGE%s\n' "$C_YELLOW" "$C_RESET" "$C_CYAN" "$C_RESET"
     printf '%s   /__|   |__\\    %s%s    ./arima.sh [command] [--bg]%s\n' "$C_YELLOW" "$C_RESET" "$C_DIM" "$C_RESET"
