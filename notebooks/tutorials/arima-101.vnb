@@ -1,0 +1,101 @@
+{
+  "id": "arima-101",
+  "name": "Arima 101 · Getting Started with Arima Notebooks",
+  "description": "A guided tour of Arima Notebooks itself — what it is, the Barista engine, cells & languages, running code, pipelines, packages, AI co-pilots, agents, and MCP. Start here.",
+  "metadata": {
+    "category": "tutorial",
+    "language": "arima",
+    "level": 101,
+    "subcategory": "Getting Started"
+  },
+  "cells": [
+    {
+      "id": "a101-intro",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Welcome to Arima Notebooks 👋\n\nArima Notebooks is a **local, browser-based, multi-language notebook for the agentic era** — a place where *you* and *AI agents* build on the same living code. This tour explains everything, in order. Press **▶ Guided** (in Settings → Tutorials) to have it read aloud, or just read along.\n\n**What makes Arima different:**\n- **Eight languages** in one notebook, switchable per cell.\n- **Pipelines** that chain cells into real workflows.\n- **AI co-pilots** and a full **MCP server** — agents are first-class users.\n- **Local-first** — nothing leaves your machine.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "a101-barista",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## ☕ Why \"Barista\"?\n\nArima is built on **Java**. In a coffee bar, a *barista* serves what you order — and Arima's **Barista** engine is the pure-Java core that \"serves\" every capability: running your cells, executing pipelines, managing packages, and powering the MCP server.\n\n**Java is the coffee; Barista brews it.** So when you see `barista.table(...)` in a cell, or \"brewed by Barista,\" that's the engine at work.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "a101-cells",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## 1. Cells\n\nA notebook is a stack of **cells**. Each cell is either **Markdown** (prose, like this) or **Code** (runnable). Add cells with **+ Code** / **+ Markdown** in the toolbar.\n\nRun a code cell with **▶** or **Shift+Enter**. Try the one below.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "a101-run",
+      "type": "CODE",
+      "mode": "jshell",
+      "source": "// Your first cell — this runs on the Barista (Java/JShell) engine.\nSystem.out.println(\"Hello from Arima!\");\nint a = 6, b = 7;\nSystem.out.println(a + \" x \" + b + \" = \" + (a * b));",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "a101-langs",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## 2. Eight languages, one canvas\n\nEvery code cell has a **mode badge** (top-right). Click it to cycle through **JShell · Java · JavaScript · TypeScript · C# · F# · C++ · Python**. Each runs on its real toolchain — no language is a second-class citizen.\n\nPick the languages you care about in **Settings → Languages**; the tutorial list tailors itself to your choice.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "a101-barista-helpers",
+      "type": "CODE",
+      "mode": "jshell",
+      "source": "// Barista gives every cell display helpers. Here's a quick table + stats.\nvar rows = java.util.List.of(\n  java.util.Map.of(\"lang\", \"Python\", \"since\", 4.0),\n  java.util.Map.of(\"lang\", \"C++\", \"since\", 3.0),\n  java.util.Map.of(\"lang\", \"JShell\", \"since\", 1.0)\n);\nbarista.table(rows);",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "a101-pipelines",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## 3. Pipelines — Arima's superpower\n\nGive a cell a name with `//@ anchor: myStep`, then have another cell declare `//@ depends: myStep`. Arima builds a **dependency graph** and runs cells in the right order — a real, repeatable workflow that works **across all eight languages** and even **across notebooks**.\n\nAdd a **Pipeline** cell (toolbar) to orchestrate a whole graph, then **Run All**.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "a101-packages",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## 4. Packages\n\nBring real libraries. The **Packages** tab has one manager per ecosystem:\n\n| Tab | For | Example |\n|---|---|---|\n| **Maven** | Java / JShell | `com.google.code.gson:gson` |\n| **npm** | JavaScript / TypeScript | `lodash` |\n| **NuGet** | C# / F# | `Newtonsoft.Json` |\n| **PyPI** | Python | `pandas`, `requests` |\n\nInstalls are **local to you** and isolated. If you open a notebook that imports a package you don't have, Arima **prompts you to install it** — one click takes you to the right tab, pre-filled.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "a101-ai",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## 5. AI co-pilots\n\nPress **Ctrl+\\\\** (or the floating ✨ button) to open the AI panel. **Claude**, **GitHub Copilot**, and **Antigravity** all run **locally — no API keys**. Ask the AI to generate a cell, explain an error, or convert code between languages, and apply the result with one click (Undo always available).\n\nOn the **Home** page, the ask box sends your question straight to the AI.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "a101-agents",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## 6. Agents — and why Arima is \"agentic\"\n\nAn **agent** in Arima *is* a notebook (its markdown cells are the system prompt). Author and run agents & skills from the **Agents** tab, invoke an agent from a cell in a pipeline, or drive one over MCP.\n\n**MCP (Model Context Protocol):** Arima runs a built-in MCP server at `/api/mcp/sse`. Every notebook and cell is **tool-invokable by external agents** (Claude Desktop, Claude Code, custom loops) — `barista_list_notebooks`, `barista_run_pipeline`, `barista_run_agent`, and more. Humans and agents are equal users of the same notebook.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "a101-learn",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## 7. Keep learning\n\n- **Tutorials** (Settings → Tutorials): per-language tracks 101 → 601. Press **▶ Guided** for a narrated, step-by-step walkthrough you can interrupt with questions.\n- **Home** (the Arima logo or Home tab): recent notebooks, the MCP catalog, what's new, and a quick quiz.\n- **Docs** (top bar): full reference, with a distraction-free reading mode.\n- **Notifications** (🔔): when a notebook finishes a Run All, click the bell to jump right back to it.\n\nThat's the tour — now go build something. Happy brewing! ☕",
+      "output": "",
+      "executionCount": 0
+    }
+  ]
+}

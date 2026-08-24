@@ -20,6 +20,7 @@ const Home = (function () {
   ];
 
   const TIDBITS = [
+    ['☕', 'Why "Barista"?', 'Arima is built on <b>Java</b> — and like a barista serving what you order, the <b>Barista</b> engine is the pure-Java core that serves every capability: running cells, pipelines, packages, and the MCP server. Java is the coffee; Barista brews it.'],
     ['🐍', 'Python', 'Python is named after Monty Python’s Flying Circus — not the snake. Install any PyPI package from the Packages tab and <code>import</code> it.'],
     ['☕', 'JShell', 'JShell (Java’s REPL) shares state across cells in a notebook — declare a variable once, use it everywhere below.'],
     ['⬡', 'JavaScript', 'Every JS cell runs in a fresh Node.js process; installed npm modules are on NODE_PATH so <code>require()</code> just works.'],
@@ -47,10 +48,31 @@ const Home = (function () {
     { q: 'What links cells into a runnable workflow?',
       options: ['//@ anchor & //@ depends', 'Magic', 'Cell order only'], answer: 0,
       explain: `Name a cell with //@ anchor and declare //@ depends — Arima topologically runs the graph across all ${langWord()} languages.` },
+    { q: 'Arima is nicknamed "brewed by Barista". Why?',
+      options: ['A coffee sponsor', 'It’s built on Java (coffee); Barista is the Java engine', 'Random codename'], answer: 1,
+      explain: 'Arima runs on Java. The Barista engine is the pure-Java core that serves every capability — Java is the coffee, Barista brews it.' },
+    { q: 'Where do Python libraries come from in Arima?',
+      options: ['Bundled only', 'PyPI, via the Packages tab', 'You can’t add any'], answer: 1,
+      explain: 'Install any package from the Python Package Index (PyPI) in the Packages → PyPI tab; it’s isolated on PYTHONPATH.' },
     ];
   }
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // ── Learn progress (points + no-repeat) persisted locally ────────────
+  function lget(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+  function lset(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function points() { return lget('arima.home.points', 0); }
+  function addPoints(n) { lset('arima.home.points', points() + n); }
+  // Pick an unseen index from a list; when all seen, reset and start over.
+  function pickUnseen(key, len) {
+    let seen = lget(key, []);
+    if (seen.length >= len) seen = [];
+    const pool = []; for (let i = 0; i < len; i++) if (!seen.includes(i)) pool.push(i);
+    const idx = pool[Math.floor(Math.random() * pool.length)];
+    seen.push(idx); lset(key, seen);
+    return idx;
+  }
 
   function show() {
     const h = document.getElementById('home-view');
@@ -75,9 +97,6 @@ const Home = (function () {
   async function render() {
     const el = document.getElementById('home-view');
     if (!el) return;
-    const tidbit = TIDBITS[Math.floor(Math.random() * TIDBITS.length)];
-    const quizzes = buildQuiz();
-    const quiz = quizzes[Math.floor(Math.random() * quizzes.length)];
 
     el.innerHTML = `
       <div class="home-wrap">
@@ -124,51 +143,72 @@ const Home = (function () {
             </div>
           </section>
 
-          <section class="home-card home-learn">
-            <div class="home-card-hd"><h2>Did you know?</h2></div>
-            <div class="home-tidbit"><span class="home-tidbit-icon">${tidbit[0]}</span>
-              <div><b>${esc(tidbit[1])}</b><p>${tidbit[2]}</p></div>
-            </div>
-            <div class="home-quiz" id="home-quiz">
-              <div class="home-quiz-q">${esc(quiz.q)}</div>
-              <div class="home-quiz-opts">
-                ${quiz.options.map((o, i) => `<button class="home-quiz-opt" data-i="${i}">${esc(o)}</button>`).join('')}
-              </div>
-              <div class="home-quiz-result" hidden></div>
-            </div>
-          </section>
+          <section class="home-card home-learn" id="home-learn"></section>
         </div>
       </div>`;
 
-    wire(quiz);
+    wireCommon();
+    renderLearn();
     loadRecent();
   }
 
-  function wire(quiz) {
+  function wireCommon() {
     const form = document.getElementById('home-ask-form');
     form?.addEventListener('submit', (e) => { e.preventDefault(); ask(document.getElementById('home-ask-input').value); });
-
-    document.querySelectorAll('#home-view [data-new]').forEach(b => b.addEventListener('click', () => {
-      if (window.NotebookEditor && NotebookEditor.addCellWithSource) { /* noop */ }
-      document.getElementById('btn-new')?.click();
-    }));
+    document.querySelectorAll('#home-view [data-new]').forEach(b => b.addEventListener('click', () =>
+      document.getElementById('btn-new')?.click()));
     document.querySelectorAll('#home-view [data-view]').forEach(b => b.addEventListener('click', () =>
       window.SettingsNav && SettingsNav.show(b.dataset.view)));
     document.querySelectorAll('#home-view [data-tab]').forEach(b => b.addEventListener('click', () =>
       document.querySelector(`.tab-btn[data-tab="${b.dataset.tab}"]`)?.click()));
     document.getElementById('home-wn-more')?.addEventListener('click', () => window.Welcome && Welcome.openReleaseNotes());
+  }
 
-    // Quiz interaction
-    document.querySelectorAll('#home-quiz .home-quiz-opt').forEach(opt => opt.addEventListener('click', () => {
+  // "Did you know?" + quiz — no-repeat tidbits, points, and Next navigation.
+  function renderLearn() {
+    const card = document.getElementById('home-learn');
+    if (!card) return;
+    const quizzes = buildQuiz();
+    const tIdx = pickUnseen('arima.home.tidbitSeen', TIDBITS.length);
+    const qIdx = pickUnseen('arima.home.quizSeen', quizzes.length);
+    const tidbit = TIDBITS[tIdx];
+    const quiz = quizzes[qIdx];
+
+    card.innerHTML = `
+      <div class="home-card-hd">
+        <h2>Did you know?</h2>
+        <span class="home-points" title="Points earned from quizzes">⭐ ${points()} pts</span>
+      </div>
+      <div class="home-tidbit"><span class="home-tidbit-icon">${tidbit[0]}</span>
+        <div><b>${esc(tidbit[1])}</b><p>${tidbit[2]}</p></div>
+      </div>
+      <div class="home-quiz" id="home-quiz">
+        <div class="home-quiz-q">${esc(quiz.q)}</div>
+        <div class="home-quiz-opts">
+          ${quiz.options.map((o, i) => `<button class="home-quiz-opt" data-i="${i}">${esc(o)}</button>`).join('')}
+        </div>
+        <div class="home-quiz-result" hidden></div>
+      </div>
+      <div class="home-learn-foot"><button class="home-link" id="home-next-insight">Next insight →</button></div>`;
+
+    let answered = false;
+    card.querySelectorAll('.home-quiz-opt').forEach(opt => opt.addEventListener('click', () => {
+      if (answered) return;
+      answered = true;
       const i = Number(opt.dataset.i);
-      const res = document.querySelector('#home-quiz .home-quiz-result');
-      document.querySelectorAll('#home-quiz .home-quiz-opt').forEach((o, j) => {
+      const correct = i === quiz.answer;
+      card.querySelectorAll('.home-quiz-opt').forEach((o, j) => {
         o.disabled = true;
         if (j === quiz.answer) o.classList.add('correct');
         else if (j === i) o.classList.add('wrong');
       });
-      if (res) { res.hidden = false; res.innerHTML = (i === quiz.answer ? '✅ Correct! ' : '❌ Not quite. ') + esc(quiz.explain); }
+      if (correct) addPoints(10);
+      const res = card.querySelector('.home-quiz-result');
+      const badge = card.querySelector('.home-points');
+      if (badge) badge.textContent = `⭐ ${points()} pts`;
+      if (res) { res.hidden = false; res.innerHTML = (correct ? '✅ Correct! +10 pts. ' : '❌ Not quite. ') + esc(quiz.explain); }
     }));
+    card.querySelector('#home-next-insight')?.addEventListener('click', renderLearn);
   }
 
   function ask(q) {

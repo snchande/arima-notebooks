@@ -10,10 +10,12 @@
  * the set at any time. Everything re-renders live on language / progress changes.
  */
 const TutorialsSettings = (function () {
-  const LANG_LABEL = { jshell:'JShell', java:'Java', javascript:'JavaScript', typescript:'TypeScript',
+  const LANG_LABEL = { arima:'Arima Guide', jshell:'JShell', java:'Java', javascript:'JavaScript', typescript:'TypeScript',
     csharp:'C#', fsharp:'F#', cpp:'C++', python:'Python' };
-  const LANG_ICON  = { jshell:'☕', java:'♨', javascript:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙', python:'🐍' };
-  const ORDER = ['jshell', 'java', 'javascript', 'typescript', 'csharp', 'fsharp', 'cpp', 'python'];
+  const LANG_ICON  = { arima:'📘', jshell:'☕', java:'♨', javascript:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙', python:'🐍' };
+  // 'arima' is a meta-guide about the product — always shown first, regardless of language selection.
+  const ORDER = ['arima', 'jshell', 'java', 'javascript', 'typescript', 'csharp', 'fsharp', 'cpp', 'python'];
+  const ALWAYS = ['arima'];
   const SUBCAT_ORDER = ['Basics & Foundations', 'Advanced', 'Data Science & Analytics'];
 
   let tutorials = null;     // cached catalog (demos filtered out)
@@ -86,8 +88,8 @@ const TutorialsSettings = (function () {
 
     const groups = byLang();
     const selected = LangPrefs.get();
-    // Only show tabs for selected languages that actually have tutorials.
-    const langs = ORDER.filter(l => selected.includes(l) && groups[l]);
+    // Show tabs for selected languages that have tutorials — plus the always-on Arima guide.
+    const langs = ORDER.filter(l => (ALWAYS.includes(l) || selected.includes(l)) && groups[l]);
 
     // Language tabs + the "add languages" shortcut.
     tabsEl.innerHTML = langs.map(l => {
