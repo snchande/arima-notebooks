@@ -14,8 +14,10 @@
 (function () {
   'use strict';
 
-  const LS_DONE   = 'arima.fre.done';    // "1" once the tour is finished/skipped
-  const LS_REPLAY = 'arima.fre.replay';  // "1" = force the tour on next launch
+  const LS_DONE    = 'arima.fre.done';    // "1" once the tour is finished/skipped
+  const LS_REPLAY  = 'arima.fre.replay';  // "1" = force the tour on next launch
+  const LS_VERSION = 'arima.fre.version'; // FRE content version last completed
+  const FRE_VERSION = '4.0.0';            // bump when the tour changes → re-shows once
 
   // ── Navigation helpers ──────────────────────────────────────────
   function switchTab(tab) {
@@ -152,7 +154,8 @@
           <button class="fre-back" type="button">Back</button>
           <button class="fre-next" type="button">Next</button>
         </div>
-      </div>`;
+      </div>
+      <label class="fre-dontshow"><input type="checkbox" id="fre-dontshow"> Don't show this again</label>`;
     document.body.appendChild(block);
     document.body.appendChild(ring);
     document.body.appendChild(tip);
@@ -160,6 +163,16 @@
     tip.querySelector('.fre-skip').addEventListener('click', () => FRE.end(true));
     tip.querySelector('.fre-back').addEventListener('click', () => FRE.prev());
     tip.querySelector('.fre-next').addEventListener('click', () => FRE.next());
+    // "Don't show again" — persist immediately so it won't reappear even if the tab is closed mid-tour.
+    tip.querySelector('#fre-dontshow').addEventListener('change', (e) => {
+      if (e.target.checked) {
+        localStorage.setItem(LS_DONE, '1');
+        localStorage.setItem(LS_VERSION, FRE_VERSION); // also suppress the upgrade re-show
+        localStorage.removeItem(LS_REPLAY);
+      } else {
+        localStorage.removeItem(LS_DONE);
+      }
+    });
 
     els = {
       block, ring, tip,
@@ -303,6 +316,7 @@
       document.body.classList.remove('fre-on');
       if (els) els.ring.style.display = 'none';
       localStorage.setItem(LS_DONE, '1');
+      localStorage.setItem(LS_VERSION, FRE_VERSION);
       localStorage.removeItem(LS_REPLAY);
       switchTab('notebook');
       void skipped;
@@ -324,9 +338,13 @@
 
   // ── Auto-run on first launch ─────────────────────────────────────
   function auto() {
-    const first  = localStorage.getItem(LS_DONE) !== '1';
+    const done   = localStorage.getItem(LS_DONE) === '1';
+    const first  = !done;
     const replay = localStorage.getItem(LS_REPLAY) === '1';
-    if (first || replay) {
+    // Re-show once after an upgrade that changed the tour (e.g. the new language picker),
+    // unless the user ticked "Don't show again" for this version.
+    const upgraded = done && localStorage.getItem(LS_VERSION) !== FRE_VERSION;
+    if (first || replay || upgraded) {
       // Suppress the Welcome modal's own first-run auto-popup; the tour
       // owns the first-run moment. Mark it seen so it won't also fire.
       try {
@@ -337,9 +355,11 @@
       // (e.g. by an automated walkthrough that drives the tour itself).
       setTimeout(() => {
         if (isActive()) return;
-        const stillFirst  = localStorage.getItem(LS_DONE) !== '1';
+        const stillDone   = localStorage.getItem(LS_DONE) === '1';
+        const stillFirst  = !stillDone;
         const stillReplay = localStorage.getItem(LS_REPLAY) === '1';
-        if (stillFirst || stillReplay) FRE.start();
+        const stillUpgraded = stillDone && localStorage.getItem(LS_VERSION) !== FRE_VERSION;
+        if (stillFirst || stillReplay || stillUpgraded) FRE.start();
       }, 700);
     }
   }

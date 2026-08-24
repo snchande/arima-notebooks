@@ -14,6 +14,8 @@
    ────────────────────────────────────────────────────────────────────────── */
 const Notifications = (() => {
   const pending = new Map();          // cellId -> { sessionId, cellId, tabId, label, at }
+  const done = [];                    // finished notebook runs: { id, tabId, notebookName, status, summary, at }
+  let doneSeq = 0;
   let permissionAsked = false;
   let titleFlashTimer = null;
   const originalTitle = document.title;
@@ -44,7 +46,7 @@ const Notifications = (() => {
 
   function renderBadge() {
     const { badge, btn } = els();
-    const n = pending.size;
+    const n = pending.size + done.length;
     if (badge) {
       badge.textContent = n > 9 ? '9+' : String(n);
       badge.style.display = n > 0 ? '' : 'none';
@@ -72,14 +74,23 @@ const Notifications = (() => {
     document.title = originalTitle;
   }
 
+  function timeAgo(at) {
+    const s = Math.round((Date.now() - at) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s / 60) + 'm ago';
+    return Math.floor(s / 3600) + 'h ago';
+  }
+
   function renderList() {
     const { list } = els();
     if (!list) return;
-    if (pending.size === 0) {
+    if (pending.size === 0 && done.length === 0) {
       list.innerHTML = `<div class="notif-empty">No notifications</div>`;
       return;
     }
     list.innerHTML = '';
+
+    // Waiting-for-input items first (most urgent).
     [...pending.values()].reverse().forEach(item => {
       const row = document.createElement('button');
       row.className = 'notif-item';
@@ -93,6 +104,26 @@ const Notifications = (() => {
       row.addEventListener('click', () => { focusItem(item); closeMenu(); });
       list.appendChild(row);
     });
+
+    // Finished notebook runs (newest first). Click → open that notebook.
+    [...done].reverse().forEach(item => {
+      const ok = item.status !== 'error';
+      const row = document.createElement('button');
+      row.className = 'notif-item';
+      row.type = 'button';
+      row.innerHTML =
+        `<span class="notif-item-icon">${ok ? '✅' : '⚠️'}</span>` +
+        `<span class="notif-item-text">` +
+          `<strong>${ok ? 'Notebook finished' : 'Notebook finished with errors'}</strong>` +
+          `<span class="notif-item-sub">${esc(item.notebookName)}${item.summary ? ' · ' + esc(item.summary) : ''} · ${timeAgo(item.at)}</span>` +
+        `</span>` +
+        `<span class="notif-item-x" title="Dismiss" data-x="${item.id}">×</span>`;
+      row.addEventListener('click', (e) => {
+        if (e.target && e.target.dataset && e.target.dataset.x) { clearDone(item.id); e.stopPropagation(); return; }
+        focusNotebook(item); clearDone(item.id); closeMenu();
+      });
+      list.appendChild(row);
+    });
   }
 
   function focusItem(item) {
@@ -100,6 +131,17 @@ const Notifications = (() => {
     try { window.focus(); } catch {}
     if (window.NotebookEditor && NotebookEditor.revealCell) {
       NotebookEditor.revealCell(item.tabId, item.cellId);
+    }
+  }
+
+  // Open the notebook a finished-run notification points at, and show the Notebook tab.
+  function focusNotebook(item) {
+    if (!item) return;
+    try { window.focus(); } catch {}
+    document.querySelector('.tab-btn[data-tab="notebook"]')?.click();
+    if (window.NotebookEditor && NotebookEditor.loadNotebook) {
+      // loadNotebook switches to the tab if it's already open, otherwise loads it.
+      NotebookEditor.loadNotebook(item.tabId, !!item.isTutorial);
     }
   }
 
@@ -137,6 +179,50 @@ const Notifications = (() => {
     renderList();
   }
 
+  /**
+   * A notebook run (Run All / pipeline) finished. Adds a bell entry the user can click
+   * to jump straight to that notebook — key for background/scheduled runs.
+   * @param {{tabId:string, notebookName:string, status?:string, summary?:string, isTutorial?:boolean}} info
+   */
+  function runFinished(info) {
+    if (!info || !info.tabId) return;
+    ensurePermission();
+    const item = {
+      id: 'done-' + (++doneSeq),
+      tabId: info.tabId,
+      notebookName: info.notebookName || 'Notebook',
+      status: info.status || 'ok',
+      summary: info.summary || '',
+      isTutorial: !!info.isTutorial,
+      at: Date.now(),
+    };
+    done.push(item);
+    if (done.length > 30) done.shift(); // cap history
+    renderBadge();
+    renderList();
+    // OS notification when the user is away or looking at a different notebook.
+    if (document.hidden || !document.hasFocus() || Arima?.state?.currentNotebookId !== info.tabId) {
+      fireRunOsNotification(item);
+    }
+  }
+
+  function fireRunOsNotification(item) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+      const ok = item.status !== 'error';
+      const n = new Notification('Arima — ' + (ok ? 'notebook finished' : 'notebook finished with errors'), {
+        body: item.notebookName + (item.summary ? '\n' + item.summary : '') + '\nClick to open it.',
+        tag: 'arima-run-' + item.id,
+      });
+      n.onclick = () => { focusNotebook(item); clearDone(item.id); n.close(); };
+    } catch { /* ignore */ }
+  }
+
+  function clearDone(id) {
+    const i = done.findIndex(d => d.id === id);
+    if (i >= 0) { done.splice(i, 1); renderBadge(); renderList(); }
+  }
+
   // ── Menu open/close ────────────────────────────────────────────────────────
   function openMenu()  { els().menu?.classList.add('open'); }
   function closeMenu() { els().menu?.classList.remove('open'); }
@@ -167,7 +253,7 @@ const Notifications = (() => {
     document.addEventListener('DOMContentLoaded', init);
   } else { init(); }
 
-  return { inputNeeded, clear };
+  return { inputNeeded, clear, runFinished, clearDone };
 })();
 
 window.Notifications = Notifications;

@@ -223,19 +223,9 @@
         <svg viewBox="0 0 16 16"><path d="M8 1l6 3v4l-6 3L2 8V4l6-3zM2 8l6 3 6-3M8 11v4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
         Packages
       </button>
-      <div class="tab-dropdown" id="settings-dd">
-        <button class="tab-btn" data-tab="settings" id="settings-tab-btn" role="tab" aria-haspopup="true" title="Tutorials, Configurations &amp; Help">
-          <svg viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9.5" y="1.5" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="1.5" y="9.5" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/></svg>
-          Hub
-          <svg class="tab-caret" viewBox="0 0 10 6" width="9" height="6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <div class="tab-dropdown-menu" id="settings-menu" role="menu" hidden>
-          <div class="tab-dd-head">Arima Hub</div>
-          <button class="tab-dd-item" data-settings-view="tutorials" role="menuitem">📚 Tutorials</button>
-          <button class="tab-dd-item" data-settings-view="config" role="menuitem">⚙️ Configurations</button>
-          <button class="tab-dd-item" data-settings-view="help" role="menuitem">❔ Help</button>
-        </div>
-      </div>
+      <!-- Settings/Tutorials/Help now live in the user-name dropdown (top-right).
+           This hidden tab-button keeps the panel-activation machinery intact. -->
+      <button class="tab-btn" data-tab="settings" id="settings-tab-btn" role="tab" style="display:none" aria-hidden="true"></button>
     </nav>
   </div>
 
@@ -277,6 +267,27 @@
       <div class="user-dropdown" id="user-dropdown" style="display:none">
         <div class="udd-greeting" id="udd-greeting">Hello!</div>
         <div class="udd-email" id="udd-email"></div>
+        <hr class="udd-sep">
+        <button class="udd-btn" onclick="SettingsNav.show('tutorials')">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M8 3.5C6.5 2 3.5 2 2 2.5v10c1.5-.5 4.5-.5 6 1 1.5-1.5 4.5-1.5 6-1v-10c-1.5-.5-4.5-.5-6 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 3.5v10" stroke="currentColor" stroke-width="1.3"/></svg>
+          Tutorials
+        </button>
+        <button class="udd-btn" onclick="SettingsNav.show('config','ai-provider-picker')">
+          <svg viewBox="0 0 16 16" fill="none"><rect x="3" y="5" width="10" height="8" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v3M6 9h.01M10 9h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Configuration
+        </button>
+        <button class="udd-btn" onclick="SettingsNav.show('config')">
+          <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Settings
+        </button>
+        <button class="udd-btn" onclick="Welcome && Welcome.open()">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.4" stroke="currentColor" stroke-width="1.3"/><path d="M6.1 6.2a1.9 1.9 0 1 1 2.5 1.8c-.5.2-.8.5-.8 1.1v.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".8" fill="currentColor"/></svg>
+          Help
+        </button>
+        <button class="udd-btn" onclick="AboutUI && AboutUI.open()">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.4" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="4.6" r=".8" fill="currentColor"/></svg>
+          About
+        </button>
         <hr class="udd-sep">
         <button class="udd-btn" onclick="UserAuth.showEmailPrompt()">
           <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 5l7 5 7-5" stroke="currentColor" stroke-width="1.3"/></svg>
@@ -1710,30 +1721,28 @@ const PackageTabUI = {
   }
 };
 
-// ── Settings dropdown: Tutorials · Configurations · Help ──
+// ── Panel views behind the user menu: Tutorials · Configuration · Settings ──
 const SettingsNav = {
-  show(view) {
-    if (view === 'help') { if (window.Welcome) Welcome.open(); this.close(); return; }
+  // view: 'tutorials' | 'config' | 'help'; scrollId: optional element to reveal within config
+  show(view, scrollId) {
+    // Close the user dropdown that launched this.
+    const dd = document.getElementById('user-dropdown'); if (dd) dd.style.display = 'none';
+    if (view === 'help') { if (window.Welcome) Welcome.open(); return; }
     const t = document.getElementById('settings-view-tutorials');
     const c = document.getElementById('settings-view-config');
     if (t) t.hidden = view !== 'tutorials';
     if (c) c.hidden = view !== 'config';
-    // Make sure the Settings panel is the active tab.
-    document.querySelector('.tab-btn[data-tab="settings"]')?.click();
+    document.querySelector('.tab-btn[data-tab="settings"]')?.click(); // activate the panel
     if (view === 'tutorials' && window.TutorialsSettings) TutorialsSettings.refresh();
     try { localStorage.setItem('arima.settings.view', view); } catch (e) {}
-    this.close();
+    if (scrollId) setTimeout(() => {
+      const el = document.getElementById(scrollId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const card = el.closest('.card'); if (card) { card.classList.add('pulse'); setTimeout(() => card.classList.remove('pulse'), 1400); }
+    }, 140);
   },
-  toggle() { const m = document.getElementById('settings-menu'); if (m) m.hidden = !m.hidden; },
-  close()  { const m = document.getElementById('settings-menu'); if (m) m.hidden = true; },
   init() {
-    // Clicking the Settings tab opens the menu (in addition to activating the panel).
-    document.getElementById('settings-tab-btn')?.addEventListener('click', () => setTimeout(() => this.toggle(), 0));
-    document.querySelectorAll('.tab-dd-item').forEach(it =>
-      it.addEventListener('click', (e) => { e.stopPropagation(); this.show(it.dataset.settingsView); }));
-    // Close the menu on any outside click or when switching to another tab.
-    document.addEventListener('click', (e) => { if (!e.target.closest('#settings-dd')) this.close(); });
-    // Restore last view — default to the dedicated Tutorials page.
     const v = (() => { try { return localStorage.getItem('arima.settings.view') || 'tutorials'; } catch (e) { return 'tutorials'; } })();
     const t = document.getElementById('settings-view-tutorials');
     const c = document.getElementById('settings-view-config');
@@ -1743,7 +1752,38 @@ const SettingsNav = {
 };
 document.addEventListener('DOMContentLoaded', () => SettingsNav.init());
 window.SettingsNav = SettingsNav;
+
+// ── About modal ──
+const AboutUI = {
+  open() {
+    const dd = document.getElementById('user-dropdown'); if (dd) dd.style.display = 'none';
+    document.getElementById('about-overlay')?.classList.remove('hidden');
+  },
+  close() { document.getElementById('about-overlay')?.classList.add('hidden'); }
+};
+window.AboutUI = AboutUI;
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('about-overlay')?.classList.contains('hidden')) AboutUI.close();
+});
 </script>
+
+<!-- ═══════════════ ABOUT MODAL ═══════════════ -->
+<div id="about-overlay" class="about-overlay hidden" role="dialog" aria-modal="true" aria-label="About Arima Notebooks" onclick="if(event.target===this)AboutUI.close()">
+  <div class="about-modal">
+    <button class="about-close" onclick="AboutUI.close()" title="Close (Esc)" aria-label="Close">
+      <svg viewBox="0 0 16 16" width="16" height="16"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <div class="about-logo">☕</div>
+    <h2 class="about-title">Arima Notebooks</h2>
+    <div class="about-version">Version 4.0.0 · brewed by Barista</div>
+    <p class="about-desc">A local, browser-based multi-language notebook for the agentic era — JShell · Java · JavaScript · TypeScript · C# · F# · C++ · Python — with AI co-pilots and MCP. Humans and agents collaborate on the same living code.</p>
+    <div class="about-links">
+      <a class="about-link" href="#" onclick="showDocsPanel('usage');AboutUI.close();return false;">📖 Documentation</a>
+      <a class="about-link" href="#" onclick="Welcome.openReleaseNotes();AboutUI.close();return false;">✨ What's New</a>
+      <a class="about-link" href="https://github.com/snchande/arima-notebooks" target="_blank" rel="noopener">⌥ GitHub</a>
+    </div>
+  </div>
+</div>
 
 <!-- Cross-Notebook Dependency Picker Modal -->
 <div id="cross-nb-picker" class="cross-nb-picker hidden" role="dialog" aria-modal="true">

@@ -2591,12 +2591,24 @@ const NotebookEditor = (() => {
   /* ── Run all cells sequentially ──────────────────── */
   async function runAll() {
     if (!notebook) return;
+    // Capture the target now — the run is async and the user may switch tabs meanwhile.
+    const targetId = notebook.id;
+    const targetName = notebook.name;
+    const isTut = !!notebook._readOnly;
     Arima.setStatus('Running all cells…');
     const stats = await runAllSequential(notebook.cells, { delay: 2500 });
     Arima.setStatus(stats.aborted
       ? `Stopped — ${stats.ok} OK, ${stats.errors} error(s) before stop`
       : `Done — ${stats.ok} OK, ${stats.errors} error(s), ${(stats.totalMs/1000).toFixed(2)}s`);
     showNotebookStats(stats);
+    // Notify the bell so the user can jump back to this notebook (esp. if it ran in the background).
+    if (!stats.aborted && window.Notifications) {
+      Notifications.runFinished({
+        tabId: targetId, notebookName: targetName, isTutorial: isTut,
+        status: stats.errors > 0 ? 'error' : 'ok',
+        summary: `${stats.ok} OK, ${stats.errors} error(s), ${(stats.totalMs/1000).toFixed(1)}s`,
+      });
+    }
   }
 
   /* ── Save ─────────────────────────────────────────── */
@@ -3164,5 +3176,9 @@ const NotebookEditor = (() => {
     _onCrossNbNotebookChange, _onCrossNbAnchorChange
   };
 })();
+
+// Expose globally so other modules (notifications, tutorials, settings nav) can
+// reference it reliably — a top-level `const` is NOT a property of `window`.
+window.NotebookEditor = NotebookEditor;
 
 document.addEventListener('DOMContentLoaded', () => NotebookEditor.init());
