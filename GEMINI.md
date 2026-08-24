@@ -26,7 +26,7 @@ Offer to open docs (`./arima.sh docs`, or read the file directly). **State the k
 - **No new outbound HTTP hosts** outside the allow-list (Maven Central, npm, NuGet.org, AI CLI).
 - **No secrets in git.** `data/settings.json` and `oauth-config.json` are intentionally `.gitignore`-d.
 - All real-time output uses the existing STOMP `/ws` endpoint. Do not open new WebSocket endpoints.
-- The seven-language execution split, unified `ExecutionResult`, `//@ anchor` / `//@ depends` orchestration DSL, and the local-first guarantee are load-bearing. Don't alter them in a feature PR.
+- The eight-language execution split, unified `ExecutionResult`, `//@ anchor` / `//@ depends` orchestration DSL, and the local-first guarantee are load-bearing. Don't alter them in a feature PR.
 
 ## Workflow
 

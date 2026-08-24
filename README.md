@@ -93,7 +93,7 @@ The bar to **customize for yourself** and the bar to **contribute back** become 
 | **PyPI Package Manager** | Find, install, and use any package from the Python Package Index in Python cells — isolated on `PYTHONPATH` |
 | **C++ Built-in Headers** | 26 standard headers pre-included; MSVC, GCC, and Clang auto-detected |
 | **TypeScript Type-checking** | Optional `tsc --noEmit` pass before each cell — type errors with proper line numbers |
-| **Pipeline Orchestration** | Chain cells with `//@ depends:` annotations — works across all 7 languages |
+| **Pipeline Orchestration** | Chain cells with `//@ depends:` annotations — works across all 8 languages |
 | **Multi-provider AI** | Claude · GitHub Copilot · Antigravity — local (CLI + Copilot SDK), no API key needed |
 | **AI Language Conversion** | Switch a cell's language and AI converts the code automatically |
 | **MCP Server** | Expose Arima Notebooks as an MCP tool server for Claude Code, Claude Desktop, and custom agents |

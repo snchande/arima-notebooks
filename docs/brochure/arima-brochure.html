@@ -379,7 +379,7 @@
     Arima Notebooks is part of the <strong>Arima</strong> platform. It is a
     <strong>ground-up modernization of the notebook</strong> — a locally-hosted,
     browser-based environment that treats many rich languages as equals and is built for a world where
-    humans and AI agents work on code together. Seven languages run side by side today — JavaScript,
+    humans and AI agents work on code together. Eight languages run side by side today — JavaScript,
     TypeScript, C#, F#, C++, Java, and JShell, with <strong>more to come</strong> — each with real
     compilation, real dependencies, and real tooling. Three AI co-pilots (Claude, GitHub Copilot,
     Antigravity) are wired in <strong>locally</strong> (CLI subprocesses + the GitHub Copilot SDK), and
@@ -408,7 +408,7 @@
   <nav class="toc">
     <a><span><span class="num">01</span> &nbsp; What is Arima Notebooks?</span><span class="pg">02</span></a>
     <a><span><span class="num">02</span> &nbsp; Capabilities &amp; Features</span><span class="pg">03</span></a>
-    <a><span><span class="num">03</span> &nbsp; Seven languages, one canvas</span><span class="pg">04</span></a>
+    <a><span><span class="num">03</span> &nbsp; Eight languages, one canvas</span><span class="pg">04</span></a>
     <a><span><span class="num">04</span> &nbsp; Architecture</span><span class="pg">05</span></a>
     <a><span><span class="num">05</span> &nbsp; Install &amp; quick start</span><span class="pg">06</span></a>
     <a><span><span class="num">06</span> &nbsp; Your first notebook</span><span class="pg">07</span></a>
@@ -420,7 +420,7 @@
 
   <h3 style="margin-top:14px">At a glance</h3>
   <div class="grid-4">
-    <div class="card"><div class="ttl"><span class="dot"></span>7 languages</div><p>JShell · Java · JS · TS · C# · F# · C++ — one UI.</p></div>
+    <div class="card"><div class="ttl"><span class="dot"></span>8 languages</div><p>JShell · Java · JS · TS · C# · F# · C++ · Python — one UI.</p></div>
     <div class="card"><div class="ttl"><span class="dot"></span>CLI inside</div><p>Claude · Copilot · Antigravity, all local.</p></div>
     <div class="card"><div class="ttl"><span class="dot"></span>MCP outside</div><p>Whole system exposed to any agent over MCP.</p></div>
     <div class="card"><div class="ttl"><span class="dot"></span>.ipynb interop</div><p>Round-trip with Jupyter — pick your canvas.</p></div>
@@ -501,7 +501,7 @@
       <div class="ttl"><span class="dot"></span>Pipeline orchestration</div>
       <p>Annotate cells with <code>//@ anchor</code> and <code>//@ depends</code>. The orchestration
       service builds a DAG, topologically sorts, and runs ancestors before your target cell. Works in
-      all 7 languages, including cross-notebook references.</p>
+      all 8 languages, including cross-notebook references.</p>
     </div>
     <div class="card">
       <div class="ttl"><span class="dot"></span>Multi-provider AI</div>
@@ -521,7 +521,7 @@
     </div>
     <div class="card">
       <div class="ttl"><span class="dot"></span>Variable inspector</div>
-      <p>Inspect live variable state across JShell, JS, TS, C#, F#, and C++ sessions. See types, values,
+      <p>Inspect live variable state across JShell, JS, TS, C#, F#, C++, and Python sessions. See types, values,
       and structure without printing.</p>
     </div>
     <div class="card">
@@ -548,12 +548,12 @@
 
 
 <!-- ════════════════════════════════════════════════════════════════
-     PAGE 4 — SEVEN LANGUAGES, ONE CANVAS
+     PAGE 4 — EIGHT LANGUAGES, ONE CANVAS
      ════════════════════════════════════════════════════════════════ -->
 <section class="page">
   <div class="section-head">
     <span class="section-num">03</span>
-    <h2>Seven languages, <span class="accent">one canvas</span></h2>
+    <h2>Eight languages, <span class="accent">one canvas</span></h2>
   </div>
 
   <p>Each cell carries a mode badge that mirrors the language colour shown in the live UI. Switch
@@ -631,7 +631,7 @@ Plot.show(clean.column(<span class="tok-str">"sales"</span>).asDoubleArray());</
       <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#f5a623"/></svg>
       ARIMA NOTEBOOKS
     </div>
-    <div>page 04 · seven languages</div>
+    <div>page 04 · eight languages</div>
   </div>
 </section>
 
@@ -948,7 +948,7 @@ barista.display(obj);</pre>
     <tr><td>Read &amp; write cells</td><td>Append, modify, and reorder cells programmatically.</td></tr>
     <tr><td>Execute cells</td><td>Run any cell in any of the seven modes; get the full execution result.</td></tr>
     <tr><td>Manage packages</td><td>Install Maven, npm, or NuGet packages on behalf of an agent.</td></tr>
-    <tr><td>Inspect state</td><td>Query live variables in JShell, JS, TS, C#, F#, and C++ sessions.</td></tr>
+    <tr><td>Inspect state</td><td>Query live variables in JShell, JS, TS, C#, F#, C++, and Python sessions.</td></tr>
     <tr><td>Import / export <code>.ipynb</code></td><td>Round-trip between Arima Notebooks and Jupyter so you pick the canvas, not the tool.</td></tr>
   </table>
 

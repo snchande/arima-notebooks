@@ -17,9 +17,15 @@
   const LANG_KEY = 'arima.languages';
   const ALL_LANGS = ['jshell', 'java', 'javascript', 'typescript', 'csharp', 'fsharp', 'cpp', 'python'];
 
+  const NUM_WORDS = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+
   window.LangPrefs = {
     ALL: ALL_LANGS.slice(),
     all() { return ALL_LANGS.slice(); },
+    /** How many languages Arima supports — the single source of truth for the count. */
+    count() { return ALL_LANGS.length; },
+    /** Spelled-out count ("eight") for prose; falls back to the number. */
+    countWord() { return NUM_WORDS[ALL_LANGS.length] || String(ALL_LANGS.length); },
     /** Selected languages; if never set, everything is considered selected. */
     get() {
       try {

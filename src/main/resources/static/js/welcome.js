@@ -24,7 +24,7 @@
 
   // ── Highlights (short) ──────────────────────────────────────────
   const HIGHLIGHTS = [
-    '7 languages', 'Live output', '3 AI co-pilots',
+    '8 languages', 'Live output', '3 AI co-pilots',
     'Maven · npm · NuGet', 'Pipelines', 'MCP server',
     '28 tutorials', 'Local-first'
   ];
@@ -73,7 +73,7 @@
         'Authentication: local (default) and OAuth2 modes.',
         'Cross-platform barista CLI: start · stop · status · welcome · docs · agents.',
         'Agentic contributor stack: AGENTS.md guardrails, the barista agent, a PR security gate, and a product brochure.',
-        'Variable inspector extended to all subprocess languages (JS, TS, C#, F#, C++) + tab UX.',
+        'Variable inspector extended to all subprocess languages (JS, TS, C#, F#, C++, Python) + tab UX.',
         'This in-app Welcome & User Guide — reopen anytime from Help.'
       ]
     },
@@ -128,7 +128,7 @@
       icon: 'M8 1l2 4 4 .5-3 3 .8 4.5L8 11l-3.8 2 .8-4.5-3-3L6 5z',
       steps: [
         { do: 'Write code in a cell, then run it with Ctrl+Enter.', where: 'The notebook canvas (center).' },
-        { do: 'Switch a cell between 7 languages with its mode badge.', where: 'Top-right of each cell.' },
+        { do: 'Switch a cell between 8 languages with its mode badge.', where: 'Top-right of each cell.' },
         { do: 'Ask AI to generate, explain, or convert code.', where: 'AI panel — press Ctrl+\\.' },
         { do: 'Learn by example from 28 built-in tutorials.', where: 'Notebook Browser → Arima Tutorials.' },
         { do: 'Save and Run All from the toolbar.', where: 'Notebook toolbar (top).' }
@@ -152,7 +152,7 @@
       icon: 'M5 4L2 8l3 4M11 4l3 4-3 4M9 2L7 14',
       steps: [
         { do: 'Use built-in helpers: barista.table(), barista.display(), barista.html().', where: 'Any code cell.' },
-        { do: 'Chain cells with //@ anchor and //@ depends — works across all 7 languages.', where: 'Pipeline cells · Run with Dependencies.' },
+        { do: 'Chain cells with //@ anchor and //@ depends — works across all 8 languages.', where: 'Pipeline cells · Run with Dependencies.' },
         { do: 'Install a package and use it immediately on the classpath.', where: 'Packages tab.' },
         { do: 'Drive Arima from your editor/agent over MCP.', where: 'GET /api/mcp/sse · POST /api/mcp/messages.' },
         { do: 'Extend Arima itself: run claude / copilot / gemini in the repo and ask the barista agent.', where: 'Terminal + AGENTS.md.' }

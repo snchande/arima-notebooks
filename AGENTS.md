@@ -55,7 +55,7 @@ These are load-bearing decisions. Do not change them in a feature PR:
 
 - The execution-service split — one service per language (`JShellManager`, `JavaCompilerService`, `NodeJsExecutionService`, `TypeScriptExecutionService`, `DotNetExecutionService`, `CppExecutionService`, `PythonExecutionService`), plus `OrchestrationService`. Adding a language is additive: new `<Lang>ExecutionService` + a `case` in `ShellController` + a mode entry in the frontend + a `<lang>-packages` manager if it has one (see the `add-execution-language` skill).
 - The unified `ExecutionResult` shape — all runtimes return the same DTO.
-- The `//@ anchor` / `//@ depends` orchestration DSL — the syntax is identical across all seven languages, by design.
+- The `//@ anchor` / `//@ depends` orchestration DSL — the syntax is identical across all eight languages, by design.
 - The local-first guarantee — no telemetry, no analytics, no auto-update calls.
 - The port `8585` default — there is exactly one well-known place to look.
 - The static-resources-from-JAR pattern — no Webpack, no Vite, no npm in the frontend build.

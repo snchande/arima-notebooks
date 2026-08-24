@@ -47,7 +47,7 @@
       target: null,
       langPicker: true,
       title: 'Which languages do you use?',
-      body: 'Arima supports seven languages — but you probably don’t need them all. Pick the ones you work with and we’ll tailor the tutorials to you. You can change this anytime in <b>Settings &rarr; Languages</b>.',
+      body: 'Arima supports eight languages — but you probably don’t need them all. Pick the ones you work with and we’ll tailor the tutorials to you. You can change this anytime in <b>Settings &rarr; Languages</b>.',
       before: () => { switchTab('notebook'); openAI(false); }
     },
     {
@@ -65,14 +65,14 @@
     {
       target: '#nb-toolbar',
       title: 'Every language is first-class',
-      body: 'Add code or markdown cells and switch each cell between <b>seven languages</b> — JShell, Java, JavaScript, TypeScript, C#, F#, and C++ — with more on the way. No language is a second-class citizen.',
+      body: 'Add code or markdown cells and switch each cell between <b>eight languages</b> — JShell, Java, JavaScript, TypeScript, C#, F#, C++, and Python — with more on the way. No language is a second-class citizen.',
       before: () => switchTab('notebook'),
       place: 'bottom'
     },
     {
       target: '#btn-add-pipeline',
       title: 'Pipelines — unique to Arima Notebooks',
-      body: 'Give any cell a <code>//@ anchor:</code> name, then declare <code>//@ depends:</code> on other anchors. Arima Notebooks builds a dependency graph and runs the cells in <b>topological order</b> — a real workflow, across all seven languages.',
+      body: 'Give any cell a <code>//@ anchor:</code> name, then declare <code>//@ depends:</code> on other anchors. Arima Notebooks builds a dependency graph and runs the cells in <b>topological order</b> — a real workflow, across all eight languages.',
       before: () => switchTab('notebook'),
       place: 'bottom'
     },
