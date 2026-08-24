@@ -472,11 +472,39 @@
 .fre-lang-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .fre-lang-grid .lang-chip { font-size: 12px; padding: 5px 10px; }
 
-#languages-card.pulse { animation: langPulse 1.4s ease; }
+#languages-card.pulse, .card.pulse { animation: langPulse 1.4s ease; }
 @keyframes langPulse {
   0%, 100% { box-shadow: 0 0 0 0 transparent; }
   30% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
 }
+
+/* About modal */
+.about-overlay {
+  position: fixed; inset: 0; z-index: 1400; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.6);
+}
+.about-overlay.hidden { display: none; }
+.about-modal {
+  position: relative; width: min(440px, 92vw); text-align: center;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: var(--shadow-md); padding: 32px 28px 26px;
+}
+.about-close {
+  position: absolute; top: 12px; right: 12px; background: none; border: none;
+  color: var(--text-3); cursor: pointer; padding: 4px; border-radius: 6px;
+}
+.about-close:hover { color: var(--text-1); background: var(--surface-4); }
+.about-logo { font-size: 40px; line-height: 1; margin-bottom: 6px; }
+.about-title { font-size: 22px; font-weight: 700; color: var(--text-1); margin: 0 0 4px; }
+.about-version { font-family: var(--font-code); font-size: 12px; color: var(--accent); margin-bottom: 16px; }
+.about-desc { font-size: 13.5px; line-height: 1.7; color: var(--text-2); margin: 0 0 20px; }
+.about-links { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.about-link {
+  font-size: 12.5px; font-weight: 600; text-decoration: none;
+  padding: 7px 14px; border-radius: 999px; color: var(--text-2);
+  background: var(--surface-3); border: 1px solid var(--border); transition: all .15s;
+}
+.about-link:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ── Settings: Tutorials catalog ──────────────────────────────────── */
 .tut-cat-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px;
@@ -4403,9 +4431,14 @@ table.barista-df th { position: relative; padding-bottom: 14px; }
   display: grid; place-items: center; font-size: 13px;
   background: var(--accent-dim); color: var(--accent);
 }
-.notif-item-text { display: flex; flex-direction: column; gap: 2px; }
+.notif-item-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .notif-item-text strong { font-size: 12.5px; font-weight: 600; }
 .notif-item-sub { font-size: 11.5px; color: var(--text-3); }
+.notif-item-x {
+  flex: 0 0 auto; align-self: center; width: 20px; height: 20px; border-radius: 5px;
+  display: grid; place-items: center; color: var(--text-3); font-size: 15px; line-height: 1;
+}
+.notif-item-x:hover { background: var(--surface-4); color: var(--text-1); }
 
 /* ════════════════════════════════════════════════════════════════
    First Run Experience (FRE) — guided spotlight tour
@@ -4475,6 +4508,11 @@ body.fre-on #fre-tip { display: block; }
   padding: 1px 6px; font-size: .85em; font-family: inherit; color: var(--text-1);
 }
 .fre-tip-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fre-dontshow {
+  display: flex; align-items: center; gap: 7px; margin-top: 12px;
+  font-size: 12px; color: var(--text-3); cursor: pointer; user-select: none;
+}
+.fre-dontshow input { cursor: pointer; }
 .fre-dots { display: flex; gap: 6px; flex-wrap: wrap; }
 .fre-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--surface-5); transition: all .2s; }
 .fre-dot.on { background: var(--accent); width: 18px; border-radius: 3px; }
