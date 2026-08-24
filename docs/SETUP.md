@@ -18,10 +18,11 @@
 | TypeScript (`tsc`) | 5.0 | Pre-execution type-check for TS cells (optional — TS cells still run without it) |
 | .NET SDK | 6.0 | C# and F# cells (no extra tools needed) |
 | g++ or clang++ | g++ 9 / clang++ 9 | C++ cells (`⚙ C++` mode), C++17 required |
+| Python | 3.8+ | Python cells (`🐍 Python` mode) and PyPI packages |
 | Claude CLI | Latest | AI Assistant (Claude provider) — `claude auth` |
 | GitHub Copilot CLI | 1.0.55-5+ | AI Assistant (Copilot provider, driven by the Copilot SDK) — `copilot` binary |
 | Antigravity CLI (`agy`) | Latest | AI Assistant (Antigravity provider, formerly Gemini) — run `agy` to sign in |
-| Internet access | — | Maven Central, npm registry, NuGet |
+| Internet access | — | Maven Central, npm registry, NuGet, PyPI |
 
 > **Node.js**: Install from [nodejs.org](https://nodejs.org) to use JavaScript and TypeScript cells (plus npm packages).
 > JavaScript cells work on Node 18+; **TypeScript cells require Node 22.6+** (recommended: Node 24 LTS) for the built-in type-stripping runtime.
@@ -37,6 +38,17 @@
 > **.NET SDK**: Install from [dot.net](https://dot.net) to use C# **and** F# cells. The SDK is free for all platforms.
 > Both C# and F# cells require only the standard .NET SDK — no extra tools like `dotnet-script` are needed.
 > Without the .NET SDK, Java, JShell, and JavaScript cells work normally.
+
+> **Python**: The fastest way is the bundled setup helper, which detects Python and installs it if missing (winget/Chocolatey on Windows; apt/dnf/brew on Linux/macOS):
+> ```bash
+> # Windows PowerShell
+> ./scripts/setup-python.ps1
+> # Linux / macOS
+> ./scripts/setup-python.sh
+> ```
+> Or install Python 3.8+ manually from [python.org/downloads](https://www.python.org/downloads/) (on Windows, tick **"Add python.exe to PATH"**).
+> Ensure `python`, `python3`, or the Windows `py` launcher is on your `PATH`, then restart Arima. Packages are installed from the **Packages → PyPI** tab via `pip` into an isolated folder (`data/pypi-packages/`) added to `PYTHONPATH` — your system site-packages are left untouched.
+> Without Python, the other seven languages work normally.
 
 ---
 
@@ -73,6 +85,7 @@ Arima Notebooks supports multiple cell execution modes. Each language is **optio
 | C# | `csharp` | .NET SDK 6+ | [dot.net](https://dot.net) |
 | F# | `fsharp` | .NET SDK 6+ | [dot.net](https://dot.net) |
 | **C++** | `cpp` | **g++ 9+, clang++ 9+, or MSVC 2017+** | See C++ section below |
+| Python | `python` | Python 3.8+ (`python`/`python3`/`py`) | [python.org](https://www.python.org/downloads/) |
 
 ### Setting up C++ support
 

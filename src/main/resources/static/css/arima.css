@@ -571,6 +571,24 @@
 #notebook-browser.fullscreen .nb-browser-fs .fs-expand   { display: none; }
 #notebook-browser.fullscreen .nb-browser-fs .fs-collapse { display: inline; }
 
+/* Settings tab dropdown: Tutorials · Configurations · Help */
+.tab-dropdown { position: relative; display: inline-flex; }
+.tab-caret { margin-left: 3px; opacity: .7; }
+.tab-dropdown-menu {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  margin-top: 6px; min-width: 180px; z-index: 1250;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: var(--shadow-md); padding: 6px; display: flex; flex-direction: column; gap: 2px;
+}
+.tab-dropdown-menu[hidden] { display: none; }
+.tab-dd-item {
+  display: flex; align-items: center; gap: 9px; text-align: left; width: 100%;
+  padding: 9px 12px; border: none; border-radius: 7px; cursor: pointer;
+  background: transparent; color: var(--text-2); font-family: var(--font-ui); font-size: 13px; font-weight: 500;
+  transition: background .12s, color .12s;
+}
+.tab-dd-item:hover { background: var(--surface-4); color: var(--text-1); }
+
 /* Top-level browser view switch: Select Notebook | Tutorials */
 .nbb-views {
   display: flex; gap: 6px; margin-bottom: 16px;
@@ -679,8 +697,40 @@
   font-family: var(--font-code); font-size: 13px; color: var(--text-2); white-space: pre-wrap; }
 
 .tp-caption {
-  min-height: 20px; padding: 8px 30px; font-size: 12.5px; color: var(--text-3);
-  font-style: italic; border-top: 1px solid var(--border); background: var(--surface-1);
+  min-height: 20px; max-height: 84px; overflow-y: auto; padding: 10px 30px;
+  font-size: 13px; line-height: 1.6; color: var(--text-3);
+  border-top: 1px solid var(--border); background: var(--surface-1);
+}
+/* Teleprompter: the sentence currently being narrated */
+.tp-cap-active {
+  color: var(--text-1); font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-radius: 4px; padding: 1px 3px; box-decoration-break: clone;
+}
+
+/* Objective / overview intro slide */
+.tp-intro { max-width: 680px; margin: 0 auto; }
+.tp-intro-eyebrow {
+  font-family: var(--font-code); font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+}
+.tp-intro-title { font-size: 28px; font-weight: 700; color: var(--text-1); margin: 0 0 14px; }
+.tp-intro-obj { font-size: 16px; line-height: 1.7; color: var(--text-2); margin: 0 0 20px; }
+.tp-intro-learn-label { font-size: 13px; font-weight: 700; color: var(--text-1); margin-bottom: 8px; }
+.tp-intro-learn { margin: 0 0 20px; padding-left: 20px; }
+.tp-intro-learn li { font-size: 15px; line-height: 1.9; color: var(--text-2); }
+.tp-intro-learn li::marker { color: var(--accent); }
+.tp-intro-meta { font-size: 12.5px; color: var(--text-3); border-top: 1px solid var(--border); padding-top: 14px; }
+
+/* Code block being discussed by the narrator */
+.tp-code.tp-code-speaking {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 22px color-mix(in srgb, var(--accent) 22%, transparent);
+  animation: tpCodeGlow 1.8s ease-in-out infinite;
+}
+@keyframes tpCodeGlow {
+  0%, 100% { box-shadow: 0 0 0 1px var(--accent), 0 0 10px color-mix(in srgb, var(--accent) 14%, transparent); }
+  50%      { box-shadow: 0 0 0 1px var(--accent), 0 0 24px color-mix(in srgb, var(--accent) 30%, transparent); }
 }
 
 .tp-qa { max-height: 34vh; overflow-y: auto; padding: 10px 30px;

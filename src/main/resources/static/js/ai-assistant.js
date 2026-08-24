@@ -247,7 +247,7 @@ const AIAssistant = (() => {
         const bar = document.getElementById('ai-ctx-bar');
         if (!bar) return;
         if (cellContext) {
-            const modeIcon = { jshell: '☕', java: '♨', nodejs: '⬡', typescript: '◆', cpp: '⚙' }[cellContext.mode] || '◈';
+            const modeIcon = { jshell: '☕', java: '♨', nodejs: '⬡', typescript: '◆', cpp: '⚙', python: '🐍' }[cellContext.mode] || '◈';
             bar.innerHTML = `
               <span class="ai-ctx-icon">${modeIcon}</span>
               <span class="ai-ctx-label">${nbContext?.notebookName || 'Notebook'}</span>
@@ -285,6 +285,7 @@ const AIAssistant = (() => {
             csharp:     'C# (top-level program via dotnet run)',
             fsharp:     'F# (script via dotnet fsi)',
             cpp:        'C++ (MSVC / GCC / Clang subprocess)',
+            python:     'Python 3 (python subprocess; PyPI packages via the PyPI tab)',
         };
 
         let sys = `You are the **Arima Agentic Assistant (AAA)** embedded in **Arima Notebooks** — an interactive multi-language notebook environment. You are grounded in the full Arima codebase (you may reference project files and AGENTS.md when relevant).
@@ -298,6 +299,7 @@ const AIAssistant = (() => {
 | typescript | TypeScript (Node.js 22.6+) | Built-in type-stripping; \`tsc --noEmit\` for type-check; uses same npm modules as JS |
 | csharp | C# 9+ | Top-level program, no class wrapper needed |
 | fsharp | F# | \`dotnet fsi\` script, functional style |
+| python | Python 3.8+ | \`python\` subprocess; install libraries from the PyPI tab and \`import\` them |
 
 ## Your role
 - Help the user write, debug, understand, and improve code in their Arima notebook cells
@@ -360,7 +362,7 @@ When a cell has \`//@ depends: anchor\`, Arima compiles and injects the ancestor
                 if (cellContext.lastExecutionTimeMs) sys += ` (${cellContext.lastExecutionTimeMs}ms)`;
             }
             const fenceLang = ({
-                nodejs:'js', typescript:'ts', csharp:'csharp', fsharp:'fsharp', cpp:'cpp'
+                nodejs:'js', typescript:'ts', csharp:'csharp', fsharp:'fsharp', cpp:'cpp', python:'python'
             })[cellContext.mode] || 'java';
             sys += `\n\n**Source:**\n\`\`\`${fenceLang}\n${cellContext.source || '(empty)'}\n\`\`\``;
             if (cellContext.output?.trim())
@@ -371,7 +373,7 @@ When a cell has \`//@ depends: anchor\`, Arima compiles and injects the ancestor
 
         sys += `\n\n---
 ## Responding with code
-- Wrap ALL code in fenced code blocks with the correct language tag (\`\`\`java, \`\`\`jshell, \`\`\`csharp, \`\`\`fsharp, \`\`\`js, \`\`\`ts, \`\`\`cpp)
+- Wrap ALL code in fenced code blocks with the correct language tag (\`\`\`java, \`\`\`jshell, \`\`\`csharp, \`\`\`fsharp, \`\`\`js, \`\`\`ts, \`\`\`cpp, \`\`\`python)
 - Match the language/mode of the focused cell unless the user explicitly asks to change it
 - For an edit request, the FIRST code block is auto-applied to the focused cell (with Undo); make it the complete replacement. Additional blocks show manual **Apply to cell**, **Apply & Run**, and **New cell** buttons.
 - Keep each block complete and immediately runnable as a Arima cell`;

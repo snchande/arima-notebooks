@@ -1,0 +1,117 @@
+{
+  "id": "python-201",
+  "name": "Python 201 · Collections & OOP",
+  "description": "Lists, tuples, dicts, sets, comprehensions, classes & dataclasses, and error handling — the tools you reach for every day.",
+  "metadata": {
+    "category": "tutorial",
+    "language": "python",
+    "level": 201,
+    "subcategory": "Basics & Foundations"
+  },
+  "cells": [
+    {
+      "id": "py201-md0",
+      "type": "MARKDOWN",
+      "source": "# Python 201 · Collections & OOP\n\nBuild on the fundamentals with Python's core data structures and object-oriented features.\n\n**Prerequisites:** *Python 101*.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-md1",
+      "type": "MARKDOWN",
+      "source": "## 1. Lists and tuples\n\n**Lists** are mutable ordered sequences; **tuples** are immutable. Slicing works on both.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-1",
+      "type": "CODE",
+      "mode": "python",
+      "source": "nums = [3, 1, 4, 1, 5, 9, 2, 6]\nnums.append(5)\nprint(\"list:    \", nums)\nprint(\"sorted:  \", sorted(nums))\nprint(\"slice[1:4]:\", nums[1:4])\nprint(\"reversed: \", nums[::-1])\n\npoint = (10, 20)   # tuple — immutable\nx, y = point       # unpacking\nprint(f\"x={x}, y={y}\")",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-md2",
+      "type": "MARKDOWN",
+      "source": "## 2. Dictionaries\n\nKey/value maps — the workhorse of Python. Iterate with `.items()`.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-2",
+      "type": "CODE",
+      "mode": "python",
+      "source": "inventory = {\"apples\": 30, \"pears\": 12, \"plums\": 0}\ninventory[\"cherries\"] = 50      # add\ninventory[\"pears\"] += 8         # update\n\nfor item, qty in inventory.items():\n    status = \"OUT\" if qty == 0 else qty\n    print(f\"{item:<10} {status}\")\n\nin_stock = {k: v for k, v in inventory.items() if v > 0}\nprint(\"in stock:\", in_stock)",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-md3",
+      "type": "MARKDOWN",
+      "source": "## 3. Sets\n\nUnordered collections of unique values — great for membership tests and set algebra.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-3",
+      "type": "CODE",
+      "mode": "python",
+      "source": "a = {1, 2, 3, 4}\nb = {3, 4, 5, 6}\nprint(\"union:       \", a | b)\nprint(\"intersection:\", a & b)\nprint(\"difference:  \", a - b)\n\nwords = \"the quick brown fox the lazy dog the\".split()\nprint(\"unique words:\", sorted(set(words)))",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-md4",
+      "type": "MARKDOWN",
+      "source": "## 4. Classes\n\nDefine your own types with `class`. `__init__` is the constructor; `self` is the instance.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-4",
+      "type": "CODE",
+      "mode": "python",
+      "source": "class Account:\n    def __init__(self, owner, balance=0):\n        self.owner = owner\n        self.balance = balance\n\n    def deposit(self, amount):\n        self.balance += amount\n        return self.balance\n\n    def __repr__(self):\n        return f\"Account({self.owner!r}, ${self.balance})\"\n\nacct = Account(\"Ada\")\nacct.deposit(100)\nacct.deposit(50)\nprint(acct)\nprint(\"balance:\", acct.balance)",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-md5",
+      "type": "MARKDOWN",
+      "source": "## 5. Dataclasses\n\n`@dataclass` auto-generates `__init__`, `__repr__`, and `__eq__` — perfect for plain data.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-5",
+      "type": "CODE",
+      "mode": "python",
+      "source": "from dataclasses import dataclass\n\n@dataclass\nclass Product:\n    name: str\n    price: float\n    qty: int = 1\n\n    def total(self):\n        return self.price * self.qty\n\ncart = [Product(\"Book\", 12.99, 2), Product(\"Pen\", 1.50, 5)]\nfor p in cart:\n    print(f\"{p.name:<6} x{p.qty}  ->  ${p.total():.2f}\")\nprint(f\"Order total: ${sum(p.total() for p in cart):.2f}\")",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-md6",
+      "type": "MARKDOWN",
+      "source": "## 6. Error handling\n\n`try` / `except` / `finally`. Catch specific exceptions; raise your own when needed.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-6",
+      "type": "CODE",
+      "mode": "python",
+      "source": "def safe_divide(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        return \"undefined (÷0)\"\n    finally:\n        pass\n\nprint(safe_divide(10, 2))\nprint(safe_divide(10, 0))\n\ntry:\n    raise ValueError(\"bad input\")\nexcept ValueError as e:\n    print(\"caught:\", e)",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py201-md7",
+      "type": "MARKDOWN",
+      "source": "## Next\n\n**Python 301 · Standard Library & Functional** — the batteries-included stdlib, plus map/filter, generators, and decorators.",
+      "output": "",
+      "executionCount": 0
+    }
+  ]
+}

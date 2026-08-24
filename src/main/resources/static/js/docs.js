@@ -44,6 +44,7 @@ Every code cell has an **execution mode** badge in its header. Click it to cycle
 | **C#** | C# 9+ top-level | \`dotnet run\` | ✗ Per-cell (pipeline injection) |
 | **F#** | F# Script | \`dotnet fsi\` | ✗ Per-cell (pipeline injection) |
 | **C++** | C++ 17/20 | MSVC / GCC / Clang subprocess | ✗ Per-cell |
+| **Python** | Python 3.8+ | \`python\` subprocess | ✗ Per-cell (pipeline injection) |
 
 ---
 
@@ -222,7 +223,34 @@ See **Packages → C++ (Built-in)** for the full header reference grouped by cat
 
 ---
 
-### 2.8 Cell Output
+### 2.8 Python Mode — python3 subprocess
+
+Each Python cell runs in a fresh **Python 3** process. Write top-level code — no boilerplate. Install any library from the **Packages → PyPI** tab and \`import\` it; installed packages live in an isolated folder on \`PYTHONPATH\`, so your system Python is never touched.
+
+\`\`\`python
+import statistics
+
+scores = [88, 92, 79, 95, 84]
+print("mean:", statistics.mean(scores))
+print("stdev:", round(statistics.stdev(scores), 2))
+
+# Arima helpers are pre-injected into every Python cell:
+barista.table([{"name": "Ada", "score": 92}, {"name": "Linus", "score": 88}])
+barista.stats(scores)
+\`\`\`
+
+**Arima helpers (Python):**
+- \`barista.table(rows)\` — print a list of dicts as a text table
+- \`barista.stats(values)\` — count / min / max / mean / std
+- \`barista.html(markup)\` — render inline HTML (KPI cards, badges, **inline SVG charts**)
+- \`barista.image(fig)\` — render a matplotlib figure (or PNG bytes / path) as an image
+- \`barista.display(obj)\` — pretty-print as JSON
+
+**Pipelines:** like C#/F#, Python cells compose via \`//@ anchor:\` and \`//@ depends:\` — ancestor cells are executed (output suppressed) so their variables are in scope for the dependent cell.
+
+---
+
+### 2.9 Cell Output
 
 | Output type | Shown as |
 |---|---|
@@ -282,6 +310,16 @@ Go to **Packages → NuGet** to install NuGet packages.
 2. Click **Install** — the package is registered and automatically injected into every C# and F# cell
 3. Use it immediately — no \`#r\` directive needed in cell code
 
+### PyPI (Python)
+
+Go to **Packages → PyPI** to install any package from the [Python Package Index](https://pypi.org).
+
+1. Enter a package name (e.g. \`requests\`, \`numpy\`, \`pandas\`) or \`name==version\`
+2. Click **Install** — \`pip\` downloads it into an isolated folder (\`data/pypi-packages/\`) added to \`PYTHONPATH\`
+3. Use it immediately with \`import <package>\` in any Python cell — your system Python is never modified
+
+Use **Find on PyPI** to look up a package's latest version and summary before installing. Because installs go to a dedicated target folder, **Remove** cleanly deletes exactly what that package added.
+
 ### C++ (Built-in Headers)
 
 Go to **Packages → C++ (Built-in)** to see the reference panel.
@@ -290,7 +328,7 @@ C++ does **not** use installable packages — instead, Arima pre-includes 26 sta
 
 For third-party libraries (Boost, Eigen, nlohmann/json, etc.) install them system-wide using your OS package manager so the compiler can find them — Arima does not manage C++ package installation.
 
-> **Removing a package:** The Maven, npm, and NuGet tabs each have a **Remove** button next to installed packages. You'll be warned that any notebook cells using that package will fail until it is re-installed.
+> **Removing a package:** The Maven, npm, NuGet, and PyPI tabs each have a **Remove** button next to installed packages. You'll be warned that any notebook cells using that package will fail until it is re-installed.
 
 ---
 
@@ -788,6 +826,21 @@ Narration uses your browser's built-in voices. The player **auto-selects the mos
 |---|---|---|
 | **F# 101** | Beginner | Functions, pattern matching, lists, discriminated unions |
 | **F# 201** | Intermediate | NuGet packages, pipelines, cross-cell data sharing |
+
+---
+
+## Python Tutorials
+
+| Notebook | Level | Topics |
+|---|---|---|
+| **Python 101** | Beginner | Variables, types, f-strings, control flow, loops, functions |
+| **Python 201** | Beginner | Lists, dicts, sets, comprehensions, classes, dataclasses, error handling |
+| **Python 301** | Advanced | Standard library (datetime, collections, itertools, json, re), map/filter, generators, decorators |
+| **Python 401** | Advanced | Networking — urllib, the \`requests\` library, a local socket server, concurrent fetches |
+| **Python 501** | Advanced | Databases — SQLite (stdlib), parameterized queries, aggregation, transactions, PyPI drivers |
+| **Python 601** | Data Science | Metrics & reporting with built-in rendering (tables, KPI cards, SVG charts), NumPy, pandas, matplotlib |
+
+Install libraries for these from the **Packages → PyPI** tab.
 
 ---
 

@@ -1,0 +1,102 @@
+{
+  "id": "python-401",
+  "name": "Python 401 · Networking",
+  "description": "Networking in Python: URLs and JSON APIs with the stdlib (urllib), the popular requests library from PyPI, a local TCP socket demo, and concurrent fetches.",
+  "metadata": {
+    "category": "tutorial",
+    "language": "python",
+    "level": 401,
+    "subcategory": "Advanced"
+  },
+  "cells": [
+    {
+      "id": "py401-md0",
+      "type": "MARKDOWN",
+      "source": "# Python 401 · Networking\n\nTalk to the network from Python — first with the **standard library** (always available), then with **`requests`** (install from the PyPI tab). We finish with a self-contained socket demo that needs no internet.\n\n**Prerequisites:** *Python 301*.\n\n> Cells that reach the internet are marked **🌐 needs internet**. The socket demo and URL parsing run fully offline.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py401-md1",
+      "type": "MARKDOWN",
+      "source": "## 1. Parsing URLs (offline)\n\n`urllib.parse` breaks apart and builds URLs — no network required.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py401-1",
+      "type": "CODE",
+      "mode": "python",
+      "source": "from urllib.parse import urlparse, urlencode, parse_qs\n\nurl = \"https://api.example.com/search?q=python&page=2&sort=new\"\nparts = urlparse(url)\nprint(\"scheme:\", parts.scheme)\nprint(\"host:  \", parts.netloc)\nprint(\"path:  \", parts.path)\nprint(\"query: \", parse_qs(parts.query))\n\nbuilt = \"https://api.example.com/items?\" + urlencode({\"limit\": 10, \"tag\": \"new\"})\nprint(\"built: \", built)",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py401-md2",
+      "type": "MARKDOWN",
+      "source": "## 2. HTTP with the standard library 🌐\n\n`urllib.request` performs HTTP with zero dependencies. This GET hits a public test API.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py401-2",
+      "type": "CODE",
+      "mode": "python",
+      "source": "import json\nfrom urllib.request import urlopen, Request\n\nreq = Request(\"https://httpbin.org/json\", headers={\"User-Agent\": \"Arima/1.0\"})\ntry:\n    with urlopen(req, timeout=10) as resp:\n        data = json.load(resp)\n    print(\"status:\", resp.status)\n    barista.display(data)\nexcept Exception as e:\n    print(\"Network unavailable or blocked:\", e)",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py401-md3",
+      "type": "MARKDOWN",
+      "source": "## 3. The `requests` library 🌐\n\n`requests` is the de-facto HTTP client. **Install it first:** open **Packages → PyPI** and install `requests`, then run this cell.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py401-3",
+      "type": "CODE",
+      "mode": "python",
+      "source": "try:\n    import requests\nexcept ModuleNotFoundError:\n    print(\"requests not installed — add it from Packages -> PyPI, then re-run.\")\nelse:\n    r = requests.get(\"https://httpbin.org/get\", params={\"tool\": \"arima\"}, timeout=10)\n    print(\"status:\", r.status_code)\n    print(\"echoed args:\", r.json().get(\"args\"))",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py401-md4",
+      "type": "MARKDOWN",
+      "source": "## 4. A local TCP server + client (offline)\n\nSockets are the foundation of all networking. Here a tiny server and client talk over `localhost` in one cell — no internet needed.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py401-4",
+      "type": "CODE",
+      "mode": "python",
+      "source": "import socket, threading\n\ndef server(ready):\n    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)\n    srv.bind((\"127.0.0.1\", 0))\n    srv.listen(1)\n    ready[\"port\"] = srv.getsockname()[1]\n    ready[\"evt\"].set()\n    conn, addr = srv.accept()\n    msg = conn.recv(1024).decode()\n    conn.sendall(f\"echo: {msg}\".encode())\n    conn.close(); srv.close()\n\nready = {\"evt\": threading.Event()}\nt = threading.Thread(target=server, args=(ready,), daemon=True)\nt.start(); ready[\"evt\"].wait(5)\n\nclient = socket.create_connection((\"127.0.0.1\", ready[\"port\"]), timeout=5)\nclient.sendall(b\"hello sockets\")\nprint(client.recv(1024).decode())\nclient.close(); t.join(timeout=5)",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py401-md5",
+      "type": "MARKDOWN",
+      "source": "## 5. Concurrent requests 🌐\n\n`ThreadPoolExecutor` fetches several URLs in parallel — much faster than one at a time. (Needs internet.)",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py401-5",
+      "type": "CODE",
+      "mode": "python",
+      "source": "import json, time\nfrom concurrent.futures import ThreadPoolExecutor\nfrom urllib.request import urlopen\n\nurls = [f\"https://httpbin.org/delay/1?i={i}\" for i in range(4)]\n\ndef fetch(u):\n    try:\n        with urlopen(u, timeout=15) as r:\n            return r.status\n    except Exception as e:\n        return f\"err: {e}\"\n\nstart = time.perf_counter()\ntry:\n    with ThreadPoolExecutor(max_workers=4) as pool:\n        results = list(pool.map(fetch, urls))\n    print(\"results:\", results)\n    print(f\"4 x 1s requests in {time.perf_counter() - start:.2f}s (parallel)\")\nexcept Exception as e:\n    print(\"Network unavailable:\", e)",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py401-md6",
+      "type": "MARKDOWN",
+      "source": "## Next\n\n**Python 501 · Databases** — SQLite from the stdlib (no install), parameterized queries, and connecting to other databases via PyPI drivers.",
+      "output": "",
+      "executionCount": 0
+    }
+  ]
+}

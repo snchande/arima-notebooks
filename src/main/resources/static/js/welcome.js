@@ -12,7 +12,7 @@
 
   // Bump this with every release. Changing it makes returning users see
   // the What's New panel on their next load.
-  const ARIMA_VERSION = '3.1.0';
+  const ARIMA_VERSION = '4.0.0';
 
   // Link to the full changelog (release-by-release history lives in-app below,
   // and in this file for those who want the raw detail).
@@ -33,6 +33,17 @@
   // The first entry is the current "What's New". Older entries power the
   // "See all releases" view. Keep each item short.
   const RELEASES = [
+    {
+      version: "4.0.0", date: "2026-08-23",
+      title: "Python — the eighth language",
+      items: [
+        "Python cells (🐍 Python mode): run Python 3 with a fresh interpreter per cell and pipeline dependency injection via //@ anchor / //@ depends.",
+        "PyPI package manager (Packages → PyPI): find, install, and use any package from the Python Package Index — isolated on PYTHONPATH, your system Python untouched.",
+        "Built-in Python renderers: barista.table / stats / html (KPI cards + inline SVG) / image (matplotlib) for metrics & reporting.",
+        "Full tutorial track: Python 101 → 601 (fundamentals, collections & OOP, stdlib, networking, databases, data science).",
+        "Setup automation: scripts/setup-python detects and installs Python; the app guides you if it's missing."
+      ]
+    },
     {
       version: "3.2.0", date: "2026-07-26",
       title: "The Agents Arena + Guided Tutorial Player",

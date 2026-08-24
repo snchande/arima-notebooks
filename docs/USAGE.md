@@ -123,7 +123,7 @@ This is a **markdown** cell. It renders formatted text.
 
 Every code cell has a **mode button** on its header. Click it to **cycle through all languages**:
 
-**JShell → Java → JS → C# → F# → C++ → JShell → …**
+**JShell → Java → JS → TS → C# → F# → C++ → Python → JShell → …**
 
 | Mode | Icon | Behavior |
 |------|------|----------|
@@ -134,6 +134,7 @@ Every code cell has a **mode button** on its header. Click it to **cycle through
 | **C#** | `◈ C#` | C# top-level program via `dotnet run`; isolated per cell (with dep injection for `//@ depends:`) |
 | **F#** | `◈ F#` | F# script via `dotnet fsi`; isolated per cell (with dep injection for `//@ depends:`) |
 | **C++** | `⚙ C++` | g++/clang++/MSVC compile+run, C++17; auto-wraps in `main()`; isolated per cell |
+| **Python** | `🐍 Python` | Python 3 subprocess; isolated per cell (with dep injection for `//@ depends:`); `import` PyPI packages from the PyPI tab |
 
 #### AI-powered language conversion
 
@@ -1062,7 +1063,7 @@ Notebooks are stored as `.vnb` JSON files in the `notebooks/` directory:
 |-------|------|-------------|
 | `id` | string | Unique cell identifier |
 | `type` | `CODE` / `MARKDOWN` / `PIPELINE` | Cell type |
-| `mode` | `jshell` / `java` / `nodejs` / `csharp` / `fsharp` / `cpp` | Execution mode (CODE cells only) |
+| `mode` | `jshell` / `java` / `nodejs` / `typescript` / `csharp` / `fsharp` / `cpp` / `python` | Execution mode (CODE cells only) |
 | `source` | string | Cell content |
 | `anchor` | string | Optional unique name for dependency graph |
 | `dependsOn` | string[] | List of anchor names this cell depends on |

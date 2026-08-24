@@ -110,15 +110,15 @@
     {
       target: '#tutorials-card',
       title: 'Learn by example',
-      body: 'Find <b>Tutorials</b> in <b>Settings</b> — dozens of ready-made, hands-on lessons for the languages you picked. Press <b>▶ Guided</b> on any one for a narrated walkthrough, and watch your <b>completion %</b> climb as you run the cells.',
-      before: () => switchTab('settings'),
+      body: 'Open <b>Settings → Tutorials</b> — dozens of ready-made, hands-on lessons for the languages you picked. Press <b>▶ Guided</b> on any one for a narrated walkthrough, and watch your <b>completion %</b> climb as you run the cells.',
+      before: () => { switchTab('settings'); if (window.SettingsNav) SettingsNav.show('tutorials'); },
       place: 'top'
     },
     {
       target: '#fre-tour-setting',
       title: 'Replay this tour anytime',
-      body: 'You can relaunch this walkthrough whenever you like from <b>Settings → Guided Tour</b>, or have it show again on your next launch.',
-      before: () => switchTab('settings'),
+      body: 'You can relaunch this walkthrough whenever you like from <b>Settings → Configurations → Guided Tour</b>, or have it show again on your next launch.',
+      before: () => { switchTab('settings'); if (window.SettingsNav) SettingsNav.show('config'); },
       place: 'top'
     },
     {

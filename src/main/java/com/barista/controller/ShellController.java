@@ -13,6 +13,7 @@ import com.barista.service.NodeJsExecutionService;
 import com.barista.service.NotebookService;
 import com.barista.service.OrchestrationService;
 import com.barista.service.PackageService;
+import com.barista.service.PythonExecutionService;
 import com.barista.service.TypeScriptExecutionService;
 import com.barista.service.UserService;
 import com.barista.shell.JShellManager;
@@ -61,6 +62,7 @@ public class ShellController {
     private final TypeScriptExecutionService typeScriptExecutionService;
     private final DotNetExecutionService dotNetExecutionService;
     private final CppExecutionService cppExecutionService;
+    private final PythonExecutionService pythonExecutionService;
     private final OrchestrationService orchestrationService;
     private final NotebookService notebookService;
     private final UserService userService;
@@ -77,6 +79,7 @@ public class ShellController {
                            TypeScriptExecutionService typeScriptExecutionService,
                            DotNetExecutionService dotNetExecutionService,
                            CppExecutionService cppExecutionService,
+                           PythonExecutionService pythonExecutionService,
                            OrchestrationService orchestrationService,
                            NotebookService notebookService,
                            UserService userService,
@@ -89,6 +92,7 @@ public class ShellController {
         this.typeScriptExecutionService = typeScriptExecutionService;
         this.dotNetExecutionService = dotNetExecutionService;
         this.cppExecutionService = cppExecutionService;
+        this.pythonExecutionService = pythonExecutionService;
         this.orchestrationService = orchestrationService;
         this.notebookService = notebookService;
         this.userService = userService;
@@ -136,6 +140,9 @@ public class ShellController {
             } else if ("cpp".equals(mode)) {
                 result = runInteractiveSubprocess(sessionId, cellId, stdin,
                         () -> cppExecutionService.execute(sessionId, cellId, code));
+            } else if ("python".equals(mode)) {
+                result = runInteractiveSubprocess(sessionId, cellId, stdin,
+                        () -> pythonExecutionService.execute(sessionId, cellId, code));
             } else if ("agent".equals(mode)) {
                 // Agent invocation cell — needs a JShell session so //@ bind can inject a variable.
                 if (!jShellManager.hasSession(sessionId)) {
@@ -211,6 +218,7 @@ public class ShellController {
         orchestrationService.clearSessionCache(sessionId);   // cell execution cache must reset
         dotNetExecutionService.clearSessionAnchors(sessionId); // C#/F# anchor cache must reload
         cppExecutionService.clearSessionAnchors(sessionId);   // C++ anchor cache must reload
+        pythonExecutionService.clearSessionAnchors(sessionId); // Python anchor cache must reload
         // Re-apply packages after restart so imports still work
         packageService.applyPackagesToSession(sessionId);
         return ResponseEntity.ok(Map.of(
@@ -423,6 +431,8 @@ public class ShellController {
             dotNetExecutionService.executeFSharp(sessionId, cellId, code);
         } else if ("cpp".equals(mode)) {
             cppExecutionService.execute(sessionId, cellId, code);
+        } else if ("python".equals(mode)) {
+            pythonExecutionService.execute(sessionId, cellId, code);
         } else {
             if (!jShellManager.hasSession(sessionId)) {
                 jShellManager.getOrCreateSession(sessionId);

@@ -15,7 +15,7 @@
 
   // ── Language preferences ────────────────────────────────────────────
   const LANG_KEY = 'arima.languages';
-  const ALL_LANGS = ['jshell', 'java', 'javascript', 'typescript', 'csharp', 'fsharp', 'cpp'];
+  const ALL_LANGS = ['jshell', 'java', 'javascript', 'typescript', 'csharp', 'fsharp', 'cpp', 'python'];
 
   window.LangPrefs = {
     ALL: ALL_LANGS.slice(),

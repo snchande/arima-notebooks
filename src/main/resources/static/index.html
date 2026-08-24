@@ -38,6 +38,10 @@
     .cell.mode-cpp { border-left-color: #06b6d4; }
     .cell-badge.cpp, .cell-badge.code.mode-cpp { background: rgba(6,182,212,.15); color: #06b6d4; border-color: rgba(6,182,212,.3); }
 
+    /* Python cell mode — Python blue/gold */
+    .cell.mode-python { border-left-color: #ffd43b; }
+    .cell-badge.python, .cell-badge.code.mode-python { background: rgba(255,212,59,.15); color: #ffd43b; border-color: rgba(255,212,59,.35); }
+
     /* npm sub-tab navigation */
     .pkg-subtab-nav { display: flex; gap: 4px; padding: 8px 0 12px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
     .pkg-subtab { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-2); color: var(--text-2); cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; }
@@ -178,7 +182,7 @@
         <path d="M24 7 C26 5.4 22.6 4 24.4 2.2" fill="none" stroke="rgba(245,166,35,0.7)" stroke-width="1" stroke-linecap="round"/>
       </svg>
       <span class="brand-name">Arima Notebooks</span>
-      <span class="brand-tag">v3.1</span>
+      <span class="brand-tag">v4.0</span>
     </div>
 
     <div class="nb-file-row">
@@ -219,10 +223,18 @@
         <svg viewBox="0 0 16 16"><path d="M8 1l6 3v4l-6 3L2 8V4l6-3zM2 8l6 3 6-3M8 11v4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
         Packages
       </button>
-      <button class="tab-btn" data-tab="settings" role="tab">
-        <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-        Settings
-      </button>
+      <div class="tab-dropdown" id="settings-dd">
+        <button class="tab-btn" data-tab="settings" id="settings-tab-btn" role="tab" aria-haspopup="true">
+          <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Settings
+          <svg class="tab-caret" viewBox="0 0 10 6" width="9" height="6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="tab-dropdown-menu" id="settings-menu" role="menu" hidden>
+          <button class="tab-dd-item" data-settings-view="tutorials" role="menuitem">📚 Tutorials</button>
+          <button class="tab-dd-item" data-settings-view="config" role="menuitem">⚙️ Configurations</button>
+          <button class="tab-dd-item" data-settings-view="help" role="menuitem">❔ Help</button>
+        </div>
+      </div>
     </nav>
   </div>
 
@@ -470,6 +482,10 @@
             <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M4 3l-3 5 3 5M12 3l3 5-3 5M9 2l-2 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
             C++ (Built-in)
           </button>
+          <button class="pkg-subtab" id="pkg-subtab-pypi" onclick="PackageTabUI.show('pypi')">
+            <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M2 5.5C2 4 3 3 5 3h3v3.5H2z M8 3h3c2 0 3 1 3 2.5V9c0 1.5-1 2.5-3 2.5H8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="4.2" cy="4.6" r=".5" fill="currentColor"/><circle cx="11.8" cy="9.9" r=".5" fill="currentColor"/></svg>
+            PyPI (Python)
+          </button>
         </div>
 
         <!-- MAVEN SECTION -->
@@ -700,15 +716,66 @@ dotnet fsi --version  # verify F# Interactive</pre>
           </div>
         </div><!-- /pkg-panel-cpp -->
 
+        <!-- PYPI SECTION -->
+        <div id="pkg-panel-pypi" style="display:none">
+          <div class="section-head">
+            <h2>PyPI Packages</h2>
+            <p>Find, install, and use any package from the <a href="https://pypi.org" target="_blank">Python Package Index</a> in your Python cells. Installed packages are isolated under <code>data/pypi-packages/</code> and exposed on <code>PYTHONPATH</code> — just <code>import &lt;package&gt;</code>.</p>
+            <div id="pypi-python-status" class="npm-node-status"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Install Package</div>
+            <div class="card-body">
+              <div class="field-row">
+                <input id="pypi-pkg-name" class="field-input" placeholder="package-name  or  package==version  e.g. requests  or  numpy==2.0.0">
+                <button class="btn-primary" id="btn-pypi-install">Install</button>
+              </div>
+              <div id="pypi-pkg-status" class="pkg-status hidden"></div>
+              <div class="popular-pkgs">
+                <span class="popular-label">Data Science:</span>
+                <button class="pypi-pill pill" data-pkg="numpy">numpy</button>
+                <button class="pypi-pill pill" data-pkg="pandas">pandas</button>
+                <button class="pypi-pill pill" data-pkg="matplotlib">matplotlib</button>
+                <button class="pypi-pill pill" data-pkg="scikit-learn">scikit-learn</button>
+                <span class="popular-label" style="margin-left:12px">Web &amp; Data:</span>
+                <button class="pypi-pill pill" data-pkg="requests">requests</button>
+                <button class="pypi-pill pill" data-pkg="httpx">httpx</button>
+                <button class="pypi-pill pill" data-pkg="beautifulsoup4">beautifulsoup4</button>
+                <button class="pypi-pill pill" data-pkg="sqlalchemy">sqlalchemy</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Find on PyPI</div>
+            <div class="card-body">
+              <div class="field-row">
+                <input id="pypi-pkg-search" class="field-input" placeholder="Enter an exact package name to look up…">
+                <button class="btn-secondary" id="btn-pypi-search">Look up</button>
+              </div>
+              <div id="pypi-pkg-results" class="pkg-results hidden"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Installed PyPI Packages <span class="badge" id="pypi-pkg-count">0</span></div>
+            <div class="card-body" id="pypi-pkg-list"><div class="muted">No PyPI packages installed yet.</div></div>
+          </div>
+        </div><!-- /pkg-panel-pypi -->
+
       </div>
     </div>
 
     <!-- SETTINGS TAB -->
     <div class="tab-panel" id="panel-settings">
       <div class="tab-scroll">
+
+        <!-- ═══════ TUTORIALS VIEW ═══════ -->
+        <div id="settings-view-tutorials">
         <div class="section-head">
-          <h2>Settings</h2>
-          <p>Configure Claude AI, editor preferences, and server options.</p>
+          <h2>Tutorials</h2>
+          <p>Learn Arima hands-on — choose the languages you use, then open or play a tutorial.</p>
         </div>
 
         <!-- ── Languages ── -->
@@ -734,6 +801,14 @@ dotnet fsi --version  # verify F# Interactive</pre>
             <div class="tut-cat-tabs" id="tut-cat-tabs"></div>
             <div class="tut-cat-list" id="tut-cat-list"><div class="tut-empty">Loading…</div></div>
           </div>
+        </div>
+        </div><!-- /settings-view-tutorials -->
+
+        <!-- ═══════ CONFIGURATIONS VIEW ═══════ -->
+        <div id="settings-view-config" hidden>
+        <div class="section-head">
+          <h2>Configurations</h2>
+          <p>AI providers, authentication, appearance, and the guided tour.</p>
         </div>
 
         <div class="card">
@@ -1094,6 +1169,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
             </a>
           </div>
         </div>
+        </div><!-- /settings-view-config -->
       </div>
     </div>
   </div>
@@ -1380,7 +1456,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
         </svg>
       </div>
       <div class="welcome-hero-text">
-        <h1>Welcome to <span>Arima Notebooks</span> <em id="welcome-version-tag">v2.1.0</em></h1>
+        <h1>Welcome to <span>Arima Notebooks</span> <em id="welcome-version-tag">v4.0.0</em></h1>
         <p>A local, browser-based notebook for seven languages — with AI co-pilots and MCP. Pick a quick tour below; reopen anytime from <strong>Help</strong>.</p>
       </div>
     </div>
@@ -1488,7 +1564,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
     <span class="sb-sep">|</span>
     <span id="sb-java">Java 25</span>
     <span class="sb-sep">|</span>
-    <span id="sb-version" title="Version — click for What's New" style="cursor:pointer" onclick="Welcome && Welcome.openReleaseNotes()">v3.1.0</span>
+    <span id="sb-version" title="Version — click for What's New" style="cursor:pointer" onclick="Welcome && Welcome.openReleaseNotes()">v4.0.0</span>
     <span id="sb-build-date" class="sb-build-date" title="Build timestamp"></span>
     <span class="sb-sep">|</span>
     <span id="sb-time"></span>
@@ -1566,6 +1642,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/mode/overlay.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
@@ -1590,6 +1667,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
 <script src="/js/docs.js"></script>
 <script src="/js/npm-packages.js"></script>
 <script src="/js/nuget.js"></script>
+<script src="/js/pypi-packages.js"></script>
 <script src="/js/welcome.js"></script>
 <script src="/js/fre.js"></script>
 <script>
@@ -1599,12 +1677,15 @@ const PackageTabUI = {
     document.getElementById('pkg-panel-npm').style.display    = tab === 'npm'    ? '' : 'none';
     document.getElementById('pkg-panel-nuget').style.display  = tab === 'nuget'  ? '' : 'none';
     document.getElementById('pkg-panel-cpp').style.display    = tab === 'cpp'    ? '' : 'none';
+    document.getElementById('pkg-panel-pypi').style.display   = tab === 'pypi'   ? '' : 'none';
     document.getElementById('pkg-subtab-maven').classList.toggle('active', tab === 'maven');
     document.getElementById('pkg-subtab-npm').classList.toggle('active', tab === 'npm');
     document.getElementById('pkg-subtab-nuget').classList.toggle('active', tab === 'nuget');
     document.getElementById('pkg-subtab-cpp').classList.toggle('active', tab === 'cpp');
+    document.getElementById('pkg-subtab-pypi').classList.toggle('active', tab === 'pypi');
     if (tab === 'nuget') NuGetUI.load();
     if (tab === 'cpp') PackageTabUI._loadCppStatus();
+    if (tab === 'pypi' && window.PyPiPackageManager) PyPiPackageManager.refresh();
   },
   async _loadCppStatus() {
     const el = document.getElementById('cpp-compiler-status-body');
@@ -1627,6 +1708,40 @@ const PackageTabUI = {
     }
   }
 };
+
+// ── Settings dropdown: Tutorials · Configurations · Help ──
+const SettingsNav = {
+  show(view) {
+    if (view === 'help') { if (window.Welcome) Welcome.open(); this.close(); return; }
+    const t = document.getElementById('settings-view-tutorials');
+    const c = document.getElementById('settings-view-config');
+    if (t) t.hidden = view !== 'tutorials';
+    if (c) c.hidden = view !== 'config';
+    // Make sure the Settings panel is the active tab.
+    document.querySelector('.tab-btn[data-tab="settings"]')?.click();
+    if (view === 'tutorials' && window.TutorialsSettings) TutorialsSettings.refresh();
+    try { localStorage.setItem('arima.settings.view', view); } catch (e) {}
+    this.close();
+  },
+  toggle() { const m = document.getElementById('settings-menu'); if (m) m.hidden = !m.hidden; },
+  close()  { const m = document.getElementById('settings-menu'); if (m) m.hidden = true; },
+  init() {
+    // Clicking the Settings tab opens the menu (in addition to activating the panel).
+    document.getElementById('settings-tab-btn')?.addEventListener('click', () => setTimeout(() => this.toggle(), 0));
+    document.querySelectorAll('.tab-dd-item').forEach(it =>
+      it.addEventListener('click', (e) => { e.stopPropagation(); this.show(it.dataset.settingsView); }));
+    // Close the menu on any outside click or when switching to another tab.
+    document.addEventListener('click', (e) => { if (!e.target.closest('#settings-dd')) this.close(); });
+    // Restore last view — default to the dedicated Tutorials page.
+    const v = (() => { try { return localStorage.getItem('arima.settings.view') || 'tutorials'; } catch (e) { return 'tutorials'; } })();
+    const t = document.getElementById('settings-view-tutorials');
+    const c = document.getElementById('settings-view-config');
+    if (t) t.hidden = v !== 'tutorials';
+    if (c) c.hidden = v !== 'config';
+  }
+};
+document.addEventListener('DOMContentLoaded', () => SettingsNav.init());
+window.SettingsNav = SettingsNav;
 </script>
 
 <!-- Cross-Notebook Dependency Picker Modal -->
