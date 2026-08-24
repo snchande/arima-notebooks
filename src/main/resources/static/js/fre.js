@@ -14,10 +14,11 @@
 (function () {
   'use strict';
 
-  const LS_DONE    = 'arima.fre.done';    // "1" once the tour is finished/skipped
+  const LS_DONE    = 'arima.fre.done';    // "1" once the tour is finished/skipped (this session record)
   const LS_REPLAY  = 'arima.fre.replay';  // "1" = force the tour on next launch
+  const LS_MUTE    = 'arima.fre.mute';    // "1" = user ticked "Don't show again" → never auto-show
   const LS_VERSION = 'arima.fre.version'; // FRE content version last completed
-  const FRE_VERSION = '4.0.0';            // bump when the tour changes → re-shows once
+  const FRE_VERSION = '4.0.0';
 
   // ── Navigation helpers ──────────────────────────────────────────
   function switchTab(tab) {
@@ -165,13 +166,9 @@
     tip.querySelector('.fre-next').addEventListener('click', () => FRE.next());
     // "Don't show again" — persist immediately so it won't reappear even if the tab is closed mid-tour.
     tip.querySelector('#fre-dontshow').addEventListener('change', (e) => {
-      if (e.target.checked) {
-        localStorage.setItem(LS_DONE, '1');
-        localStorage.setItem(LS_VERSION, FRE_VERSION); // also suppress the upgrade re-show
-        localStorage.removeItem(LS_REPLAY);
-      } else {
-        localStorage.removeItem(LS_DONE);
-      }
+      // Only the explicit checkbox mutes the tour; skipping/finishing lets it show again next launch.
+      if (e.target.checked) { localStorage.setItem(LS_MUTE, '1'); localStorage.removeItem(LS_REPLAY); }
+      else { localStorage.removeItem(LS_MUTE); }
     });
 
     els = {
@@ -338,13 +335,9 @@
 
   // ── Auto-run on first launch ─────────────────────────────────────
   function auto() {
-    const done   = localStorage.getItem(LS_DONE) === '1';
-    const first  = !done;
-    const replay = localStorage.getItem(LS_REPLAY) === '1';
-    // Re-show once after an upgrade that changed the tour (e.g. the new language picker),
-    // unless the user ticked "Don't show again" for this version.
-    const upgraded = done && localStorage.getItem(LS_VERSION) !== FRE_VERSION;
-    if (first || replay || upgraded) {
+    // Show the tour on every launch until the user explicitly ticks "Don't show again".
+    const muted = localStorage.getItem(LS_MUTE) === '1';
+    if (!muted) {
       // Suppress the Welcome modal's own first-run auto-popup; the tour
       // owns the first-run moment. Mark it seen so it won't also fire.
       try {
@@ -355,11 +348,7 @@
       // (e.g. by an automated walkthrough that drives the tour itself).
       setTimeout(() => {
         if (isActive()) return;
-        const stillDone   = localStorage.getItem(LS_DONE) === '1';
-        const stillFirst  = !stillDone;
-        const stillReplay = localStorage.getItem(LS_REPLAY) === '1';
-        const stillUpgraded = stillDone && localStorage.getItem(LS_VERSION) !== FRE_VERSION;
-        if (stillFirst || stillReplay || stillUpgraded) FRE.start();
+        if (localStorage.getItem(LS_MUTE) !== '1') FRE.start();
       }, 700);
     }
   }

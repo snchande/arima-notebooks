@@ -642,8 +642,8 @@ const NotebookEditor = (() => {
       const nb = tabStore.get(id);
       const name = nb?.name || id;
       const isActive = id === activeTabId;
-      return `<div class="nb-tab${isActive ? ' active' : ''}" data-tab-id="${id}" title="${escapeHtml(name)}">
-        <span class="nb-tab-name">${escapeHtml(name)}</span>
+      return `<div class="nb-tab${isActive ? ' active' : ''}" data-tab-id="${id}" title="${escapeHtml(name)} — double-click to rename">
+        <span class="nb-tab-name" data-tab-id="${id}">${escapeHtml(name)}</span>
         <span class="nb-tab-close" data-close-id="${id}">×</span>
       </div>`;
     }).join('');
@@ -652,8 +652,37 @@ const NotebookEditor = (() => {
         if (!e.target.classList.contains('nb-tab-close')) switchTab(tab.dataset.tabId);
       });
     });
+    bar.querySelectorAll('.nb-tab-name').forEach(nameEl => {
+      nameEl.addEventListener('dblclick', e => { e.stopPropagation(); beginRename(nameEl, nameEl.dataset.tabId); });
+    });
     bar.querySelectorAll('.nb-tab-close').forEach(btn => {
       btn.addEventListener('click', e => { e.stopPropagation(); closeTab(btn.dataset.closeId); });
+    });
+  }
+
+  /** Inline-rename a notebook from its tab (double-click). */
+  function beginRename(nameEl, id) {
+    const nb = tabStore.get(id);
+    if (!nb || nb._readOnly) return;
+    const input = document.createElement('input');
+    input.className = 'nb-tab-rename';
+    input.value = nb.name || '';
+    nameEl.replaceWith(input);
+    input.focus(); input.select();
+    const commit = async () => {
+      const v = input.value.trim();
+      if (v && v !== nb.name) {
+        nb.name = v; nb._autoNamed = false;
+        try { await Arima.api('PUT', `/notebooks/${id}`, nb); await refreshList(); } catch (e) {}
+        Arima.setStatus('Renamed to: ' + v);
+      }
+      renderTabStrip();
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      else if (e.key === 'Escape') { e.preventDefault(); renderTabStrip(); }
+      e.stopPropagation();
     });
   }
 
@@ -2458,6 +2487,7 @@ const NotebookEditor = (() => {
         setTimeout(() => div?.classList.remove('success-flash'), 1500);
       } else {
         div.classList.add('has-error');
+        offerMissingDependency(cell, result, bodyWrap);
       }
     }
 
@@ -2483,6 +2513,42 @@ const NotebookEditor = (() => {
 
     // Save immediately so output persists if the user closes the notebook
     save().catch(() => Arima.markDirty(true));
+  }
+
+  // Common import-name → PyPI package-name mismatches.
+  const PYPI_ALIASES = {
+    cv2: 'opencv-python', sklearn: 'scikit-learn', bs4: 'beautifulsoup4', PIL: 'Pillow',
+    yaml: 'PyYAML', dotenv: 'python-dotenv', dateutil: 'python-dateutil', OpenSSL: 'pyOpenSSL',
+    serial: 'pyserial', Crypto: 'pycryptodome', google: 'google-api-python-client', win32api: 'pywin32'
+  };
+
+  /**
+   * If a Python cell failed because a module isn't installed, offer a one-click
+   * install that opens the PyPI tab pre-filled — so opening someone else's notebook
+   * and hitting a missing dependency is a prompt, not a dead end.
+   */
+  function offerMissingDependency(cell, result, bodyWrap) {
+    if (!bodyWrap || cell.mode !== 'python' || result.success) return;
+    const m = /ModuleNotFoundError: No module named ['"]([\w.]+)['"]/.exec(result.error || '');
+    if (!m) return;
+    const importName = m[1].split('.')[0];
+    const pkg = PYPI_ALIASES[importName] || importName;
+    bodyWrap.querySelector('.cell-dep-prompt')?.remove();
+    const banner = document.createElement('div');
+    banner.className = 'cell-dep-prompt';
+    banner.innerHTML =
+      `<span class="cdp-icon">📦</span>` +
+      `<span class="cdp-text">This cell needs the <b>${escapeHtml(pkg)}</b> package. Install it from PyPI and re-run.</span>` +
+      `<button class="cdp-btn">Install ${escapeHtml(pkg)}</button>`;
+    banner.querySelector('.cdp-btn').addEventListener('click', () => {
+      // Take the user to the PyPI tab, pre-filled, and kick off the install.
+      document.querySelector('.tab-btn[data-tab="packages"]')?.click();
+      if (window.PackageTabUI) PackageTabUI.show('pypi');
+      const input = document.getElementById('pypi-pkg-name');
+      if (input) input.value = pkg;
+      setTimeout(() => document.getElementById('btn-pypi-install')?.click(), 150);
+    });
+    bodyWrap.appendChild(banner);
   }
 
   function clearOutput(cellId) {
@@ -2619,7 +2685,33 @@ const NotebookEditor = (() => {
       await Arima.api('PUT', `/notebooks/${notebook.id}`, notebook);
       Arima.markDirty(false);
       Arima.setStatus(`Saved: ${notebook.name}`);
+      maybeAutoName(notebook);   // agentic: name an Untitled notebook from its content
     } catch(e) { Arima.setStatus('Save failed: ' + e.message); }
+  }
+
+  // Once an Untitled notebook has real content, ask the AI for a short name and rename.
+  // Runs at most once per notebook; the user can always double-click the tab to override.
+  const _autoNaming = new Set();
+  async function maybeAutoName(nb) {
+    if (!nb || nb._readOnly) return;
+    const isUntitled = /^untitled/i.test(nb.name || '');
+    if (!isUntitled || nb._autoNamePending || _autoNaming.has(nb.id)) return;
+    const content = (nb.cells || [])
+      .map(c => (c.source || '').trim()).filter(Boolean).join('\n').slice(0, 1500);
+    if (content.replace(/\/\/@[^\n]*/g, '').trim().length < 20) return; // too little to name
+    _autoNaming.add(nb.id);
+    try {
+      const sys = 'You name notebooks. Given the notebook content, reply with ONLY a concise, ' +
+        'descriptive title (3-6 words, Title Case, no quotes, no punctuation at the end).';
+      const r = await Arima.api('POST', '/llm/chat', { message: content, systemPrompt: sys });
+      let name = ((r && r.response) || '').trim().split('\n')[0].replace(/^["'`]|["'`.]+$/g, '').slice(0, 60);
+      if (name && /^untitled/i.test(nb.name || '')) {   // only if user hasn't named it meanwhile
+        nb.name = name; nb._autoNamed = true;
+        await Arima.api('PUT', `/notebooks/${nb.id}`, nb);
+        await refreshList(); renderTabStrip();
+        Arima.setStatus('Named this notebook: ' + name);
+      }
+    } catch (e) { /* naming is best-effort */ }
   }
 
   function syncSources() {
@@ -2736,18 +2828,14 @@ const NotebookEditor = (() => {
 
   /* ── Toolbar bindings ─────────────────────────────── */
   function bindToolbar() {
-    document.getElementById('btn-new')?.addEventListener('click', async () => {
-      const name = prompt('Notebook name:', 'Untitled Notebook');
-      if (!name) return;
-      const nb = await Arima.api('POST', '/notebooks', { name });
-      await refreshList(); loadNotebook(nb.id);
-    });
-    document.getElementById('btn-create-first')?.addEventListener('click', async () => {
-      const name = prompt('Notebook name:', 'My Notebook');
-      if (!name) return;
-      const nb = await Arima.api('POST', '/notebooks', { name });
-      await refreshList(); loadNotebook(nb.id);
-    });
+    // New notebook: no prompt — create "Untitled", open it, and let Arima suggest a
+    // name from your content later (double-click the tab name to rename anytime).
+    const createUntitled = async () => {
+      const nb = await Arima.api('POST', '/notebooks', { name: 'Untitled notebook' });
+      if (nb) { nb._autoNamed = true; await refreshList(); loadNotebook(nb.id); }
+    };
+    document.getElementById('btn-new')?.addEventListener('click', createUntitled);
+    document.getElementById('btn-create-first')?.addEventListener('click', createUntitled);
     document.getElementById('btn-save')?.addEventListener('click', save);
     document.getElementById('btn-run-all')?.addEventListener('click', runAll);
     document.getElementById('btn-stop-run')?.addEventListener('click', stopRun);

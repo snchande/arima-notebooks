@@ -15,6 +15,8 @@ usage: `
 
 Arima is a multi-language interactive notebook environment. Write and run code across **eight languages** — JShell, Java, JavaScript, **TypeScript**, C#, F#, C++, and Python — in cells that live alongside Markdown documentation. Organise work with named Workflows, get AI assistance from Claude, GitHub Copilot, or Antigravity, and expose everything as an API.
 
+> ☕ **What is "Barista"?** Arima is built on **Java**, and — like a barista in a coffee bar serving what you order — the **Barista** engine is Arima's pure-Java core that serves every capability: running your cells, pipelines, packages, and the MCP server. Java is the coffee; Barista brews it. Whenever you see "Barista" (e.g. the \`barista.table()\` cell helper, or "brewed by Barista"), that's the engine at work.
+
 ---
 
 ## 1. Getting Started

@@ -11,6 +11,8 @@ Arima Notebooks is part of the **Arima** platform. It is a **ground-up moderniza
 
 No cloud account. No data sent anywhere. Runs entirely on your machine.
 
+> ☕ **Why "Barista"?** Arima Notebooks is built on **Java**, and in coffee culture a *barista* serves what you order. **Barista** is Arima's pure-Java core engine — it "serves" every foundational capability: executing cells across all eight languages, running pipelines, managing packages, and powering the MCP server. Java is the coffee; Barista brews it. Throughout these docs, "Barista" refers to that engine.
+
 > 📄 **[Product Brochure (PDF)](docs/brochure/arima-brochure.pdf)** — 12 pages, branded, with architecture diagrams.
 > 🛡 **AI-contributor rules** live in **[AGENTS.md](AGENTS.md)** — read this before you (or your CLI) write code.
 > 🔍 **Pre-flight security check:** `pwsh ./scripts/security-check.ps1` or `./scripts/security-check.sh`.
