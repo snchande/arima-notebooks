@@ -1488,13 +1488,14 @@ a:hover { text-decoration: underline; }
   z-index: 1;
 }
 
-/* Fully-open states — the whole cell body is shown, no inner scroll cap:
-     .cell-focused          caret is in this editor
-     .cell-peek             pointer is hovering the cell
-     .cell-pinned           pinned open via the pin button or the → key
-     .nb-all-expanded       toolbar "Expand all" is on
+/* Full render is the DEFAULT — every cell shows its whole body with no inner
+   scroll cap. This rule used to be keyed on .cell-focused / .cell-peek /
+   .cell-pinned / .nb-all-expanded, which meant that once full height became the
+   resting state a plain un-focused cell matched none of them and fell back to
+   CodeMirror's overflow:scroll — the last lines were readable only by scrolling
+   inside the cell. A collapsed cell caps its height separately below.
    The user can still shrink or set any height with the drag handle (or minimize
-   via double-click); that inline height then wins over all of these.
+   via double-click); that inline height then wins over this.
 
    CodeMirror's own .CodeMirror-scroll ships with height:100%, overflow:scroll
    and a margin-bottom:-50px / padding-bottom:50px trick for hiding the native
@@ -1509,12 +1510,17 @@ a:hover { text-decoration: underline; }
    (CodeMirror sets overflow:scroll !important, so !important is required here to
    beat it) while leaving overflow-x scrollable for long lines. The :not() guards
    keep a hand-sized cell at the size the user dragged it to. */
-.cell.cell-focused .cell-editor:not(.user-sized):not(.minimized) .CodeMirror-scroll,
-.cell.cell-peek    .cell-editor:not(.user-sized):not(.minimized) .CodeMirror-scroll,
-.cell.cell-pinned  .cell-editor:not(.user-sized):not(.minimized) .CodeMirror-scroll,
-.nb-all-expanded .cell .cell-editor:not(.user-sized):not(.minimized) .CodeMirror-scroll {
+.cell .cell-editor:not(.user-sized):not(.minimized) .CodeMirror-scroll {
   overflow-y: hidden !important;
   overflow-x: auto !important;
+  /* CodeMirror pairs padding-bottom:50px with margin-bottom:-50px to hide the
+     native scrollbar. That negative margin shrinks the scroller's MARGIN box, so
+     the .CodeMirror wrapper's height:auto resolved to ~35px and clamped to its
+     44px min-height — the wrapper, not the scroller, was cutting the last lines
+     off. With vertical overflow hidden the trick buys nothing, so drop it and let
+     the wrapper size to the real content height. */
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 /* Drag-to-resize handle at the bottom of a cell editor */

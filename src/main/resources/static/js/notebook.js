@@ -1308,24 +1308,26 @@ const NotebookEditor = (() => {
     return document.getElementById(`cell-${cellId}`)?.querySelector('.CodeMirror-scroll') || null;
   }
 
-  /** Grow the editor to exactly its content height, so no line is cut off. */
+  /**
+   * Open the editor to its full content height.
+   *
+   * This deliberately sets NO pixel height. It used to measure
+   * cm.getScrollInfo().height one animation frame after clearing the cap and pin
+   * that value — but a frame is not always enough for CodeMirror to finish laying
+   * out, so a stale, too-small height got frozen in and the last line rendered
+   * half-cut. The CSS now gives the wrapper height:auto and hides vertical
+   * overflow on the scroller, which is CodeMirror's documented auto-height mode:
+   * it grows to fit on its own. Clearing the caps and refreshing is all that is
+   * needed, and there is no measurement left to go stale.
+   */
   function openEditorFully(cellId) {
     const cm = editors[cellId], scroller = scrollerOf(cellId);
     if (!cm || !scroller) return;
-    // Let it size to content first, then measure and pin that height.
     scroller.style.maxHeight = 'none';
     scroller.style.height    = 'auto';
     cm.refresh();
-    requestAnimationFrame(() => {
-      if (!editors[cellId]) return;
-      // getScrollInfo().height is the full scrollable content height.
-      const h = Math.ceil(cm.getScrollInfo().height);
-      if (h > 0) {
-        scroller.style.height    = h + 'px';
-        scroller.style.maxHeight = 'none';
-      }
-      cm.refresh();
-    });
+    // A second refresh after layout settles catches fonts/wrapping landing late.
+    requestAnimationFrame(() => editors[cellId]?.refresh());
   }
 
   /** Hand the height back to the CSS preview cap. */
