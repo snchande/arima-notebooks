@@ -70,10 +70,15 @@ POST /api/notebooks
 ```
 **Body:**
 ```json
-{ "name": "My New Notebook" }
+{ "name": "My New Notebook", "mode": "python" }
 ```
 
-**Response 201:** Returns the created notebook.
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | no | Defaults to `Untitled Notebook` |
+| `mode` | no | Default language for the notebook's code cells — one of `jshell`, `java`, `nodejs`, `typescript`, `csharp`, `fsharp`, `cpp`, `python`. Stored as `metadata.defaultMode`; unrecognised values fall back to `jshell`. |
+
+**Response 201:** Returns the created notebook. The notebook is created **empty** (`cells: []`) — no starter cell is added.
 
 ---
 
@@ -670,6 +675,84 @@ GET /api/settings/status
 ```
 
 The `typescriptAvailable` flag reports whether Node ≥ 22.6 is on the PATH (required for the built-in type-stripping runtime). The optional `tscAvailable` flag indicates whether the `tsc` compiler is also present — if so, TS cells receive a pre-execution `tsc --noEmit` type-check pass.
+
+---
+
+## System
+
+### Server Info
+```
+GET /api/system/info
+```
+Live metadata about the running server — the authoritative answer to *"is Arima up, since when, and what is it running?"*. The `arima` CLI calls this on a bare invocation and on `arima status`.
+
+Unlike `GET /api/settings/status` (which reports configuration and AI-provider availability), this endpoint reports **runtime** state: JVM start time, uptime, the real JVM PID, live shell sessions, and notebook counts.
+
+**Response 200:**
+```json
+{
+  "name": "Arima Notebooks",
+  "tagline": "A local-first, AI-native notebook for eight languages - run code, build pipelines, and drive it all over MCP.",
+  "status": "running",
+  "version": "1.0.0-SNAPSHOT",
+  "buildTimestamp": "2026-08-24T22:09:23Z",
+  "startedAt": "2026-08-24 15:10:02 PDT",
+  "startedAtEpochMs": 1787609402878,
+  "uptimeMs": 18238,
+  "uptime": "18s",
+  "pid": 30104,
+  "port": 8585,
+  "url": "http://localhost:8585",
+  "authMode": "local",
+  "java":     { "version": "25", "vendor": "Oracle Corporation", "vm": "Java HotSpot(TM) 64-Bit Server VM", "home": "C:\Java\jdk-25" },
+  "os":       { "name": "Windows 11", "version": "10.0", "arch": "amd64", "cpus": 12 },
+  "memory":   { "usedMb": 40, "totalMb": 80, "maxMb": 16256 },
+  "sessions": { "active": 0, "ids": [] },
+  "notebooks":{ "tutorials": 54, "total": 88, "dir": "notebooks" },
+  "mcp":      { "enabled": true, "protocol": "2024-11-05",
+                "sse": "http://localhost:8585/api/mcp/sse",
+                "messages": "http://localhost:8585/api/mcp/messages" },
+  "languages": [
+    { "name": "Java / JShell", "available": true, "detail": "25" },
+    { "name": "JavaScript",    "available": true, "detail": "Node.js" },
+    { "name": "TypeScript",    "available": true, "detail": "Node.js + tsc" },
+    { "name": "C#",            "available": true, "detail": ".NET SDK" },
+    { "name": "F#",            "available": true, "detail": "dotnet fsi" },
+    { "name": "C++",           "available": true, "detail": "MSVC (Visual Studio Build Tools)" },
+    { "name": "Python",        "available": true, "detail": "Python 3.14.2" }
+  ]
+}
+```
+
+`pid` is the JVM's own process id, which may differ from the launcher's wrapper PID. `startedAt` and `uptime` come from the JVM `RuntimeMXBean`, so they survive a launcher restart and never drift.
+
+**Auth:** in the default `local` auth mode this endpoint is open. In `oauth` mode it requires authentication like every other `/api/**` route — CLI callers that get a `401` should fall back to `GET /actuator/health`, which stays open.
+
+---
+
+### Shutdown
+```
+POST /api/system/shutdown
+```
+Graceful shutdown — drains in-flight requests, then exits 0.
+
+**Response 200:**
+```json
+{ "status": "shutting_down", "message": "Arima is shutting down" }
+```
+
+---
+
+### Restart
+```
+POST /api/system/restart
+```
+Graceful self-restart. Writes an OS trampoline script that waits for port 8585 to be released, relaunches the JAR, and exits. If no runnable JAR is found the server exits with code **42** so an external watchdog (the `arima` launchers) relaunches it instead.
+
+**Response 200:**
+```json
+{ "status": "restarting", "message": "Arima is restarting" }
+```
 
 ---
 

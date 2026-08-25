@@ -179,6 +179,17 @@
                     </compilerArgs>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Tests target Java 21, but developers often run a newer JDK.
+                         Mockito's bundled Byte Buddy refuses class files newer than
+                         it knows about; this flag lets it proceed instead of failing
+                         every mock-based test on a modern JDK. -->
+                    <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
