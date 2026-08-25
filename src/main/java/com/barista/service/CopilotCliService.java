@@ -162,16 +162,17 @@ public class CopilotCliService {
     /**
      * How long to wait for Copilot to answer a single prompt.
      *
-     * The SDK's no-timeout {@code sendAndWait(MessageOptions)} overload defaults to 60s,
-     * which is simply too short: the CLI routinely takes 90-180s for an ordinary prompt
-     * (measured at 194s for a one-word reply). That default was cutting off answers that
-     * were on their way, and surfaced as "sendAndWait timed out after 60000ms" — which
-     * read like a broken or unauthenticated CLI when it was neither.
+     * An earlier revision raised this to 300s on the theory that "the CLI routinely takes
+     * 90-180s for an ordinary prompt". That was a misreading. The real cause was an MCP
+     * startup stall: every `copilot` launch blocked connecting to a configured MCP server,
+     * retrying 3 x 60s before it would answer anything. With that fixed a simple prompt
+     * returns in under 10s, so a 300s ceiling only means failures hang for five minutes
+     * before they are reported.
      *
-     * Override with -Dbarista.copilot.timeout-ms= if your environment is slower still.
+     * Override with -Dbarista.copilot.timeout-ms= for genuinely long-running prompts.
      */
     private static final long SEND_TIMEOUT_MS =
-            Long.getLong("barista.copilot.timeout-ms", 300_000L);
+            Long.getLong("barista.copilot.timeout-ms", 120_000L);
 
     /** Advice that matches what actually failed, rather than always blaming PATH or auth. */
     private String hintFor(Exception e) {
@@ -179,10 +180,12 @@ public class CopilotCliService {
                 || (e.getCause() instanceof java.util.concurrent.TimeoutException);
         if (timedOut) {
             return "\n\nCopilot did not answer within " + (SEND_TIMEOUT_MS / 1000) + "s."
-                 + " The CLI was found and accepted the request, so this is a slow response,"
-                 + " not a PATH or sign-in problem — Copilot commonly takes 90-180s per prompt."
-                 + " Raise the limit with -Dbarista.copilot.timeout-ms=<ms>, or switch provider"
-                 + " in Settings -> AI Provider.";
+                 + " The CLI was found and accepted the request, so this is not a PATH or"
+                 + " sign-in problem. The usual cause is a configured MCP server the CLI"
+                 + " cannot reach: it retries 3 x 60s on startup before answering anything."
+                 + " Check `copilot mcp list` and ~/.copilot/mcp-config.json, or rerun with"
+                 + " `--disable-mcp-server <name>` to confirm. Otherwise raise the limit with"
+                 + " -Dbarista.copilot.timeout-ms=<ms>, or switch provider in Settings -> AI Provider.";
         }
         return "\n\nMake sure the `copilot` CLI (v1.0.55-5+) is installed and authenticated.";
     }

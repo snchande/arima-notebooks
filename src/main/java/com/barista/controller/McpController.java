@@ -94,8 +94,16 @@ public class McpController {
      * On connect, sends the MCP "endpoint" event so the client knows where to POST.
      */
     @GetMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter sse(@RequestParam(defaultValue = "default") String sessionId,
+    public SseEmitter sse(@RequestParam(name = "sessionId", required = false) String requestedSessionId,
                           HttpServletRequest request) {
+        // Each connection gets its own id unless the client pinned one. Two clients
+        // sharing a single "default" key would overwrite each other's emitter and
+        // receive each other's replies — Claude Code and the Copilot CLI are both
+        // registered against this server, so that collision is a live scenario.
+        String sessionId = (requestedSessionId != null && !requestedSessionId.isBlank())
+                ? requestedSessionId
+                : UUID.randomUUID().toString();
+
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
         emitters.put(sessionId, emitter);
 
@@ -144,22 +152,56 @@ public class McpController {
 
         log.debug("MCP message: method={}, id={}, session={}", method, id, sessionId);
 
+        Map<String, Object> response;
         try {
             Object result = dispatch(method, params, sessionId);
 
-            // Notifications have no id and return no response body
+            // Notifications have no id and never get a response, on either channel
             if (result == null && isNotification(method)) {
                 return ResponseEntity.accepted().<Map<String, Object>>build();
             }
 
-            return ResponseEntity.ok(jsonRpcSuccess(id, result != null ? result : Map.of()));
+            response = jsonRpcSuccess(id, result != null ? result : Map.of());
 
         } catch (McpException e) {
             log.warn("MCP error for method '{}': code={}, msg={}", method, e.code(), e.getMessage());
-            return ResponseEntity.ok(jsonRpcError(id, e.code(), e.getMessage()));
+            response = jsonRpcError(id, e.code(), e.getMessage());
         } catch (Exception e) {
             log.error("MCP internal error for method '{}': {}", method, e.getMessage(), e);
-            return ResponseEntity.ok(jsonRpcError(id, -32603, "Internal error: " + e.getMessage()));
+            response = jsonRpcError(id, -32603, "Internal error: " + e.getMessage());
+        }
+
+        // MCP HTTP+SSE transport: the POST is only an acknowledgement — the JSON-RPC
+        // response has to travel back on the client's SSE stream. Spec-compliant clients
+        // discard the POST body entirely and block on the stream, so answering inline
+        // here left them waiting until they gave up.
+        if (sendOverStream(sessionId, response)) {
+            return ResponseEntity.accepted().<Map<String, Object>>build();
+        }
+
+        // No stream open for this session (plain HTTP caller, curl, integration tests):
+        // fall back to answering inline so simple request/response usage still works.
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Pushes a JSON-RPC response to the SSE stream registered for {@code sessionId}.
+     *
+     * @return true if it was handed to an open stream, false if no stream is open
+     *         (or the stream was dead, in which case it is dropped from the registry).
+     */
+    private boolean sendOverStream(String sessionId, Map<String, Object> response) {
+        SseEmitter emitter = emitters.get(sessionId);
+        if (emitter == null) return false;
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("message")
+                    .data(objectMapper.writeValueAsString(response)));
+            return true;
+        } catch (Exception e) {
+            log.warn("Failed to deliver MCP response over SSE session {}: {}", sessionId, e.getMessage());
+            emitters.remove(sessionId);
+            return false;
         }
     }
 
