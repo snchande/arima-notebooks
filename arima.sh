@@ -209,7 +209,7 @@ listening_pid() {
         pid=$(netstat -ano 2>/dev/null \
               | awk -v p=":$PORT$" '/LISTENING/ && $2 ~ p { print $NF; exit }')
         [ -z "$pid" ] && pid=$(netstat -anv 2>/dev/null \
-              | awk -v p="\.$PORT$" '/LISTEN/ && $4 ~ p { print $9; exit }')
+              | awk -v p="[.]$PORT$" '/LISTEN/ && $4 ~ p { print $9; exit }')
     fi
     printf '%s' "$pid" | grep -E '^[0-9]+$' || true
 }
