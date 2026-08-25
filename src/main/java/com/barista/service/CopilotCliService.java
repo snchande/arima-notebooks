@@ -159,6 +159,34 @@ public class CopilotCliService {
         return prompt.toString();
     }
 
+    /**
+     * How long to wait for Copilot to answer a single prompt.
+     *
+     * The SDK's no-timeout {@code sendAndWait(MessageOptions)} overload defaults to 60s,
+     * which is simply too short: the CLI routinely takes 90-180s for an ordinary prompt
+     * (measured at 194s for a one-word reply). That default was cutting off answers that
+     * were on their way, and surfaced as "sendAndWait timed out after 60000ms" — which
+     * read like a broken or unauthenticated CLI when it was neither.
+     *
+     * Override with -Dbarista.copilot.timeout-ms= if your environment is slower still.
+     */
+    private static final long SEND_TIMEOUT_MS =
+            Long.getLong("barista.copilot.timeout-ms", 300_000L);
+
+    /** Advice that matches what actually failed, rather than always blaming PATH or auth. */
+    private String hintFor(Exception e) {
+        boolean timedOut = e instanceof java.util.concurrent.TimeoutException
+                || (e.getCause() instanceof java.util.concurrent.TimeoutException);
+        if (timedOut) {
+            return "\n\nCopilot did not answer within " + (SEND_TIMEOUT_MS / 1000) + "s."
+                 + " The CLI was found and accepted the request, so this is a slow response,"
+                 + " not a PATH or sign-in problem — Copilot commonly takes 90-180s per prompt."
+                 + " Raise the limit with -Dbarista.copilot.timeout-ms=<ms>, or switch provider"
+                 + " in Settings -> AI Provider.";
+        }
+        return "\n\nMake sure the `copilot` CLI (v1.0.55-5+) is installed and authenticated.";
+    }
+
     private String chatViaSdk(String prompt) throws IOException, InterruptedException {
         log.info("Copilot SDK chat: prompt length {}", prompt.length());
 
@@ -176,14 +204,18 @@ public class CopilotCliService {
                 if (c != null && !c.isBlank()) holder[0] = c;
             });
 
-            session.sendAndWait(new MessageOptions().setPrompt(prompt)).get(180, TimeUnit.SECONDS);
+            // Pass the timeout explicitly — the single-argument overload applies the SDK's
+            // 60s default, which is shorter than Copilot's typical response time. The outer
+            // get() is given extra headroom so the SDK's own timeout is what fires first and
+            // we get its clearer message.
+            session.sendAndWait(new MessageOptions().setPrompt(prompt), SEND_TIMEOUT_MS)
+                   .get(SEND_TIMEOUT_MS + 30_000L, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw e;
         } catch (Exception e) {
             log.warn("Copilot SDK error", e);
-            throw new IOException("Copilot SDK error: " + e.getMessage()
-                + "\n\nMake sure the `copilot` CLI (v1.0.55-5+) is installed and authenticated.", e);
+            throw new IOException("Copilot SDK error: " + e.getMessage() + hintFor(e), e);
         } finally {
             if (client != null) {
                 try { client.close(); } catch (Exception ignore) {}

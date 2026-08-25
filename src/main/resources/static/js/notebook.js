@@ -916,7 +916,8 @@ const NotebookEditor = (() => {
     const container = document.getElementById('cells-container');
     container.innerHTML = '';
     editors = {};
-    loadPinnedCells();   // pins are per notebook and survive reload
+    loadPinnedCells();     // pins are per notebook and survive reload
+    loadCollapsedCells();  // so does the collapsed set
     inferDefaultMode();  // older notebooks have no metadata.defaultMode
     // Agent/skill notebooks get an authoring banner + run dock (agent.js); normal notebooks clear it.
     if (window.Agent) Agent.onNotebookLoaded(notebook);
@@ -1047,6 +1048,9 @@ const NotebookEditor = (() => {
           </button>
           <button class="cell-btn dup-btn" title="Duplicate cell">
             <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="8" height="9" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="6" y="2" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
+          </button>
+          <button class="cell-btn collapse-btn" id="collapse-btn-${cell.id}" title="Collapse cell to a short preview">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M4 6l4-3 4 3M4 10l4 3 4-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <button class="cell-btn pin-btn" id="pin-btn-${cell.id}" title="Pin cell open (keeps the full code visible)">
             <svg viewBox="0 0 16 16" fill="none"><path d="M9.5 1.5l5 5-1.8.6-2.4 2.4-.5 3.4-4.7-4.7-3.4.5 2.4-2.4.6-1.8 5-5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M5.6 10.4L2 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -1334,14 +1338,20 @@ const NotebookEditor = (() => {
   }
 
   /** A cell is open when focused, hovered, pinned, or "Expand all" is on. */
+  /**
+   * Cells render in full by default — a notebook you can actually read. Collapsing is an
+   * explicit user action (the cell's collapse button, or Collapse All), not the resting
+   * state. A collapsed cell still opens on hover or focus so you can read it without
+   * un-collapsing it.
+   */
   function shouldBeOpen(cellId) {
     const el = document.getElementById(`cell-${cellId}`);
     if (!el || hasManualHeight(el)) return false;
-    const wrap = document.getElementById('cells-container');
+    if (!el.classList.contains('cell-collapsed')) return true;   // default: fully rendered
+    // Collapsed — reveal only while hovered, focused, or pinned.
     return focusedCellId === cellId
         || el.classList.contains('cell-peek')
-        || pinnedCells.has(cellId)
-        || !!wrap?.classList.contains('nb-all-expanded');
+        || pinnedCells.has(cellId);
   }
 
   /** Single place that reconciles a cell's height with its current state. */
@@ -1375,6 +1385,51 @@ const NotebookEditor = (() => {
     }
   }
 
+  /* ── Collapse ─────────────────────────────────────────────────────
+     Cells are fully rendered by default; collapsing is opt-in and remembered
+     per notebook, the same way pins are. */
+  const COLLAPSE_KEY_PREFIX = 'nb-collapsed:';
+  let collapsedCells = new Set();
+
+  function collapseStorageKey() { return COLLAPSE_KEY_PREFIX + (notebook?.id || '_'); }
+
+  function loadCollapsedCells() {
+    collapsedCells = new Set();
+    try {
+      const raw = JSON.parse(localStorage.getItem(collapseStorageKey()) || '[]');
+      if (Array.isArray(raw)) collapsedCells = new Set(raw.filter(v => typeof v === 'string'));
+    } catch { /* ignore corrupt value */ }
+  }
+
+  function saveCollapsedCells() {
+    try { localStorage.setItem(collapseStorageKey(), JSON.stringify([...collapsedCells])); }
+    catch { /* private mode / quota */ }
+  }
+
+  /** Collapse (or expand) one cell. */
+  function toggleCellCollapsed(cellId, force) {
+    const el = document.getElementById(`cell-${cellId}`);
+    const collapsed = force !== undefined ? force : !collapsedCells.has(cellId);
+    if (collapsed) collapsedCells.add(cellId); else collapsedCells.delete(cellId);
+    saveCollapsedCells();
+    if (el) {
+      el.classList.toggle('cell-collapsed', collapsed);
+      const btn = el.querySelector(`#collapse-btn-${cellId}`);
+      btn?.classList.toggle('active', collapsed);
+      if (btn) btn.title = collapsed ? 'Expand cell to full height' : 'Collapse cell to a short preview';
+      applyCellOpenState(cellId);
+    }
+  }
+
+  /** Re-apply the stored collapsed state after a render. */
+  function applyCollapsedState(cell, div) {
+    if (!collapsedCells.has(cell.id)) return;
+    div.classList.add('cell-collapsed');
+    const btn = div.querySelector(`#collapse-btn-${cell.id}`);
+    btn?.classList.add('active');
+    if (btn) btn.title = 'Expand cell to full height';
+  }
+
   /** Re-apply the stored pin state after a render. */
   function applyPinnedState(cell, div) {
     if (!pinnedCells.has(cell.id)) return;
@@ -1386,18 +1441,24 @@ const NotebookEditor = (() => {
 
   /** Toolbar toggle: open every code cell at once (or return them all to preview). */
   function toggleExpandAll(force) {
-    const wrap = document.getElementById('cells-container') || document.body;
-    const on = force !== undefined ? force : !wrap.classList.contains('nb-all-expanded');
-    wrap.classList.toggle('nb-all-expanded', on);
+    // Cells are fully rendered by default, so this button's job is the bulk collapse
+    // and the bulk restore. `force` true = collapse all, false = expand all.
+    const anyExpanded = (notebook?.cells || [])
+        .some(c => c.type === 'CODE' && !collapsedCells.has(c.id));
+    const collapseAll = force !== undefined ? force : anyExpanded;
+
+    (notebook?.cells || []).forEach(c => {
+      if (c.type === 'CODE') toggleCellCollapsed(c.id, collapseAll);
+    });
+
     const btn = document.getElementById('btn-expand-all');
-    btn?.classList.toggle('active', on);
+    btn?.classList.toggle('active', collapseAll);
     if (btn) {
-      btn.title = on ? 'Collapse all cells back to preview height' : 'Expand all cells to show their full code';
+      btn.title = collapseAll ? 'Expand all cells to their full height' : 'Collapse all cells to a short preview';
       const label = btn.querySelector('.expand-all-label');
-      if (label) label.textContent = on ? 'Collapse All' : 'Expand All';
+      if (label) label.textContent = collapseAll ? 'Expand All' : 'Collapse All';
     }
-    Object.keys(editors).forEach(applyCellOpenState);
-    return on;
+    return collapseAll;
   }
 
   /* ── Build CODE cell ──────────────────────────────── */
@@ -1453,6 +1514,11 @@ const NotebookEditor = (() => {
       e.stopPropagation();
       toggleCellPin(cell.id);
     });
+    div.querySelector(`#collapse-btn-${cell.id}`)?.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleCellCollapsed(cell.id);
+    });
+    applyCollapsedState(cell, div);
     applyPinnedState(cell, div);
 
     // Expand on focus, collapse on blur — applyCellOpenState owns the height.
@@ -3797,7 +3863,7 @@ const NotebookEditor = (() => {
     init, loadNotebook, save, deleteCell, deleteNotebook, moveUp, moveDown, addCell, addCellWithSource,
     insertCodeFromAI, applyCodeToCell, executeCell, getContext, focusCell, revealCell,
     runToHere, runPipeline, runWithDeps, switchTab, closeTab,
-    toggleExpandAll, toggleCellPin,
+    toggleExpandAll, toggleCellPin, toggleCellCollapsed,
     stepStart, stepClose, stepAction, stepPrev,
     _openCrossNbPicker, _closeCrossNbPicker, _insertCrossNbRef,
     _onCrossNbNotebookChange, _onCrossNbAnchorChange

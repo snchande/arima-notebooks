@@ -1467,14 +1467,18 @@ a:hover { text-decoration: underline; }
   padding: 2px 0;
 }
 
-/* Collapsed (unfocused) — show ~4 lines, fade at bottom */
+/* Cells render in FULL by default — the notebook should be readable at a glance.
+   The ~4-line preview is opt-in via the cell's collapse button (or Collapse All),
+   which sets .cell-collapsed on the cell. */
 .cell-editor .CodeMirror-scroll {
-  max-height: 96px;
   transition: max-height .25s ease;
+}
+.cell.cell-collapsed .cell-editor .CodeMirror-scroll {
+  max-height: 96px;
   overflow: hidden !important;
 }
-/* Fade-out gradient hint on collapsed cells */
-.cell-editor::after {
+/* Fade-out gradient hint — only meaningful while a cell is collapsed */
+.cell.cell-collapsed .cell-editor::after {
   content: '';
   position: absolute; left: 0; right: 0; bottom: 0;
   height: 28px;
@@ -4824,3 +4828,10 @@ body.fre-on #fre-tip { display: block; }
   border: 1px solid transparent; border-radius: 4px;
 }
 .nbb-reveal-btn:hover { color: var(--accent); border-color: var(--border); }
+
+/* Per-cell collapse toggle — cells are fully rendered by default, so this is the
+   opt-in way to shrink one to a preview. Mirrors the pin button's active styling. */
+.cell-btn.collapse-btn.active {
+  color: var(--accent);
+  background: rgba(99,102,241,.14);
+}
