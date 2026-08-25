@@ -227,8 +227,11 @@ public class JavaCompilerService {
      * This allows users to write bare statements like JShell while still using full Java semantics.
      */
     private String prepareCode(String code) {
-        // Check if there is already a class declaration
-        if (Pattern.compile("\\bclass\\s+\\w+").matcher(code).find()) {
+        // Check if there is already a top-level type declaration. Records, enums and
+        // interfaces count: a cell whose only type is a `record` used to fall through
+        // here and get wrapped inside main(), which made its imports and the record
+        // itself illegal ("illegal start of expression").
+        if (TYPE_DECL.matcher(code).find()) {
             return code;
         }
         // Wrap bare code in boilerplate
@@ -242,12 +245,17 @@ public class JavaCompilerService {
         return sb.toString();
     }
 
+    /** Any top-level type declaration — class, record, enum or interface. */
+    private static final Pattern TYPE_DECL =
+            Pattern.compile("\\b(class|record|enum|interface)\\s+\\w+");
+
     private String extractClassName(String code) {
-        // Prefer public class name
-        Matcher m = Pattern.compile("public\\s+class\\s+(\\w+)").matcher(code);
+        // Prefer the public type's name — the file must be named after it
+        Matcher m = Pattern.compile("public\\s+(?:final\\s+|abstract\\s+)?"
+                + "(?:class|record|enum|interface)\\s+(\\w+)").matcher(code);
         if (m.find()) return m.group(1);
-        // Fall back to first class name
-        m = Pattern.compile("\\bclass\\s+(\\w+)").matcher(code);
+        // Fall back to the first declared type of any kind
+        m = Pattern.compile("\\b(?:class|record|enum|interface)\\s+(\\w+)").matcher(code);
         if (m.find()) return m.group(1);
         return "Main";
     }

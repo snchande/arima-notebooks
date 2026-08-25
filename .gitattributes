@@ -1,0 +1,35 @@
+# Normalise text files in the repo, but pin the line endings that a given
+# interpreter actually requires.
+* text=auto
+
+# cmd.exe REQUIRES CRLF. An LF-only .cmd/.bat mis-parses with errors like
+# "'x' is not recognized as an internal or external command" or
+# "was unexpected at this time". Never relax this.
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
+
+# POSIX shells require LF; a CRLF script fails with "bad interpreter: ^M".
+*.sh   text eol=lf
+
+# Java/web sources and docs: LF in the repo, checked out as-is.
+*.java text eol=lf
+*.js   text eol=lf
+*.ts   text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.xml  text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.vnb  text eol=lf
+
+# Binary assets: never touched.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.jar  binary

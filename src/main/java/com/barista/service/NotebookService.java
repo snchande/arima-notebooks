@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -94,6 +96,15 @@ public class NotebookService {
     }
 
     public Notebook createNotebook(String name, String userId) {
+        return createNotebook(name, userId, null);
+    }
+
+    /**
+     * Create an empty notebook. No starter cell is added — the user decides whether the first cell
+     * is code or markdown. {@code defaultMode} records the notebook's default language in
+     * {@code metadata.defaultMode}; new code cells adopt it. Null falls back to {@code jshell}.
+     */
+    public Notebook createNotebook(String name, String userId, String defaultMode) {
         Notebook nb = new Notebook();
         nb.setId(UUID.randomUUID().toString());
         nb.setName(name == null || name.isBlank() ? "Untitled Notebook" : name);
@@ -101,15 +112,20 @@ public class NotebookService {
         nb.setCreated(LocalDateTime.now());
         nb.setModified(LocalDateTime.now());
         nb.setMetadata(new HashMap<>());
-
-        Cell starter = new Cell();
-        starter.setId(UUID.randomUUID().toString());
-        starter.setType(CellType.CODE);
-        starter.setSource("// Start coding here!\nSystem.out.println(\"Hello from Arima Notebooks!\");");
-        nb.getCells().add(starter);
+        nb.getMetadata().put("defaultMode", normalizeMode(defaultMode));
 
         saveNotebook(nb, userId);
         return nb;
+    }
+
+    /** Accepted cell modes; anything unrecognised falls back to jshell. */
+    private static final List<String> VALID_MODES = List.of(
+            "jshell", "java", "nodejs", "typescript", "csharp", "fsharp", "cpp", "python");
+
+    private String normalizeMode(String mode) {
+        if (mode == null) return "jshell";
+        String m = mode.trim().toLowerCase();
+        return VALID_MODES.contains(m) ? m : "jshell";
     }
 
     public Notebook saveNotebook(Notebook notebook, String userId) {
@@ -189,7 +205,92 @@ public class NotebookService {
         return Optional.empty();
     }
 
+    // ── Impact analysis ──────────────────────────────────────────
+
+    private static final Pattern ANNOTATION =
+            Pattern.compile("(?m)^\\s*(?://@|#@)\\s*(anchor|depends|steps)\\s*:\\s*(.+)$");
+
+    /**
+     * Find every cell — in this notebook and every other notebook the user owns, plus
+     * tutorials — that references {@code notebookId/anchor}. This is what powers the
+     * "downstream impact" chain in the UI: before you change a cell, see who is
+     * standing on it.
+     *
+     * A reference is either a local {@code //@ depends: anchor} inside the same
+     * notebook, or a cross-notebook {@code //@ depends: notebook:<id>/<anchor>}.
+     */
+    public List<Map<String, Object>> findReferences(String notebookId, String anchor, String userId) {
+        List<Map<String, Object>> hits = new ArrayList<>();
+        String crossRef = "notebook:" + notebookId + "/" + anchor;
+
+        List<Notebook> all = new ArrayList<>();
+        for (Map<String, Object> meta : listNotebooks(userId)) {
+            Object id = meta.get("id");
+            if (id != null) getNotebook(id.toString(), userId).ifPresent(all::add);
+        }
+        for (Map<String, Object> meta : listTutorials()) {
+            Object id = meta.get("id");
+            if (id != null) getTutorial(id.toString()).ifPresent(all::add);
+        }
+
+        for (Notebook nb : all) {
+            boolean sameNotebook = notebookId.equals(nb.getId());
+            for (Cell c : nb.getCells() == null ? List.<Cell>of() : nb.getCells()) {
+                String src = c.getSource() == null ? "" : c.getSource();
+                boolean local = false, cross = src.contains(crossRef);
+                if (sameNotebook) {
+                    Matcher m = ANNOTATION.matcher(src);
+                    while (m.find()) {
+                        if (!"anchor".equals(m.group(1))) {
+                            for (String part : m.group(2).split(",")) {
+                                if (part.trim().equals(anchor)) { local = true; break; }
+                            }
+                        }
+                    }
+                }
+                if (!local && !cross) continue;
+                Map<String, Object> hit = new LinkedHashMap<>();
+                hit.put("notebookId", nb.getId());
+                hit.put("notebookName", nb.getName());
+                hit.put("cellId", c.getId());
+                hit.put("anchor", anchorOf(src));
+                hit.put("kind", cross ? "cross-notebook" : "local");
+                hit.put("preview", firstMeaningfulLine(src));
+                hits.add(hit);
+            }
+        }
+        return hits;
+    }
+
+    /** The anchor a cell declares, or null. */
+    private String anchorOf(String src) {
+        Matcher m = ANNOTATION.matcher(src == null ? "" : src);
+        while (m.find()) {
+            if ("anchor".equals(m.group(1))) return m.group(2).trim();
+        }
+        return null;
+    }
+
+    /** First non-annotation, non-comment line — used as a one-line cell preview. */
+    private String firstMeaningfulLine(String src) {
+        for (String l : (src == null ? "" : src).split("\n")) {
+            String t = l.strip();
+            if (t.isEmpty() || t.startsWith("//@") || t.startsWith("#@")
+                    || t.startsWith("//") || t.startsWith("#")) continue;
+            return t.length() > 80 ? t.substring(0, 80) + "…" : t;
+        }
+        return "";
+    }
+
     // ── Path helpers ─────────────────────────────────────────────
+
+    /** On-disk location of a notebook, for "open file location" in the UI. */
+    public Optional<Path> notebookFile(String id, String userId) {
+        Path p = notebookPath(id, userId);
+        if (Files.exists(p)) return Optional.of(p.toAbsolutePath());
+        Path t = Paths.get(notebooksDir, "tutorials", id + EXTENSION);
+        return Files.exists(t) ? Optional.of(t.toAbsolutePath()) : Optional.empty();
+    }
 
     private Path notebookPath(String id, String userId) {
         return userDir(userId).resolve(id + EXTENSION);

@@ -158,7 +158,7 @@
       "id": "j401-cross-ref-demo",
       "type": "CODE",
       "mode": "jshell",
-      "source": "//@ anchor: cross-ref-demo\n//@ depends: notebook:java-101/methods\n//@ description: Import the prime/math functions from java-101 into this session\n\n// After the cross-notebook dependency runs, the java-101 methods are in scope:\n// isPrime(), circleArea(), add() are now available from java-101 (anchor: methods)\n\nSystem.out.println(\"Imported from java-101:\");\nSystem.out.println(\"isPrime(13) = \" + isPrime(13));\nSystem.out.printf(\"circleArea(3.0) = %.4f%n\", circleArea(3.0));\nSystem.out.println(\"\\\"ha\\\".repeat(4) = \" + \"ha\".repeat(4));",
+      "source": "//@ anchor: cross-ref-demo\n//@ depends: notebook:java-101/jshell-mode-define-methods-at-top-le\n//@ description: Import the prime/math functions from java-101 into this session\n\n// After the cross-notebook dependency runs, the java-101 methods are in scope:\n// isPrime(), circleArea(), add() are now available from java-101 (anchor: methods)\n\nSystem.out.println(\"Imported from java-101:\");\nSystem.out.println(\"isPrime(13) = \" + isPrime(13));\nSystem.out.printf(\"circleArea(3.0) = %.4f%n\", circleArea(3.0));\nSystem.out.println(\"\\\"ha\\\".repeat(4) = \" + \"ha\".repeat(4));",
       "output": "Imported from java-101:\r\nisPrime(13) = true\r\ncircleArea(3.0) = 28.2743\r\n\"ha\".repeat(4) = hahahaha\r\n",
       "returnValue": "",
       "executed": true,

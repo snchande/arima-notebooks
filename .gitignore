@@ -65,6 +65,10 @@ data/pypi-packages.json
 data/packages/
 data/npm-modules/
 data/pypi-packages/
+# Dependency JARs + app classes unpacked from the fat JAR so JShell can put them
+# on its classpath (see ShellSession.extractedBootJars). Regenerated on startup.
+data/jshell-libs/
+data/jshell-classes/
 data/users/
 !data/.gitkeep
 

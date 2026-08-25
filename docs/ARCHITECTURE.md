@@ -43,6 +43,7 @@ Browser                          Arima Server (Spring Boot 3.2, Java 21)
                       │  JShellManager  ·  JavaCompilerService               │
                       │  NodeJsExecutionService  ·  TypeScriptExecutionService│
                       │  DotNetExecutionService  ·  CppExecutionService      │
+                      │  PythonExecutionService  ·  AgentService             │
                       └──────────────────────────────────────────────────────┘
 
                       ┌──────────────────────────────────────────────────────┐
@@ -208,7 +209,7 @@ js/
 
 ## Pipeline / Orchestration System
 
-`OrchestrationService` implements a full dependency graph engine. The same annotation DSL works in **all six execution modes**: JShell, Java, JavaScript, C#, F#, and C++.
+`OrchestrationService` implements a full dependency graph engine. The same annotation DSL works in **all eight execution modes** — JShell, Java, JavaScript, TypeScript, C#, F#, C++, and Python — and in **agent cells**, which participate in the DAG like any other node.
 
 ### Annotation DSL
 

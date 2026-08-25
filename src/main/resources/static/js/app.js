@@ -80,7 +80,7 @@ const Arima = (() => {
     window.addEventListener('resize', refreshOverlayUI);
 
     fab.addEventListener('click', () => {
-      // Suppress click that immediately follows a drag
+      // Suppress the click that trails a drag
       if (fab.dataset.justDragged === '1') {
         fab.dataset.justDragged = '0';
         return;
@@ -108,32 +108,109 @@ const Arima = (() => {
     Arima.openInspector   = () => setInspectorOpen(true);
     Arima.closeInspector  = () => setInspectorOpen(false);
 
-    initFabDrag(fab);
+    initFabAnchor(fab);
   }
 
-  /** Make the AI FAB draggable. Position is persisted to localStorage. */
-  function initFabDrag(fab) {
-    // Restore saved position
-    try {
-      const saved = JSON.parse(localStorage.getItem('ai-fab-pos') || 'null');
-      if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
-        applyFabPos(fab, saved.x, saved.y);
-      }
-    } catch { /* ignore corrupt saved value */ }
+  /* ── FAB positioning ──────────────────────────────────────────────
+     Default ("anchored"): the launcher parks directly beneath the
+     Shutdown button and re-anchors on every layout change.
 
-    let dragging = false;
-    let moved    = false;
-    let startX = 0, startY = 0;
-    let offsetX = 0, offsetY = 0;
-    const DRAG_THRESHOLD = 4;  // px of motion before we count it as a drag
+     Drag is an override, stored as an OFFSET from that anchor rather
+     than as absolute viewport coordinates. That keeps a dragged FAB
+     resize-stable too — it travels with the Shutdown button instead of
+     drifting and getting clamped into a corner it never leaves.
+     Dropping it back near the anchor (within SNAP_BACK px) clears the
+     override and returns it to anchored mode. */
+  const FAB_GAP        = 14;   // px between the Shutdown button and the FAB
+  const FAB_OFFSET_KEY = 'ai-fab-offset';
+  const SNAP_BACK      = 24;   // drop this close to the anchor to reset
+
+  function initFabAnchor(fab) {
+    // Retire the old absolute-position cache from the drag-anywhere era.
+    try { localStorage.removeItem('ai-fab-pos'); } catch { /* private mode */ }
+
+    let offset = readFabOffset();
+
+    const place = () => positionFab(fab, offset);
+    place();
+
+    window.addEventListener('resize', place);
+    // Catches layout shifts that don't fire a window resize — the topbar
+    // collapsing its button labels, fonts loading, a scrollbar appearing.
+    const shutdownBtn = document.getElementById('btn-shutdown');
+    if (shutdownBtn && typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(place).observe(shutdownBtn);
+    }
+    window.addEventListener('load', place);
+
+    initFabDrag(fab, {
+      getOffset: () => offset,
+      setOffset: (next) => {
+        offset = next;
+        if (next) {
+          try { localStorage.setItem(FAB_OFFSET_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+        } else {
+          try { localStorage.removeItem(FAB_OFFSET_KEY); } catch { /* ignore */ }
+        }
+        place();
+      },
+    });
+
+    Arima.repositionFab = place;
+    /** Drop the drag override and return the FAB under the Shutdown button. */
+    Arima.resetFabPosition = () => {
+      offset = null;
+      try { localStorage.removeItem(FAB_OFFSET_KEY); } catch { /* ignore */ }
+      place();
+    };
+  }
+
+  function readFabOffset() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(FAB_OFFSET_KEY) || 'null');
+      if (saved && Number.isFinite(saved.dx) && Number.isFinite(saved.dy)) return saved;
+    } catch { /* ignore corrupt saved value */ }
+    return null;
+  }
+
+  /** Anchor point: right edges flush with the Shutdown button, FAB_GAP below. */
+  function fabAnchorPoint(w, h) {
+    const rect = document.getElementById('btn-shutdown')?.getBoundingClientRect();
+    if (rect && rect.width > 0) {
+      return { x: rect.right - w, y: rect.bottom + FAB_GAP };
+    }
+    return { x: window.innerWidth - w - 24, y: 24 + h };  // topbar not laid out yet
+  }
+
+  /** Place the FAB at the anchor, plus the drag offset when one is set. */
+  function positionFab(fab, offset) {
+    const w = fab.offsetWidth  || 58;
+    const h = fab.offsetHeight || 58;
+    const a = fabAnchorPoint(w, h);
+    const x = a.x + (offset?.dx || 0);
+    const y = a.y + (offset?.dy || 0);
+
+    const maxX = Math.max(4, window.innerWidth  - w - 4);
+    const maxY = Math.max(4, window.innerHeight - h - 4);
+    fab.style.left   = Math.max(4, Math.min(maxX, x)) + 'px';
+    fab.style.top    = Math.max(4, Math.min(maxY, y)) + 'px';
+    fab.style.right  = 'auto';
+    fab.style.bottom = 'auto';
+  }
+
+  /** Drag-to-override. Records the drop point as an offset from the anchor. */
+  function initFabDrag(fab, { setOffset }) {
+    let dragging = false, moved = false;
+    let startX = 0, startY = 0, grabX = 0, grabY = 0;
+    const DRAG_THRESHOLD = 4;  // px of motion before it counts as a drag
 
     fab.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
       const rect = fab.getBoundingClientRect();
-      offsetX = e.clientX - rect.left;
-      offsetY = e.clientY - rect.top;
-      startX  = e.clientX;
-      startY  = e.clientY;
+      grabX  = e.clientX - rect.left;
+      grabY  = e.clientY - rect.top;
+      startX = e.clientX;
+      startY = e.clientY;
       dragging = true;
       moved    = false;
       e.preventDefault();
@@ -141,39 +218,31 @@ const Arima = (() => {
 
     document.addEventListener('mousemove', (e) => {
       if (!dragging) return;
-      const dx = e.clientX - startX, dy = e.clientY - startY;
-      if (!moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) < DRAG_THRESHOLD) return;
       if (!moved) { moved = true; fab.classList.add('dragging'); }
-      const x = e.clientX - offsetX;
-      const y = e.clientY - offsetY;
-      applyFabPos(fab, x, y);
+      // Free-follow the cursor while dragging; the drop is what gets stored.
+      fab.style.left   = (e.clientX - grabX) + 'px';
+      fab.style.top    = (e.clientY - grabY) + 'px';
+      fab.style.right  = 'auto';
+      fab.style.bottom = 'auto';
     });
 
     document.addEventListener('mouseup', () => {
       if (!dragging) return;
       dragging = false;
-      if (moved) {
-        fab.classList.remove('dragging');
-        fab.dataset.justDragged = '1';   // suppress the trailing click
-        // Persist position
-        const rect = fab.getBoundingClientRect();
-        localStorage.setItem('ai-fab-pos', JSON.stringify({ x: rect.left, y: rect.top }));
-      }
-    });
-  }
+      if (!moved) return;
 
-  function applyFabPos(fab, x, y) {
-    // Clamp within viewport so the FAB never escapes off-screen on resize
-    const w = fab.offsetWidth  || 58;
-    const h = fab.offsetHeight || 58;
-    const maxX = window.innerWidth  - w - 4;
-    const maxY = window.innerHeight - h - 4;
-    const cx = Math.max(4, Math.min(maxX, x));
-    const cy = Math.max(56, Math.min(maxY, y));  // keep below topbar
-    fab.style.left   = cx + 'px';
-    fab.style.top    = cy + 'px';
-    fab.style.right  = 'auto';
-    fab.style.bottom = 'auto';
+      fab.classList.remove('dragging');
+      fab.dataset.justDragged = '1';
+
+      const rect = fab.getBoundingClientRect();
+      const a = fabAnchorPoint(rect.width, rect.height);
+      const dx = rect.left - a.x;
+      const dy = rect.top  - a.y;
+
+      // Dropped back on the anchor → clear the override entirely.
+      setOffset(Math.hypot(dx, dy) < SNAP_BACK ? null : { dx, dy });
+    });
   }
 
   /* ── WebSocket (STOMP / SockJS) ─────────────────── */

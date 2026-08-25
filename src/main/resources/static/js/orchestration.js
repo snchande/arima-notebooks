@@ -195,22 +195,33 @@ const Orchestration = (() => {
         }
     }
 
+    /** Status classes a badge may carry — swapped out on every refresh. */
+    const STATUS_CLASSES = ['pending', 'running', 'ok', 'error', 'stale'];
+
+    /**
+     * Apply a status to one badge WITHOUT clobbering its other classes.
+     * Assigning className outright used to strip `dep-link` / `cross` /
+     * `step-status`, which silently disabled click-to-jump on every badge as
+     * soon as the first status refresh ran.
+     */
+    function applyBadgeStatus(badge, anchor, s) {
+        STATUS_CLASSES.forEach(c => badge.classList.remove(c));
+        badge.classList.add('dep-badge', s.status);
+        badge.title = badgeTitle(anchor, s)
+            + (badge.classList.contains('dep-link') ? ' — click to jump to this cell' : '');
+    }
+
     /** Update all dependency badge elements that reference this anchor. */
     function refreshBadges(changedAnchor) {
-        // Find all .dep-badge elements with data-anchor == changedAnchor
         document.querySelectorAll(`.dep-badge[data-anchor="${changedAnchor}"]`).forEach(badge => {
-            const s = depStatus[changedAnchor] || { status: 'pending' };
-            badge.className = `dep-badge ${s.status}`;
-            badge.title = badgeTitle(changedAnchor, s);
+            applyBadgeStatus(badge, changedAnchor, depStatus[changedAnchor] || { status: 'pending' });
         });
     }
 
     function refreshAllBadges() {
         document.querySelectorAll('.dep-badge[data-anchor]').forEach(badge => {
             const anchor = badge.dataset.anchor;
-            const s = depStatus[anchor] || { status: 'pending' };
-            badge.className = `dep-badge ${s.status}`;
-            badge.title = badgeTitle(anchor, s);
+            applyBadgeStatus(badge, anchor, depStatus[anchor] || { status: 'pending' });
         });
     }
 

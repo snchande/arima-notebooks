@@ -18,7 +18,7 @@ Arima Notebooks fills a real gap: **the notebook never modernized for a polyglot
 
 By contributing, you help:
 
-- **Developers across many languages** — JavaScript, TypeScript, C#, F#, C++, Java, and more — learn, explore, and prototype faster in one place
+- **Developers across many languages** — JavaScript, TypeScript, C#, F#, C++, Java, JShell, Python, and more — learn, explore, and prototype faster in one place
 - **People and agents** work together on the same notebook through the built-in co-pilot and MCP
 - **Students** discover new languages through interactive, visual notebooks
 - **Data scientists** gain the same fluid, exploratory workflow regardless of the language they reach for
@@ -141,7 +141,9 @@ src/main/java/com/barista/
 │   ├── ClaudeService.java          # Anthropic API integration
 │   ├── PackageService.java         # Maven Central downloads
 │   ├── NuGetService.java           # NuGet package management for C#/F#
-│   └── OrchestrationService.java   # Pipeline dependency graph (all 5 languages)
+│   ├── PyPiService.java            # PyPI package management for Python
+│   ├── AgentService.java           # Agent / skill notebooks (natural-language cells)
+│   └── OrchestrationService.java   # Pipeline dependency graph (all 8 languages + agents)
 ├── model/               # Data models — Notebook, Cell, Settings, etc.
 └── shell/               # JShell session lifecycle
 

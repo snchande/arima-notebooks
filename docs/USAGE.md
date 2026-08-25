@@ -22,7 +22,7 @@ Arima Notebooks has five main tabs:
 
 | Tab | Purpose |
 |-----|---------|
-| **Notebook** | Write and execute Java, JavaScript, TypeScript, C#, F#, or C++ code in cells |
+| **Notebook** | Write and execute Java, JShell, JavaScript, TypeScript, C#, F#, C++, or Python code in cells — plus natural-language **agent** cells |
 | **Console** | Multi-runtime REPL — JShell, Java, JavaScript, or TypeScript with Tab completion |
 | **Packages** | Install Maven packages (Java), npm packages (JavaScript / TypeScript), and NuGet packages (C#/F#) |
 | **Settings** | Configure AI provider (Claude/Copilot/Antigravity), theme, and preferences |
@@ -49,11 +49,13 @@ Click the **Tutorials** button (or the notebook name in the toolbar) to open the
 The browser has a top-level switch between two views:
 
 **Select Notebook** — your personal notebooks.
-- Click **+ New Notebook** to create a blank notebook
+- Click **+ New Notebook** to create a notebook. You're asked for a **name** and a **default language** (JShell, Java, JavaScript, TypeScript, C#, F#, C++, or Python).
+  - The notebook is created **empty** — no starter cell. Add the first cell yourself with **+ Code** or **+ Markdown**, so a notebook never begins with a language you didn't pick.
+  - The default language is stored on the notebook (`metadata.defaultMode`) and applied to every new code cell. You can still switch any individual cell's mode from its mode button.
 - Click any card to open it in a new tab
 
 **Tutorials** — built-in read-only notebooks, organized into **per-language tabs**.
-- One tab per language — `JShell` / `Java` / `JavaScript` / `TypeScript` / `C#` / `F#` / `C++` / `Agents & Skills` — each with a count badge; only the active tab's tutorials are shown
+- One tab per language — `JShell` / `Java` / `JavaScript` / `TypeScript` / `C#` / `F#` / `C++` / `Python` / `Agents & Skills` — each with a count badge; only the active tab's tutorials are shown
 - Each tab is sub-divided: **Basics & Foundations** → **Advanced** → **Data Science & Analytics**
 - Level badges (`101` → `601`) indicate progression within each language track
 - Tutorial notebooks open in a **read-only** tab (auto-save is disabled), or play them with **▶ Guided** (see below)
@@ -80,7 +82,7 @@ Click **▶ Guided** on any tutorial card to open a **narrated, multimodal walkt
 | 501 | Design patterns, architecture, idiomatic code |
 | 601 | Data science, statistics, visualization |
 
-Tutorial tracks available: **JShell**, **Java**, **JavaScript**, **TypeScript**, **C#**, **F#**, **C++**
+Tutorial tracks available: **JShell**, **Java**, **JavaScript**, **TypeScript**, **C#**, **F#**, **C++**, **Python**, and **Agents & Skills**
 
 ### Working with Cells
 
@@ -99,7 +101,7 @@ Arima Notebooks has four cell types, each visually distinct:
 | **Pipeline** | Gold | `⬡ Pipeline` | Orchestrate other cells with dependency steps |
 
 **Code cells** contain executable code. Click the mode button to cycle through languages:
-`JShell → Java → JS → TS → C# → F# → C++ → JShell`
+`JShell → Java → JS → TS → C# → F# → C++ → Python → JShell`
 
 > C# and F# cells require the .NET SDK (install from [dot.net](https://dot.net)).
 > C++ cells require `g++`, `clang++`, or MSVC — see [docs/SETUP.md](SETUP.md#setting-up-c-support) for install instructions.
@@ -184,6 +186,7 @@ a line and press `Enter` to send it, then execution continues. Works for:
 | JavaScript / TypeScript | `readline` / `process.stdin` |
 | C# / F# | `Console.ReadLine()` |
 | C++ | `std::cin` / `std::getline` |
+| Python | `input()` |
 
 If you switch to another browser tab or app while a cell is waiting, the header **🔔 bell** lights
 up with a count, a **desktop notification** fires, and the tab title flashes. Click the
@@ -725,6 +728,129 @@ See **[docs/SETUP.md — Setting up C++ support](SETUP.md#setting-up-c-support)*
 
 ---
 
+## Python Cells
+
+Python cells run in a `python3` subprocess. Nothing is wrapped or rewritten — what you write is what runs, so `if __name__ == "__main__":`, decorators, and module-level code all behave normally.
+
+**Requirement:** `python3` (3.9+) on `PATH`. Without it the other seven languages still work; `arima status` reports whether Python was detected.
+
+### Built-in helpers
+
+Every Python cell gets a `barista` helper module injected, mirroring the helpers in the other languages:
+
+```python
+barista.display(value)          # rich display of any value
+barista.html("<b>bold</b>")     # rendered as HTML in the output pane
+barista.table(rows)             # list-of-dicts or dict → formatted table
+barista.stats(numbers)          # count / mean / median / stdev / min / max
+barista.image(path_or_bytes)    # render an image inline
+```
+
+### PyPI packages
+
+Install from the **Packages** tab → **PyPI**. Packages are installed with `pip install --target data/pypi-packages/site`, and that directory is put on `PYTHONPATH` for every Python cell — so imports resolve without touching your system or virtualenv site-packages:
+
+```python
+import numpy as np
+import pandas as pd
+
+df = pd.DataFrame({"x": np.arange(5), "y": np.arange(5) ** 2})
+barista.table(df.to_dict("records"))
+```
+
+The install log streams live while pip runs. Uninstalling removes exactly the files that install added — tracked with a before/after diff, because `pip uninstall` does not support `--target`.
+
+### Interactive input
+
+`input()` prompts inline in the cell, the same as `Scanner` in JShell or `readline` in JavaScript:
+
+```python
+name = input("Your name: ")
+print(f"Hello, {name}")
+```
+
+### Pipeline dependencies
+
+The orchestration DSL is identical to the other languages — anchors are written as Python comments:
+
+```python
+#@ anchor: load-data
+#@ description: Load the CSV
+import csv
+rows = list(csv.DictReader(open("data.csv")))
+
+#@ anchor: summarize
+#@ depends: load-data
+barista.stats([float(r["value"]) for r in rows])
+```
+
+Each Python cell is its own process, so state does not persist automatically between cells. When a cell declares `//@ depends:`, the source of its dependencies is injected ahead of it — the same approach used for C#, F#, and C++.
+
+### Tutorial notebooks
+
+| Notebook | Level | Topics |
+|----------|-------|--------|
+| `python-101` | Beginner | Fundamentals — types, control flow, functions |
+| `python-201` | Intermediate | Collections & OOP |
+| `python-301` | Intermediate+ | Standard library & functional style |
+| `python-401` | Advanced | Networking |
+| `python-501` | Advanced | Databases |
+| `python-601` | Expert | Data science, metrics & reporting |
+
+---
+
+## Agents & Skills
+
+An **agent** is a different kind of cell: its body is **natural language**, not code. Where a Python cell is executed by a Python runtime, an agent cell is executed by a local **agent CLI** (Claude, Copilot, or Antigravity) — you state the intent, and the CLI carries it out. Everything else is the same: agents live in notebooks, participate in pipelines, and are reachable over MCP.
+
+### What an agent is
+
+An agent is a notebook. Any `.vnb` whose `metadata.kind` is `"agent"` or `"skill"` becomes a callable unit — authored in the same editor, versioned in the same file, and shared like any other notebook.
+
+### The agent cell DSL
+
+Inside a normal notebook, an agent cell names the agent and gives it a task:
+
+```
+//@ agent: code-reviewer
+//@ bind: review
+//@ depends: build-report
+Review the following output for correctness and style.
+Flag anything that would fail CI:
+
+{{build-report}}
+```
+
+| Directive | Meaning |
+|-----------|---------|
+| `//@ agent:` | Which agent notebook to dispatch to, resolved by id against the agents in your workspace |
+| `//@ bind:` | Binds the agent's answer into a JShell variable so downstream cells consume it as data, not prose |
+| `{{anchor}}` | Interpolates the **current** output of any anchored cell into the task text |
+| `//@ depends:` | The same orchestration DSL as every other cell — agents are ordinary nodes in the DAG |
+
+### Three ways to run one
+
+| Where | How |
+|-------|-----|
+| **Agents tab** | Browse every agent and skill in the workspace, give it a task, watch the run stream live |
+| **In a pipeline** | An agent cell is a DAG node — chain several for multi-agent review, where one agent grades another's output |
+| **Over MCP** | `barista_list_agents` discovers them, `barista_run_agent` runs one — so external agents can call your agents |
+
+Output streams over the notebook's existing STOMP `partial_output` channel, so it appears token-by-token with no extra endpoints. Providers are pluggable behind an `AgentProvider` interface.
+
+### Tutorial notebooks
+
+| Notebook | Level | Topics |
+|----------|-------|--------|
+| `agent-101` | Beginner | Explain Code |
+| `agent-201` | Intermediate | Code Reviewer |
+| `agent-301` | Intermediate | Test Writer |
+| `agent-401` | Advanced | Reviewer in a Pipeline |
+| `agent-501` | Advanced | Multi-Agent Review |
+| `agent-601` | Advanced | MCP-driven Agent |
+
+---
+
 ## Error Log Panel
 
 When network errors or pipeline failures occur, they accumulate in the **Error Log** — a collapsible panel in the status bar.
@@ -799,7 +925,7 @@ Click **Restart** to clear all variables for the current runtime session and sta
 
 ## Packages Tab
 
-The Packages tab has four sections — **Maven** for Java, **npm** for JavaScript / TypeScript, **NuGet** for C# / F#, and **C++** for the standard library reference.
+The Packages tab has five sections — **Maven** for Java, **npm** for JavaScript / TypeScript, **NuGet** for C# / F#, **PyPI** for Python, and **C++** for the standard library reference.
 
 ### Maven Packages (Java / JShell)
 
