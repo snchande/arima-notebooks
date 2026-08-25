@@ -27,7 +27,7 @@
       "id": "py201-1",
       "type": "CODE",
       "mode": "python",
-      "source": "nums = [3, 1, 4, 1, 5, 9, 2, 6]\nnums.append(5)\nprint(\"list:    \", nums)\nprint(\"sorted:  \", sorted(nums))\nprint(\"slice[1:4]:\", nums[1:4])\nprint(\"reversed: \", nums[::-1])\n\npoint = (10, 20)   # tuple — immutable\nx, y = point       # unpacking\nprint(f\"x={x}, y={y}\")",
+      "source": "# Square brackets build a list: ordered, and mutable (you can change it in place).\nnums = [3, 1, 4, 1, 5, 9, 2, 6]\n\nnums.append(5)              # .append() adds one item to the END, modifying nums itself\nprint(\"list:    \", nums)\n\n# sorted() is different: it RETURNS a new sorted list and leaves nums untouched.\n# (nums.sort() would sort in place and return None - a classic beginner trap.)\nprint(\"sorted:  \", sorted(nums))\n\n# Slicing is [start:stop] - start included, stop excluded, counting from 0.\nprint(\"slice[1:4]:\", nums[1:4])\n\n# A third slice value is the step. -1 walks the list backwards, so this reverses it.\nprint(\"reversed: \", nums[::-1])\n\npoint = (10, 20)   # parentheses build a tuple: ordered, but immutable - no append()\nx, y = point       # unpacking: the two elements are assigned to x and y in one step\nprint(f\"x={x}, y={y}\")",
       "output": "",
       "executionCount": 0
     },
@@ -42,7 +42,7 @@
       "id": "py201-2",
       "type": "CODE",
       "mode": "python",
-      "source": "inventory = {\"apples\": 30, \"pears\": 12, \"plums\": 0}\ninventory[\"cherries\"] = 50      # add\ninventory[\"pears\"] += 8         # update\n\nfor item, qty in inventory.items():\n    status = \"OUT\" if qty == 0 else qty\n    print(f\"{item:<10} {status}\")\n\nin_stock = {k: v for k, v in inventory.items() if v > 0}\nprint(\"in stock:\", in_stock)",
+      "source": "# A dict maps keys to values. Braces with key: value pairs create one.\ninventory = {\"apples\": 30, \"pears\": 12, \"plums\": 0}\n\ninventory[\"cherries\"] = 50      # assigning to a NEW key inserts it\ninventory[\"pears\"] += 8         # assigning to an existing key replaces the value (12 -> 20)\n\n# .items() yields (key, value) pairs, which the loop unpacks into two names at once.\nfor item, qty in inventory.items():\n    # A conditional expression: <value if true> if <condition> else <value if false>.\n    status = \"OUT\" if qty == 0 else qty\n    print(f\"{item:<10} {status}\")     # :<10 pads the name to 10 chars, left-aligned\n\n# A dict comprehension - the same idea as a list comprehension, but producing key: value\n# pairs. This keeps only the entries whose quantity is above zero.\nin_stock = {k: v for k, v in inventory.items() if v > 0}\nprint(\"in stock:\", in_stock)",
       "output": "",
       "executionCount": 0
     },
@@ -57,7 +57,7 @@
       "id": "py201-3",
       "type": "CODE",
       "mode": "python",
-      "source": "a = {1, 2, 3, 4}\nb = {3, 4, 5, 6}\nprint(\"union:       \", a | b)\nprint(\"intersection:\", a & b)\nprint(\"difference:  \", a - b)\n\nwords = \"the quick brown fox the lazy dog the\".split()\nprint(\"unique words:\", sorted(set(words)))",
+      "source": "# Braces without colons build a set: unordered, and each value appears at most once.\na = {1, 2, 3, 4}\nb = {3, 4, 5, 6}\n\n# Sets support the algebra you learned in school, via operators:\nprint(\"union:       \", a | b)      # in a OR b\nprint(\"intersection:\", a & b)      # in a AND b\nprint(\"difference:  \", a - b)      # in a but NOT in b\n\n# .split() cuts a string on whitespace and returns a list of words.\nwords = \"the quick brown fox the lazy dog the\".split()\n\n# set(words) discards the duplicate \"the\"s; sorted() then gives a stable, readable order\n# (sets have no order of their own, so printing one directly can surprise you).\nprint(\"unique words:\", sorted(set(words)))",
       "output": "",
       "executionCount": 0
     },
@@ -72,7 +72,7 @@
       "id": "py201-4",
       "type": "CODE",
       "mode": "python",
-      "source": "class Account:\n    def __init__(self, owner, balance=0):\n        self.owner = owner\n        self.balance = balance\n\n    def deposit(self, amount):\n        self.balance += amount\n        return self.balance\n\n    def __repr__(self):\n        return f\"Account({self.owner!r}, ${self.balance})\"\n\nacct = Account(\"Ada\")\nacct.deposit(100)\nacct.deposit(50)\nprint(acct)\nprint(\"balance:\", acct.balance)",
+      "source": "# `class` defines a new type. By convention class names use CapitalisedWords.\nclass Account:\n    # __init__ is the constructor: Python calls it when you write Account(...).\n    # `self` is the instance being built - every method receives it as its first argument.\n    def __init__(self, owner, balance=0):\n        self.owner = owner          # storing on self makes it an attribute of THIS account\n        self.balance = balance      # `balance=0` means the argument may be omitted\n\n    # A regular method. It also takes self, so it can read and change this instance.\n    def deposit(self, amount):\n        self.balance += amount\n        return self.balance\n\n    # __repr__ defines how the object prints. Without it you would see something\n    # like <__main__.Account object at 0x000001>, which tells you nothing.\n    def __repr__(self):\n        return f\"Account({self.owner!r}, ${self.balance})\"\n\nacct = Account(\"Ada\")     # calls __init__ with owner=\"Ada\"; balance takes its default 0\nacct.deposit(100)         # self is passed automatically - you never write acct.deposit(acct, 100)\nacct.deposit(50)\n\nprint(acct)               # print() falls back to __repr__, so this shows Account('Ada', $150)\nprint(\"balance:\", acct.balance)",
       "output": "",
       "executionCount": 0
     },
@@ -87,7 +87,7 @@
       "id": "py201-5",
       "type": "CODE",
       "mode": "python",
-      "source": "from dataclasses import dataclass\n\n@dataclass\nclass Product:\n    name: str\n    price: float\n    qty: int = 1\n\n    def total(self):\n        return self.price * self.qty\n\ncart = [Product(\"Book\", 12.99, 2), Product(\"Pen\", 1.50, 5)]\nfor p in cart:\n    print(f\"{p.name:<6} x{p.qty}  ->  ${p.total():.2f}\")\nprint(f\"Order total: ${sum(p.total() for p in cart):.2f}\")",
+      "source": "# The decorator lives in the standard library, so it has to be imported first.\nfrom dataclasses import dataclass\n\n# @dataclass rewrites the class below, generating __init__, __repr__ and __eq__ from\n# the annotated fields. You describe the data; Python writes the boilerplate.\n@dataclass\nclass Product:\n    name: str           # a field with its type - order here is the order of __init__ arguments\n    price: float\n    qty: int = 1        # a default, so Product(\"Pen\", 1.5) is enough\n\n    # Ordinary methods still work exactly as they do in a normal class.\n    def total(self):\n        return self.price * self.qty\n\n# The generated __init__ accepts the fields in the order they were declared.\ncart = [Product(\"Book\", 12.99, 2), Product(\"Pen\", 1.50, 5)]\n\nfor p in cart:\n    print(f\"{p.name:<6} x{p.qty}  ->  ${p.total():.2f}\")\n\n# A generator expression (no brackets) feeds each total straight into sum() -\n# the same idea as a list comprehension, without building the list in between.\nprint(f\"Order total: ${sum(p.total() for p in cart):.2f}\")",
       "output": "",
       "executionCount": 0
     },
@@ -102,7 +102,7 @@
       "id": "py201-6",
       "type": "CODE",
       "mode": "python",
-      "source": "def safe_divide(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        return \"undefined (÷0)\"\n    finally:\n        pass\n\nprint(safe_divide(10, 2))\nprint(safe_divide(10, 0))\n\ntry:\n    raise ValueError(\"bad input\")\nexcept ValueError as e:\n    print(\"caught:\", e)",
+      "source": "def safe_divide(a, b):\n    # `try` guards a block that might fail.\n    try:\n        return a / b\n    # `except` catches one specific exception type. Catching ZeroDivisionError rather\n    # than everything means a genuine bug still surfaces instead of being swallowed.\n    except ZeroDivisionError:\n        return \"undefined (division by zero)\"\n    # `finally` always runs - after a successful return, and after a caught exception.\n    # It is where cleanup goes: closing a file, releasing a lock.\n    finally:\n        pass    # nothing to clean up here; `pass` is Python's \"do nothing\" statement\n\nprint(safe_divide(10, 2))    # 5.0 - the try block returns normally\nprint(safe_divide(10, 0))    # the except block runs instead\n\n# `raise` throws an exception yourself - the way you signal that a caller got it wrong.\ntry:\n    raise ValueError(\"bad input\")\n# `as e` binds the exception object to a name so you can inspect or print it.\nexcept ValueError as e:\n    print(\"caught:\", e)",
       "output": "",
       "executionCount": 0
     },

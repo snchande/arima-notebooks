@@ -20,7 +20,7 @@
       "id": "py101-1",
       "type": "CODE",
       "mode": "python",
-      "source": "# The classic first program\nprint(\"Hello, World!\")\nprint(\"Welcome to Python in Arima Notebooks\")",
+      "source": "# print() is the built-in that writes text into this cell's Output panel below.\n# Text in quotes is a string - Python accepts \"double\" or 'single' quotes equally.\nprint(\"Hello, World!\")\n\n# Statements run top to bottom, and each print() starts a new line of output.\nprint(\"Welcome to Python in Arima Notebooks\")",
       "output": "",
       "executionCount": 0
     },
@@ -35,7 +35,7 @@
       "id": "py101-2",
       "type": "CODE",
       "mode": "python",
-      "source": "name = \"Arima\"        # str\nversion = 4           # int\npi = 3.14159          # float\nready = True          # bool\n\nfor value in (name, version, pi, ready):\n    print(f\"{value!r:>10}  ->  {type(value).__name__}\")",
+      "source": "# A variable is just a name bound to a value with `=`. There is no type to declare:\n# Python reads the type off the value on the right-hand side.\nname    = \"Arima\"     # str   - text, always in quotes\nversion = 4           # int   - a whole number\npi      = 3.14159     # float - a number with a decimal point\nready   = True        # bool  - either True or False (capitalised, no quotes)\n\n# The parentheses build a tuple - an ordered, unchangeable group of values.\n# `for` walks it, binding each element to `value` in turn.\nfor value in (name, version, pi, ready):\n    # Inside an f-string, {value!r} shows the value's repr() - so strings keep\n    # their quotes and you can see \"4\" (str) is not 4 (int). The :>10 that follows\n    # right-aligns it in a 10-character column so the arrows line up.\n    # type(value) returns the value's type object; .__name__ is its short name.\n    print(f\"{value!r:>10}  ->  {type(value).__name__}\")",
       "output": "",
       "executionCount": 0
     },
@@ -50,7 +50,7 @@
       "id": "py101-3",
       "type": "CODE",
       "mode": "python",
-      "source": "user = \"Sam\"\nitems = 3\nprice = 4.5\n\nprint(f\"{user} bought {items} coffees for ${items * price:.2f}\")\nprint(f\"Uppercase: {user.upper()} | length: {len(user)}\")",
+      "source": "user  = \"Sam\"\nitems = 3\nprice = 4.5\n\n# An f-string is an ordinary string with an `f` before the opening quote.\n# Every {...} inside it is evaluated as Python, and the result is dropped into the text:\n#   {user}                 -> Sam\n#   {items * price:.2f}    -> multiplies first (13.5), then :.2f rounds to 2 decimals\nprint(f\"{user} bought {items} coffees for ${items * price:.2f}\")\n\n# Any expression is allowed inside the braces, method calls included.\n#   user.upper() returns a NEW uppercased string - strings are immutable in Python\n#   len(user)    counts the characters\nprint(f\"Uppercase: {user.upper()} | length: {len(user)}\")",
       "output": "",
       "executionCount": 0
     },
@@ -65,7 +65,7 @@
       "id": "py101-4",
       "type": "CODE",
       "mode": "python",
-      "source": "def grade(score):\n    if score >= 90:\n        return \"A\"\n    elif score >= 80:\n        return \"B\"\n    elif score >= 70:\n        return \"C\"\n    else:\n        return \"F\"\n\nfor s in (95, 82, 71, 40):\n    print(f\"{s} -> {grade(s)}\")",
+      "source": "# `def` defines a function - a named block you can call as often as you like.\n# `score` is its parameter: a placeholder for whatever the caller passes in.\ndef grade(score):\n    # `if` runs its indented block only when the condition is True.\n    # Indentation (4 spaces) is what groups code in Python. There are no braces.\n    if score >= 90:\n        return \"A\"      # `return` hands a value back and exits the function immediately\n    # `elif` means \"else if\" - only tested when every branch above it was False.\n    elif score >= 80:\n        return \"B\"\n    elif score >= 70:\n        return \"C\"\n    # `else` catches everything the branches above did not match.\n    else:\n        return \"F\"\n\n# Call the function once per score. The loop variable `s` holds one score at a time.\nfor s in (95, 82, 71, 40):\n    print(f\"{s} -> {grade(s)}\")",
       "output": "",
       "executionCount": 0
     },
@@ -80,7 +80,7 @@
       "id": "py101-5",
       "type": "CODE",
       "mode": "python",
-      "source": "squares = [n * n for n in range(1, 8)]\nprint(\"squares:\", squares)\n\nevens = [n for n in range(20) if n % 2 == 0]\nprint(\"evens:  \", evens)\n\ntotal = sum(squares)\nprint(\"sum of squares:\", total)",
+      "source": "# A list comprehension reads as: [ expression  for item in sequence ].\n# range(1, 8) yields 1,2,3,4,5,6,7 - the start is included, the end is not -\n# and n * n is evaluated for each one, collecting the results into a new list.\nsquares = [n * n for n in range(1, 8)]\nprint(\"squares:\", squares)          # print() accepts several arguments, joined by spaces\n\n# Adding `if` to a comprehension keeps only the items that pass the test.\n# n % 2 is the remainder after dividing by 2, so `== 0` selects the even numbers.\nevens = [n for n in range(20) if n % 2 == 0]\nprint(\"evens:  \", evens)\n\n# sum() adds up any sequence of numbers. Built-ins like this replace most hand-written\n# loops in Python - shorter to write and faster to run.\ntotal = sum(squares)\nprint(\"sum of squares:\", total)",
       "output": "",
       "executionCount": 0
     },
@@ -95,7 +95,7 @@
       "id": "py101-6",
       "type": "CODE",
       "mode": "python",
-      "source": "def greet(name, greeting=\"Hello\"):\n    return f\"{greeting}, {name}!\"\n\ndef total(*numbers):\n    return sum(numbers)\n\nprint(greet(\"Arima\"))\nprint(greet(\"Sam\", greeting=\"Hi\"))\nprint(\"total(1,2,3,4):\", total(1, 2, 3, 4))",
+      "source": "# `greeting=\"Hello\"` gives that parameter a default value, so callers may leave it out.\n# Parameters with defaults must be listed after the ones without.\ndef greet(name, greeting=\"Hello\"):\n    return f\"{greeting}, {name}!\"\n\n# A `*` in front of a parameter collects every extra positional argument into a tuple.\n# That makes total() accept any number of values: total(1), total(1, 2, 3), and so on.\ndef total(*numbers):\n    return sum(numbers)\n\nprint(greet(\"Arima\"))                       # greeting is omitted, so it falls back to \"Hello\"\nprint(greet(\"Sam\", greeting=\"Hi\"))          # naming the argument overrides the default\nprint(\"total(1,2,3,4):\", total(1, 2, 3, 4)) # inside total(), numbers is the tuple (1, 2, 3, 4)",
       "output": "",
       "executionCount": 0
     },
@@ -110,7 +110,7 @@
       "id": "py101-7",
       "type": "CODE",
       "mode": "python",
-      "source": "people = [\n    {\"name\": \"Ada\", \"role\": \"Engineer\", \"age\": 36},\n    {\"name\": \"Linus\", \"role\": \"Kernel\", \"age\": 54},\n    {\"name\": \"Grace\", \"role\": \"Admiral\", \"age\": 85},\n]\nbarista.table(people)\n\nages = [p[\"age\"] for p in people]\nbarista.stats(ages)",
+      "source": "# A list of dicts is the shape Arima's table helper expects: one dict per row,\n# with the keys becoming the column headers.\npeople = [\n    {\"name\": \"Ada\",   \"role\": \"Engineer\", \"age\": 36},\n    {\"name\": \"Linus\", \"role\": \"Kernel\",   \"age\": 54},\n    {\"name\": \"Grace\", \"role\": \"Admiral\",  \"age\": 85},\n]\n\n# `barista` is pre-injected into every Python cell - there is nothing to import.\nbarista.table(people)        # renders the rows as an aligned text table\n\n# A comprehension lifts a single column out of the rows, giving [36, 54, 85].\n# p[\"age\"] looks a value up in a dict by its key.\nages = [p[\"age\"] for p in people]\n\nbarista.stats(ages)          # count / min / max / mean / std, in one call",
       "output": "",
       "executionCount": 0
     },

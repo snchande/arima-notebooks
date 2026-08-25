@@ -27,7 +27,7 @@
       "id": "py501-1",
       "type": "CODE",
       "mode": "python",
-      "source": "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\ncur = conn.cursor()\ncur.execute(\"\"\"\n    CREATE TABLE employees (\n        id INTEGER PRIMARY KEY,\n        name TEXT NOT NULL,\n        dept TEXT NOT NULL,\n        salary INTEGER\n    )\n\"\"\")\nconn.commit()\nprint(\"Created 'employees' table.\")",
+      "source": "import sqlite3       # part of the standard library - nothing to install\n\n# connect() opens a database. \":memory:\" creates one that lives in RAM and disappears\n# when the process ends; a filename such as \"company.db\" would persist it to disk.\nconn = sqlite3.connect(\":memory:\")\n\n# A cursor is the handle you run statements through and read results from.\ncur = conn.cursor()\n\n# Triple quotes hold a multi-line string, which is how SQL is usually written in Python.\n#   INTEGER PRIMARY KEY  - unique row id (SQLite fills it in automatically)\n#   TEXT NOT NULL        - the column must always have a value\ncur.execute(\"\"\"\n    CREATE TABLE employees (\n        id INTEGER PRIMARY KEY,\n        name TEXT NOT NULL,\n        dept TEXT NOT NULL,\n        salary INTEGER\n    )\n\"\"\")\n\n# Nothing is durable until commit(). Without it the CREATE would be rolled back\n# when the connection closes.\nconn.commit()\nprint(\"Created 'employees' table.\")",
       "output": "",
       "executionCount": 0
     },
@@ -42,7 +42,7 @@
       "id": "py501-2",
       "type": "CODE",
       "mode": "python",
-      "source": "//@ anchor: sample-db\nimport sqlite3\n\ndef sample_db():\n    conn = sqlite3.connect(\":memory:\")\n    conn.execute(\"CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER)\")\n    rows = [\n        (1, \"Ada\",   \"Engineering\", 145000),\n        (2, \"Linus\", \"Engineering\", 152000),\n        (3, \"Grace\", \"Research\",    138000),\n        (4, \"Alan\",  \"Research\",    141000),\n        (5, \"Edsger\",\"Engineering\", 149000),\n    ]\n    conn.executemany(\"INSERT INTO employees VALUES (?, ?, ?, ?)\", rows)\n    conn.commit()\n    return conn\n\nconn = sample_db()\ncount = conn.execute(\"SELECT COUNT(*) FROM employees\").fetchone()[0]\nprint(f\"Inserted {count} employees.\")",
+      "source": "//@ anchor: sample-db\nimport sqlite3\n\n# Each Python cell is a fresh process, so an in-memory database cannot survive from one\n# cell to the next. Building it in a function - and anchoring the cell - lets the cells\n# below rebuild the identical database through //@ depends.\ndef sample_db():\n    conn = sqlite3.connect(\":memory:\")\n\n    # execute() can be called on the connection directly; it creates a cursor for you.\n    conn.execute(\"CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER)\")\n\n    # A list of tuples - one tuple per row, values in column order.\n    rows = [\n        (1, \"Ada\",   \"Engineering\", 145000),\n        (2, \"Linus\", \"Engineering\", 152000),\n        (3, \"Grace\", \"Research\",    138000),\n        (4, \"Alan\",  \"Research\",    141000),\n        (5, \"Edsger\",\"Engineering\", 149000),\n    ]\n\n    # executemany() runs the statement once per tuple, in a single batch.\n    # Each ? is a PLACEHOLDER: the driver sends the values separately from the SQL, so a\n    # name containing a quote cannot alter the statement. This is what stops SQL injection -\n    # never build SQL with f-strings or + concatenation.\n    conn.executemany(\"INSERT INTO employees VALUES (?, ?, ?, ?)\", rows)\n    conn.commit()\n    return conn\n\nconn = sample_db()\n\n# fetchone() returns the first row as a tuple; [0] takes its single column - the count.\ncount = conn.execute(\"SELECT COUNT(*) FROM employees\").fetchone()[0]\nprint(f\"Inserted {count} employees.\")",
       "output": "",
       "executionCount": 0,
       "anchor": "sample-db"
@@ -58,10 +58,12 @@
       "id": "py501-3",
       "type": "CODE",
       "mode": "python",
-      "source": "//@ depends: sample-db\nimport sqlite3\nconn = sample_db()\nconn.row_factory = sqlite3.Row\n\nrows = conn.execute(\n    \"SELECT name, dept, salary FROM employees WHERE salary > ? ORDER BY salary DESC\",\n    (140000,)\n).fetchall()\n\nbarista.table([dict(r) for r in rows])",
+      "source": "//@ depends: sample-db\nimport sqlite3\n\n# sample_db() arrives from the anchored cell above, replayed before this code runs.\nconn = sample_db()\n\n# By default a row is a plain tuple, so you index it by position: r[0], r[1].\n# sqlite3.Row returns rows you can index by COLUMN NAME instead - readable, and immune\n# to a SELECT's column order changing later.\nconn.row_factory = sqlite3.Row\n\nrows = conn.execute(\n    \"SELECT name, dept, salary FROM employees WHERE salary > ? ORDER BY salary DESC\",\n    (140000,)          # the trailing comma makes this a 1-element TUPLE, not a number\n                       # in parentheses - a very common source of \"parameters\" errors\n).fetchall()           # fetchall() reads every remaining row into a list\n\n# dict(r) converts each Row into a real dict, which is the shape barista.table expects.\nbarista.table([dict(r) for r in rows])",
       "output": "",
       "executionCount": 0,
-      "dependsOn": ["sample-db"]
+      "dependsOn": [
+        "sample-db"
+      ]
     },
     {
       "id": "py501-md4",
@@ -74,10 +76,12 @@
       "id": "py501-4",
       "type": "CODE",
       "mode": "python",
-      "source": "//@ depends: sample-db\nimport sqlite3\nconn = sample_db()\nconn.row_factory = sqlite3.Row\n\nsummary = conn.execute(\"\"\"\n    SELECT dept,\n           COUNT(*)          AS headcount,\n           ROUND(AVG(salary)) AS avg_salary,\n           MAX(salary)       AS top_salary\n    FROM employees\n    GROUP BY dept\n    ORDER BY avg_salary DESC\n\"\"\").fetchall()\n\nbarista.table([dict(r) for r in summary])",
+      "source": "//@ depends: sample-db\nimport sqlite3\nconn = sample_db()\nconn.row_factory = sqlite3.Row\n\n# GROUP BY collapses the rows into one row per distinct dept, and the aggregate\n# functions summarise each group:\n#   COUNT(*)    how many rows fell into this group\n#   AVG(salary) the mean, wrapped in ROUND() to drop the decimals\n#   MAX(salary) the largest value in the group\n# AS renames a computed column, which is what makes dict(r)[\"headcount\"] work below.\nsummary = conn.execute(\"\"\"\n    SELECT dept,\n           COUNT(*)          AS headcount,\n           ROUND(AVG(salary)) AS avg_salary,\n           MAX(salary)       AS top_salary\n    FROM employees\n    GROUP BY dept\n    ORDER BY avg_salary DESC\n\"\"\").fetchall()\n\n# Letting SQL aggregate is almost always faster than pulling every row into Python\n# and summing it there - the database only sends back the finished summary.\nbarista.table([dict(r) for r in summary])",
       "output": "",
       "executionCount": 0,
-      "dependsOn": ["sample-db"]
+      "dependsOn": [
+        "sample-db"
+      ]
     },
     {
       "id": "py501-md5",
@@ -90,10 +94,12 @@
       "id": "py501-5",
       "type": "CODE",
       "mode": "python",
-      "source": "//@ depends: sample-db\nconn = sample_db()\n\ntry:\n    with conn:  # commits on success, rolls back on exception\n        conn.execute(\"UPDATE employees SET salary = salary + 5000 WHERE dept = 'Research'\")\n        # Uncomment to see a rollback:\n        # raise RuntimeError('simulated failure')\n    print(\"Raise applied.\")\nexcept Exception as e:\n    print(\"Rolled back:\", e)\n\nfor r in conn.execute(\"SELECT name, salary FROM employees WHERE dept='Research'\"):\n    print(r)",
+      "source": "//@ depends: sample-db\nconn = sample_db()\n\ntry:\n    # Using the connection as a context manager wraps the block in a transaction:\n    # it COMMITs if the block finishes, and ROLLS BACK if an exception escapes it.\n    # Either every statement inside lands, or none of them do.\n    with conn:\n        conn.execute(\"UPDATE employees SET salary = salary + 5000 WHERE dept = 'Research'\")\n\n        # Uncomment the line below and re-run: the UPDATE above is undone, and the\n        # salaries printed at the end are unchanged.\n        # raise RuntimeError('simulated failure')\n    print(\"Raise applied.\")\nexcept Exception as e:\n    # The rollback has already happened by the time this runs.\n    print(\"Rolled back:\", e)\n\n# Iterating a cursor directly streams the rows one at a time - no fetchall() needed.\nfor r in conn.execute(\"SELECT name, salary FROM employees WHERE dept='Research'\"):\n    print(r)",
       "output": "",
       "executionCount": 0,
-      "dependsOn": ["sample-db"]
+      "dependsOn": [
+        "sample-db"
+      ]
     },
     {
       "id": "py501-md6",
@@ -106,7 +112,7 @@
       "id": "py501-6",
       "type": "CODE",
       "mode": "python",
-      "source": "try:\n    from sqlalchemy import create_engine, text\nexcept ModuleNotFoundError:\n    print(\"SQLAlchemy not installed — add it from Packages -> PyPI, then re-run.\")\nelse:\n    engine = create_engine(\"sqlite+pysqlite:///:memory:\")\n    with engine.begin() as db:\n        db.execute(text(\"CREATE TABLE t (id INTEGER, label TEXT)\"))\n        db.execute(text(\"INSERT INTO t VALUES (:id, :label)\"), [{\"id\": 1, \"label\": \"hello\"}])\n        row = db.execute(text(\"SELECT * FROM t\")).fetchone()\n    print(\"SQLAlchemy row:\", tuple(row))",
+      "source": "# SQLAlchemy is a third-party package, so guard the import for machines without it.\ntry:\n    from sqlalchemy import create_engine, text\nexcept ModuleNotFoundError:\n    print(\"SQLAlchemy not installed - add it from Packages -> PyPI, then re-run.\")\nelse:\n    # The URL names the dialect and driver: swapping it for\n    # \"postgresql+psycopg2://user:pw@host/db\" is the only change needed to talk to\n    # PostgreSQL instead. That portability is the point of an engine.\n    engine = create_engine(\"sqlite+pysqlite:///:memory:\")\n\n    # engine.begin() opens a connection AND a transaction, committing at the end of\n    # the block (engine.connect() would leave you to commit yourself).\n    with engine.begin() as db:\n        # Raw SQL must be wrapped in text() so SQLAlchemy will accept it.\n        db.execute(text(\"CREATE TABLE t (id INTEGER, label TEXT)\"))\n\n        # SQLAlchemy uses :name placeholders where sqlite3 uses ?. Values are still\n        # passed separately, so this is parameterised in exactly the same way.\n        db.execute(text(\"INSERT INTO t VALUES (:id, :label)\"), [{\"id\": 1, \"label\": \"hello\"}])\n\n        row = db.execute(text(\"SELECT * FROM t\")).fetchone()\n    print(\"SQLAlchemy row:\", tuple(row))",
       "output": "",
       "executionCount": 0
     },
