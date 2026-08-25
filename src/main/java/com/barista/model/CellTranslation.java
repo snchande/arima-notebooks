@@ -19,6 +19,15 @@ public class CellTranslation {
     private String sourceHash = "";
     private boolean edited = false;
 
+    // -- Last run of this translation, persisted so a reopened notebook still shows
+    //    both languages' results (and timings) side by side.
+    private String  output = "";
+    private String  error = "";
+    private boolean executed = false;
+    private boolean success = false;
+    private Long    executionTimeMs;
+    private String  lastExecutedAt = "";
+
     public CellTranslation() {
     }
 
@@ -48,4 +57,23 @@ public class CellTranslation {
 
     public boolean isEdited() { return edited; }
     public void setEdited(boolean edited) { this.edited = edited; }
+
+    public String getOutput() { return output; }
+    public void setOutput(String output) { this.output = output == null ? "" : output; }
+
+    public String getError() { return error; }
+    public void setError(String error) { this.error = error == null ? "" : error; }
+
+    public boolean isExecuted() { return executed; }
+    public void setExecuted(boolean executed) { this.executed = executed; }
+
+    public boolean isSuccess() { return success; }
+    public void setSuccess(boolean success) { this.success = success; }
+
+    /** Wall-clock time of the last run, so languages can be compared on speed. */
+    public Long getExecutionTimeMs() { return executionTimeMs; }
+    public void setExecutionTimeMs(Long executionTimeMs) { this.executionTimeMs = executionTimeMs; }
+
+    public String getLastExecutedAt() { return lastExecutedAt; }
+    public void setLastExecutedAt(String lastExecutedAt) { this.lastExecutedAt = lastExecutedAt; }
 }
