@@ -342,7 +342,7 @@ Click **Run with Dependencies** on any cell to automatically execute its full de
 
 ## Tutorial Library
 
-Arima Notebooks ships with **39 built-in tutorials** across all eight languages plus a dedicated **Agents & Skills** track. Open the Notebook Browser and click **Arima Tutorials** — they're organised into per-language tabs.
+Arima Notebooks ships with **40 built-in tutorials** across all eight languages plus a dedicated **Agents & Skills** track. Open the Notebook Browser and click **Arima Tutorials** — they're organised into per-language tabs.
 
 | ID | Title | Mode | Level |
 |----|-------|------|-------|
@@ -383,6 +383,7 @@ Arima Notebooks ships with **39 built-in tutorials** across all eight languages 
 | `python-401` | Python Networking | Python | Advanced |
 | `python-501` | Python Databases | Python | Advanced |
 | `python-601` | Python Data Science, Metrics & Reporting | Python | Advanced |
+| `python-701` | Python Pipelines, Modules & Orchestration | Python | Expert |
 | `agent-101` | Explain Code | Agents | Beginner |
 | `agent-201` | Code Reviewer | Agents | Intermediate |
 | `agent-301` | Test Writer | Agents | Intermediate |
@@ -562,7 +563,7 @@ arima/
 │   ├── static/              # Frontend — index.html + CSS + JS (no build step)
 │   └── application.properties
 ├── notebooks/
-│   ├── tutorials/           # 39 built-in tutorials (JShell, Java, JS, TS, C#, F#, C++, Python, Agents, Skills)
+│   ├── tutorials/           # 40 built-in tutorials (JShell, Java, JS, TS, C#, F#, C++, Python, Agents, Skills)
 │   ├── examples/            # Example & demo notebooks (incl. C++ and cross-notebook demos)
 │   └── welcome.vnb          # Getting started notebook
 ├── scripts/
