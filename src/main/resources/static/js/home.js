@@ -143,12 +143,14 @@ const Home = (function () {
             </div>
           </section>
 
-          <section class="home-card home-learn" id="home-learn"></section>
+          <section class="home-card home-learn" id="home-insight"></section>
+          <section class="home-card home-learn" id="home-quiz-card"></section>
         </div>
       </div>`;
 
     wireCommon();
-    renderLearn();
+    renderInsight();
+    renderQuiz();
     loadRecent();
   }
 
@@ -164,51 +166,90 @@ const Home = (function () {
     document.getElementById('home-wn-more')?.addEventListener('click', () => window.Welcome && Welcome.openReleaseNotes());
   }
 
-  // "Did you know?" + quiz — no-repeat tidbits, points, and Next navigation.
-  function renderLearn() {
-    const card = document.getElementById('home-learn');
+  // Keep a short rolling memory (per browser) so AI content doesn't repeat.
+  function remember(key, text, cap) {
+    if (!text) return;
+    const arr = lget(key, []); arr.push(text.slice(0, 100));
+    while (arr.length > (cap || 12)) arr.shift();
+    lset(key, arr);
+  }
+  function stripFences(s) { return String(s || '').replace(/```(?:json)?/gi, '').trim(); }
+
+  // ── Insight card (AI-generated, independent Next) ────────────────────
+  async function renderInsight() {
+    const card = document.getElementById('home-insight');
     if (!card) return;
-    const quizzes = buildQuiz();
-    const tIdx = pickUnseen('arima.home.tidbitSeen', TIDBITS.length);
-    const qIdx = pickUnseen('arima.home.quizSeen', quizzes.length);
-    const tidbit = TIDBITS[tIdx];
-    const quiz = quizzes[qIdx];
-
     card.innerHTML = `
-      <div class="home-card-hd">
-        <h2>Did you know?</h2>
-        <span class="home-points" title="Points earned from quizzes">⭐ ${points()} pts</span>
-      </div>
-      <div class="home-tidbit"><span class="home-tidbit-icon">${tidbit[0]}</span>
-        <div><b>${esc(tidbit[1])}</b><p>${tidbit[2]}</p></div>
-      </div>
-      <div class="home-quiz" id="home-quiz">
-        <div class="home-quiz-q">${esc(quiz.q)}</div>
-        <div class="home-quiz-opts">
-          ${quiz.options.map((o, i) => `<button class="home-quiz-opt" data-i="${i}">${esc(o)}</button>`).join('')}
-        </div>
-        <div class="home-quiz-result" hidden></div>
-      </div>
-      <div class="home-learn-foot"><button class="home-link" id="home-next-insight">Next insight →</button></div>`;
+      <div class="home-card-hd"><h2>💡 Insight</h2>
+        <button class="home-link" id="home-next-insight">Next →</button></div>
+      <div class="home-tidbit" id="home-insight-body"><span class="home-muted">Thinking of something interesting…</span></div>`;
+    card.querySelector('#home-next-insight').addEventListener('click', renderInsight);
+    const body = card.querySelector('#home-insight-body');
 
+    const recent = lget('arima.home.recentInsights', []);
+    const sys = 'You are Arima Notebooks\' insight generator. Reply with ONE genuinely interesting ' +
+      '"Did you know?" fact (1-2 sentences, max 40 words) about a programming language, a coding concept, ' +
+      'or an Arima Notebooks capability (eight languages, pipelines, agents, MCP, the Java "Barista" engine, PyPI/npm/NuGet/Maven). ' +
+      'Plain text only — no preamble, quotes, or markdown. Make each one different.';
+    try {
+      const r = await Arima.api('POST', '/llm/chat', { message: 'Avoid repeating these: ' + recent.join(' | ') + '. Give a fresh insight.', systemPrompt: sys });
+      const text = stripFences((r && r.response) || '').split('\n').filter(Boolean)[0] || '';
+      if (!text) throw new Error('empty');
+      remember('arima.home.recentInsights', text, 12);
+      body.innerHTML = `<span class="home-tidbit-icon">💡</span><div><p>${esc(text)}</p></div>`;
+    } catch (e) {
+      // Fallback to the local pool if the AI provider is unavailable.
+      const t = TIDBITS[pickUnseen('arima.home.tidbitSeen', TIDBITS.length)];
+      body.innerHTML = `<span class="home-tidbit-icon">${t[0]}</span><div><b>${esc(t[1])}</b><p>${t[2]}</p></div>`;
+    }
+  }
+
+  // ── Quiz card (AI-generated, independent Next, points) ───────────────
+  async function renderQuiz() {
+    const card = document.getElementById('home-quiz-card');
+    if (!card) return;
+    card.innerHTML = `
+      <div class="home-card-hd"><h2>🧠 Quiz</h2>
+        <span class="home-points" title="Points from quizzes">⭐ ${points()} pts</span></div>
+      <div class="home-quiz" id="home-quiz"><div class="home-muted">Writing a question…</div></div>
+      <div class="home-learn-foot"><button class="home-link" id="home-next-quiz">Next question →</button></div>`;
+    card.querySelector('#home-next-quiz').addEventListener('click', renderQuiz);
+    const quizEl = card.querySelector('#home-quiz');
+
+    const recent = lget('arima.home.recentQuizzes', []);
+    const sys = 'You write quiz questions for Arima Notebooks. Return STRICT JSON only (no markdown, no fences): ' +
+      '{"q":"question","options":["a","b","c"],"answer":0,"explain":"one sentence"}. ' +
+      'Exactly 3 options, one correct, "answer" is its 0-based index. Topic: programming languages, coding concepts, ' +
+      'or Arima features (pipelines, agents, MCP, the Java "Barista" engine, package managers). Keep it concise and fun.';
+    let quiz = null;
+    try {
+      const r = await Arima.api('POST', '/llm/chat', { message: 'Avoid these recent questions: ' + recent.join(' | '), systemPrompt: sys });
+      const parsed = JSON.parse(stripFences((r && r.response) || ''));
+      if (parsed && parsed.q && Array.isArray(parsed.options) && parsed.options.length >= 2
+          && typeof parsed.answer === 'number') {
+        quiz = { q: parsed.q, options: parsed.options.slice(0, 4), answer: parsed.answer, explain: parsed.explain || '' };
+        remember('arima.home.recentQuizzes', quiz.q, 12);
+      }
+    } catch (e) { /* fall through to local pool */ }
+    if (!quiz) { const pool = buildQuiz(); quiz = pool[pickUnseen('arima.home.quizSeen', pool.length)]; }
+
+    quizEl.innerHTML =
+      `<div class="home-quiz-q">${esc(quiz.q)}</div>
+       <div class="home-quiz-opts">${quiz.options.map((o, i) => `<button class="home-quiz-opt" data-i="${i}">${esc(o)}</button>`).join('')}</div>
+       <div class="home-quiz-result" hidden></div>`;
     let answered = false;
-    card.querySelectorAll('.home-quiz-opt').forEach(opt => opt.addEventListener('click', () => {
-      if (answered) return;
-      answered = true;
-      const i = Number(opt.dataset.i);
-      const correct = i === quiz.answer;
-      card.querySelectorAll('.home-quiz-opt').forEach((o, j) => {
+    quizEl.querySelectorAll('.home-quiz-opt').forEach(opt => opt.addEventListener('click', () => {
+      if (answered) return; answered = true;
+      const i = Number(opt.dataset.i), correct = i === quiz.answer;
+      quizEl.querySelectorAll('.home-quiz-opt').forEach((o, j) => {
         o.disabled = true;
-        if (j === quiz.answer) o.classList.add('correct');
-        else if (j === i) o.classList.add('wrong');
+        if (j === quiz.answer) o.classList.add('correct'); else if (j === i) o.classList.add('wrong');
       });
       if (correct) addPoints(10);
-      const res = card.querySelector('.home-quiz-result');
-      const badge = card.querySelector('.home-points');
-      if (badge) badge.textContent = `⭐ ${points()} pts`;
+      const badge = card.querySelector('.home-points'); if (badge) badge.textContent = `⭐ ${points()} pts`;
+      const res = quizEl.querySelector('.home-quiz-result');
       if (res) { res.hidden = false; res.innerHTML = (correct ? '✅ Correct! +10 pts. ' : '❌ Not quite. ') + esc(quiz.explain); }
     }));
-    card.querySelector('#home-next-insight')?.addEventListener('click', renderLearn);
   }
 
   function ask(q) {

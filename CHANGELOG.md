@@ -7,6 +7,37 @@ Dates are in `YYYY-MM-DD` format.
 
 ## [Unreleased]
 
+### New notebooks start empty, with a language you choose
+- **No more surprise JShell cell.** `NotebookService.createNotebook` no longer seeds a starter cell containing a `System.out.println` snippet. A new notebook is created **empty** and shows the "Add a code or markdown cell to get started" state, so the first cell is whatever you add.
+- **Default language is asked for at creation.** The **+ New Notebook** flow replaces the old name-only `prompt()` with a dialog that also asks for the notebook's default language (JShell, Java, JavaScript, TypeScript, C#, F#, C++, or Python). It is stored as `metadata.defaultMode` and adopted by every new code cell instead of hardcoding `jshell`. Individual cells can still switch mode as before.
+- `POST /api/notebooks` accepts an optional `mode` field; unrecognised values fall back to `jshell`.
+
+---
+
+### Python — the eighth first-class language
+- **Python cells.** A new `python` cell mode runs code in a `python3` subprocess via `PythonExecutionService`, following the same subprocess-per-language pattern as the JS/TS/C#/F#/C++ services and returning the same unified `ExecutionResult`. Interactive `input()` is supported through the shared `InteractiveProcessRunner`, so stdin prompts appear inline in the cell like every other language.
+- **PyPI package management.** `PyPiService` installs packages with `pip install --target data/pypi-packages/site`, and that directory is placed on `PYTHONPATH` for every Python cell — so `import <pkg>` resolves without touching system site-packages. The Packages tab streams the live pip log. Uninstall removes exactly the files the install added, tracked with a before/after diff (`pip uninstall` has no `--target` support).
+- **Pipelines work unchanged.** Anchors are injected as `#@ anchor` / `#@ depends` comments, so the orchestration DSL is identical to the other seven languages. Python joins Maven, npm, and NuGet as the fourth package ecosystem behind `barista_load_module`.
+- Python is optional: without `python3` on `PATH` the other seven languages work normally.
+
+---
+
+### Agents & Skills — a new kind of software entity
+- **Agents are notebooks, not plugins.** Any `.vnb` with `metadata.kind = "agent"` (or `"skill"`) becomes a callable unit. `AgentService` projects it into an `AgentSpec` and dispatches to an `AgentProvider` (Claude ships today; adding a provider is one new bean). Unlike every other cell, an agent's body is **natural language** rather than code — it is executed by a local agent CLI, not a language runtime.
+- **The agent cell DSL.** `//@ agent:` names the agent to dispatch to, `//@ bind:` binds the answer into a JShell variable so downstream cells consume it as data, and `{{anchor}}` interpolates the live output of any anchored cell into the task text. `//@ depends:` works as it does everywhere else — agents are ordinary nodes in the DAG, which makes multi-agent review chains just another pipeline.
+- **Three ways to run one.** The **Agents** tab (browse, task, watch the run stream), inside a pipeline, or over MCP. Runs stream over the existing STOMP `partial_output` channel — no new endpoints or topics.
+- **Two new MCP tools** bring the server to ten: `barista_list_agents` and `barista_run_agent`.
+- **Six new tutorials** — the `agent-101` → `agent-601` track (Explain Code, Code Reviewer, Test Writer, Reviewer in a Pipeline, Multi-Agent Review, MCP-driven Agent) — bringing the built-in library to **39 tutorials**.
+
+---
+
+### Documentation — brochure rebuilt, repo docs realigned
+- **Brochure rewritten and rebuilt** (`docs/brochure/arima-brochure.html` + `.pdf`). Python is now a first-class language card, a new **Agents & Skills** page (09) was added, the architecture diagram gained `PythonExecutionService`, `PyPiService`, `AgentService`, and `McpController`, the MCP section lists all ten tools by name, and the cover enumerates all eight languages plus Agents. The brochure is now 12 pages.
+- **Fixed silent page clipping in the brochure.** Every `.page` is a fixed 297mm block with `overflow:hidden`, so content that outgrew a page was being cut from the PDF with no warning — seven pages were affected before this release. A new `docs/brochure/build-brochure-pdf.js` measures every page and **fails the build** if any overflows, and page density was tuned so all 12 fit.
+- Corrected stale language counts and lists across `docs/ARCHITECTURE.md` ("all six execution modes" → all eight, plus agents), `CONTRIBUTING.md`, `.claude/skills/architecture-check/SKILL.md`, and the MCP tool lists in `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, and `docs/WELCOME.md`.
+
+---
+
 ### First Run Experience — a guided tour of the whole workspace
 - **New guided walkthrough on first launch.** New users are now welcomed with an interactive **First Run Experience (FRE)** — a spotlight tour (`js/fre.js`) that drives real navigation through every section of Arima Notebooks (the four workspaces, the notebook canvas, first-class languages, pipelines with named anchors, and cross-notebook reuse) before landing on the main workspace. Each step highlights the actual UI element it describes.
 - **Opt-in replay from Settings.** A new **Guided Tour** card in **Settings** lets you **Start tour now** at any time, or toggle **"Show the tour on next launch"** to have it replay automatically. The tour runs once automatically on a fresh install and remembers that it has been seen (`localStorage: arima.fre.done` / `arima.fre.replay`).

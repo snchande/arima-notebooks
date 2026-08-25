@@ -192,6 +192,123 @@ public class ShellSession {
                 cl = cl.getParent();
             }
         } catch (Exception ignore) {}
+
+        // Strategy 3 — nested JARs inside the Spring Boot fat JAR.
+        // Neither strategy above works for `java -jar arima-notebooks.jar`:
+        // java.class.path is just the fat JAR, and the dependency JARs live inside
+        // it at BOOT-INF/lib/*.jar, which JShell's classloader cannot read through
+        // a jar:file:...!/ URL. Without this, XChart / Commons Math / Tablesaw /
+        // OpenCSV are missing from every cell even though the startup imports above
+        // reference them. We extract them once to a cache directory and add those.
+        for (String jar : extractedBootJars()) {
+            try { jshell.addToClasspath(jar); } catch (Exception ignore) {}
+        }
+    }
+
+    /** Cache of extracted fat-JAR dependencies — computed once per server run. */
+    private static volatile List<String> bootJarCache;
+
+    /**
+     * Extract {@code BOOT-INF/lib/*.jar} and {@code BOOT-INF/classes} from the running
+     * fat JAR into a cache directory so JShell can put them on its classpath. Returns
+     * an empty list when not running from a fat JAR (exploded / mvn spring-boot:run),
+     * where the earlier strategies already cover everything.
+     */
+    private static List<String> extractedBootJars() {
+        List<String> cached = bootJarCache;
+        if (cached != null) return cached;
+        synchronized (ShellSession.class) {
+            if (bootJarCache != null) return bootJarCache;
+            List<String> out = new ArrayList<>();
+            try {
+                java.nio.file.Path self = locateFatJar();
+                // Inside a fat JAR the code source is the JAR itself; exploded runs
+                // report a directory, which needs no extraction.
+                if (self != null && java.nio.file.Files.isRegularFile(self)
+                        && self.toString().toLowerCase().endsWith(".jar")) {
+                    java.nio.file.Path dir = java.nio.file.Paths.get(
+                            System.getProperty("barista.data.dir", "data"), "jshell-libs");
+                    java.nio.file.Files.createDirectories(dir);
+                    try (java.util.jar.JarFile jf = new java.util.jar.JarFile(self.toFile())) {
+                        var entries = jf.entries();
+                        while (entries.hasMoreElements()) {
+                            java.util.jar.JarEntry e = entries.nextElement();
+                            String n = e.getName();
+                            if (e.isDirectory() || !n.startsWith("BOOT-INF/lib/") || !n.endsWith(".jar")) continue;
+                            java.nio.file.Path target = dir.resolve(n.substring("BOOT-INF/lib/".length()));
+                            // Re-extract only when missing or a different size.
+                            if (!java.nio.file.Files.exists(target)
+                                    || java.nio.file.Files.size(target) != e.getSize()) {
+                                try (var in = jf.getInputStream(e)) {
+                                    java.nio.file.Files.copy(in, target,
+                                            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                                }
+                            }
+                            out.add(target.toAbsolutePath().toString());
+                        }
+
+                        // The application's own classes (BaristaDisplay et al.) live under
+                        // BOOT-INF/classes/. Adding the JAR itself does not expose them —
+                        // JShell would look for com/barista/... at the JAR root — so they
+                        // are unpacked into a directory that goes on the classpath.
+                        java.nio.file.Path classesDir = dir.resolveSibling("jshell-classes");
+                        boolean any = false;
+                        var entries2 = jf.entries();
+                        while (entries2.hasMoreElements()) {
+                            java.util.jar.JarEntry e = entries2.nextElement();
+                            String n = e.getName();
+                            if (e.isDirectory() || !n.startsWith("BOOT-INF/classes/")) continue;
+                            java.nio.file.Path target = classesDir
+                                    .resolve(n.substring("BOOT-INF/classes/".length()));
+                            if (!java.nio.file.Files.exists(target)
+                                    || java.nio.file.Files.size(target) != e.getSize()) {
+                                java.nio.file.Files.createDirectories(target.getParent());
+                                try (var in = jf.getInputStream(e)) {
+                                    java.nio.file.Files.copy(in, target,
+                                            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                                }
+                            }
+                            any = true;
+                        }
+                        if (any) out.add(classesDir.toAbsolutePath().toString());
+                    }
+                }
+            } catch (Exception e) {
+                // Not fatal — it only means the bundled libraries stay unavailable —
+                // but stay loud, because silence here is what hid this for so long.
+                System.err.println("[ShellSession] could not stage bundled JARs for JShell: " + e);
+            }
+            bootJarCache = Collections.unmodifiableList(out);
+            return bootJarCache;
+        }
+    }
+
+    /**
+     * Find the executable JAR this server is running from, or null when running
+     * exploded. {@code getCodeSource()} is unreliable under Spring Boot — it reports a
+     * nested {@code jar:file:...!/BOOT-INF/classes!/} URL that {@code Paths.get} rejects
+     * — so java.class.path is checked first: for {@code java -jar app.jar} it is exactly
+     * that JAR.
+     */
+    private static java.nio.file.Path locateFatJar() {
+        String cp = System.getProperty("java.class.path", "");
+        if (!cp.isBlank() && !cp.contains(java.io.File.pathSeparator)
+                && cp.toLowerCase().endsWith(".jar")) {
+            java.nio.file.Path p = java.nio.file.Paths.get(cp).toAbsolutePath();
+            if (java.nio.file.Files.isRegularFile(p)) return p;
+        }
+        try {
+            java.net.URL loc = ShellSession.class.getProtectionDomain()
+                    .getCodeSource().getLocation();
+            String s = loc.toString();
+            // Unwrap jar:file:/path/app.jar!/BOOT-INF/classes!/ down to /path/app.jar
+            int bang = s.indexOf("!/");
+            if (s.startsWith("jar:") && bang > 0) s = s.substring(4, bang);
+            if (s.startsWith("file:")) {
+                return java.nio.file.Paths.get(java.net.URI.create(s)).toAbsolutePath();
+            }
+        } catch (Exception ignore) { /* fall through */ }
+        return null;
     }
 
     /** Execute code linked to a specific notebook cell (default runaway guards). */

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Arima Notebooks — Product Brochure</title>
+<title>Arima Notebooks — Product Brochure · Java · JShell · JavaScript · TypeScript · C# · F# · C++ · Python</title>
 <meta name="author" content="Suresh Chande">
 <meta name="description" content="Arima Notebooks — a modern, multi-language notebook for the agentic era: a cross-platform execution plane where people and AI agents collaborate on the same code.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,7 +22,7 @@
     --arima:#f5a623; --arima-warm:#c87518; --arima-glow:rgba(245,166,35,.45);
     --green:#6bcf8f; --red:#f07878; --yellow:#f7c86a; --purple:#c084fc; --teal:#5ccfcf;
     --jshell:#7c8ef7; --java:#f7c86a; --js:#22c55e; --ts:#3178c6;
-    --csharp:#a855f7; --fsharp:#f97316; --cpp:#06b6d4;
+    --csharp:#a855f7; --fsharp:#f97316; --cpp:#06b6d4; --python:#4b8bbe;
     --border:rgba(255,255,255,.09); --border-strong:rgba(255,255,255,.18);
     --font-ui:'Inter',system-ui,-apple-system,sans-serif;
     --font-code:'JetBrains Mono','Fira Code','Cascadia Code',monospace;
@@ -36,8 +36,8 @@
     background:var(--surface-0);
     -webkit-print-color-adjust:exact;
     print-color-adjust:exact;
-    line-height:1.55;
-    font-size:11pt;
+    line-height:1.42;
+    font-size:10.2pt;
   }
   .page{
     width:210mm; height:297mm;
@@ -59,9 +59,9 @@
   h1{ font-size:34pt; line-height:1.05; }
   h2{ font-size:22pt; line-height:1.15; color:var(--text-1); }
   h2 .accent{ color:var(--arima); }
-  h3{ font-size:14pt; color:var(--text-1); margin:18px 0 6px; }
-  h4{ font-size:11.5pt; color:var(--accent); margin:14px 0 4px; }
-  p{ margin:8px 0; color:var(--text-2); }
+  h3{ font-size:13pt; color:var(--text-1); margin:11px 0 5px; }
+  h4{ font-size:11pt; color:var(--accent); margin:10px 0 4px; }
+  p{ margin:6px 0; color:var(--text-2); }
   strong{ color:var(--text-1); font-weight:600; }
   code{ font-family:var(--font-code); font-size:.9em; padding:1.5px 5px; border-radius:4px;
         background:var(--surface-2); border:1px solid var(--border); color:var(--accent); }
@@ -94,7 +94,7 @@
     border-radius:999px; background:rgba(245,166,35,.08);
   }
   .cover-title{
-    font-size:60pt; font-weight:800; line-height:1; margin-top:14px;
+    font-size:54pt; font-weight:800; line-height:1.02; margin-top:14px;
     background:linear-gradient(180deg, #fff 0%, #cfd2e8 100%);
     -webkit-background-clip:text; background-clip:text; color:transparent;
   }
@@ -102,10 +102,10 @@
     background:linear-gradient(180deg,#fff5b0 0%, #f5a623 60%, #c87518 100%);
     -webkit-background-clip:text; background-clip:text;
   }
-  .cover-tag{ font-size:16pt; color:var(--text-2); margin-top:14px; max-width:165mm; line-height:1.4; }
+  .cover-tag{ font-size:14.5pt; color:var(--text-2); margin-top:14px; max-width:112mm; line-height:1.4; }
 
   .cover-planet{
-    position:absolute; right:-30mm; top:55mm; width:160mm; height:160mm;
+    position:absolute; right:-42mm; top:60mm; width:142mm; height:142mm;
     z-index:1; opacity:.95;
   }
   .cover-langs{
@@ -123,6 +123,10 @@
   .lang-pill.csharp { color:var(--csharp); border-color:rgba(168,85,247,.5);  background:rgba(168,85,247,.10); }
   .lang-pill.fsharp { color:var(--fsharp); border-color:rgba(249,115,22,.5);  background:rgba(249,115,22,.10); }
   .lang-pill.cpp    { color:var(--cpp);    border-color:rgba(6,182,212,.5);   background:rgba(6,182,212,.10); }
+  .lang-pill.python { color:var(--python); border-color:rgba(75,139,190,.5);  background:rgba(75,139,190,.10); }
+  /* Agents are not a language — the dashed border marks them as a different kind of cell. */
+  .lang-pill.agent  { color:var(--arima);  border-color:rgba(245,166,35,.6);  background:rgba(245,166,35,.12);
+                      border-style:dashed; }
 
   .cover-foot{
     z-index:2; position:relative; display:flex; justify-content:space-between; align-items:flex-end;
@@ -135,8 +139,8 @@
 
   /* ───── Section header ───── */
   .section-head{
-    display:flex; align-items:baseline; gap:14px; margin-bottom:14px;
-    border-bottom:1px solid var(--border); padding-bottom:10px;
+    display:flex; align-items:baseline; gap:14px; margin-bottom:10px;
+    border-bottom:1px solid var(--border); padding-bottom:7px;
   }
   .section-num{
     font-family:var(--font-code); font-size:10pt; color:var(--arima);
@@ -144,18 +148,18 @@
   }
 
   /* ───── Reusable layouts ───── */
-  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-  .grid-4{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .grid-4{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
 
   .card{
     background:linear-gradient(180deg, rgba(30,30,46,.85), rgba(22,22,34,.85));
     border:1px solid var(--border);
-    border-radius:8px; padding:12px 14px;
+    border-radius:8px; padding:8px 11px;
   }
-  .card .ttl{ font-weight:600; font-size:10.5pt; color:var(--text-1); margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+  .card .ttl{ font-weight:600; font-size:10pt; color:var(--text-1); margin-bottom:3px; display:flex; align-items:center; gap:7px; }
   .card .ttl .dot{ width:8px; height:8px; border-radius:50%; background:var(--arima); display:inline-block; box-shadow:0 0 6px var(--arima-glow); }
-  .card p{ margin:0; font-size:9.5pt; color:var(--text-2); }
+  .card p{ margin:0; font-size:8.8pt; color:var(--text-2); }
   .card.lang{ border-left:3px solid var(--arima); }
   .card.lang.jshell{ border-left-color:var(--jshell); }
   .card.lang.java  { border-left-color:var(--java); }
@@ -164,17 +168,27 @@
   .card.lang.csharp{ border-left-color:var(--csharp); }
   .card.lang.fsharp{ border-left-color:var(--fsharp); }
   .card.lang.cpp   { border-left-color:var(--cpp); }
+  .card.lang.python{ border-left-color:var(--python); }
 
   /* ───── Feature table ───── */
   table.feat{ width:100%; border-collapse:collapse; margin-top:8px; }
   table.feat td, table.feat th{
-    text-align:left; padding:6px 10px; vertical-align:top; font-size:9.5pt;
+    text-align:left; padding:4px 9px; vertical-align:top; font-size:9pt;
     border-bottom:1px solid var(--border);
   }
   table.feat th{ color:var(--accent); font-weight:600; }
   table.feat tr:last-child td{ border-bottom:none; }
   table.feat td:first-child{ width:35%; font-weight:500; color:var(--text-1); }
   table.feat td:last-child{ color:var(--text-2); }
+
+  /* Page-scoped density escape hatch: `.page.compact` shrinks tables and diagram
+     padding for pages that carry both a mermaid figure and a long table. Pages are
+     a fixed 297mm with overflow:hidden, so anything that does not fit is clipped
+     from the PDF silently — build-brochure-pdf.js fails the build if that happens. */
+  .page.compact table.feat td, .page.compact table.feat th{ padding:3px 8px; font-size:8.6pt; }
+  .page.compact .arch{ padding:6px 4px; }
+  .page.compact pre.code{ font-size:8.4pt; }
+  .page.compact p{ margin:5px 0; }
 
   /* ───── Code blocks ───── */
   pre.code{
@@ -340,13 +354,15 @@
   </svg>
 
   <div class="cover-hero">
-    <span class="cover-eyebrow">Product Brochure · v3.1</span>
+    <span class="cover-eyebrow">Product Brochure · v3.2</span>
     <div class="cover-title">Arima<br><em>Notebooks</em></div>
     <p class="cover-tag">
       A modern, multi-language notebook for the agentic era — a <strong>cross-platform execution plane</strong>
-      where people and AI agents collaborate on the same code. <strong>JavaScript, TypeScript, C#, F#, C++, Java, JShell</strong> —
-      every language first-class, with more to come.
-      Runs entirely on your machine. No cloud account. No telemetry.
+      where people and AI agents collaborate on the same code.
+      <strong>Java · JShell · JavaScript · TypeScript · C# · F# · C++ · Python</strong> —
+      eight languages, every one first-class — plus <strong>Agents</strong>, a ninth kind of cell
+      written in natural language and run by your agent CLI.
+      Everything runs on your machine. No cloud account. No telemetry.
     </p>
     <div class="cover-langs">
       <span class="lang-pill jshell">◈ JShell</span>
@@ -356,6 +372,8 @@
       <span class="lang-pill csharp">◈ C#</span>
       <span class="lang-pill fsharp">◈ F#</span>
       <span class="lang-pill cpp">◈ C++</span>
+      <span class="lang-pill python">◈ Python</span>
+      <span class="lang-pill agent">✦ Agents</span>
     </div>
   </div>
 
@@ -369,23 +387,25 @@
 <!-- ════════════════════════════════════════════════════════════════
      PAGE 2 — TOC + WHY ARIMA
      ════════════════════════════════════════════════════════════════ -->
-<section class="page">
+<section class="page compact">
   <div class="section-head">
     <span class="section-num">01</span>
     <h2>What is <span class="accent">Arima Notebooks</span>?</h2>
   </div>
 
   <p>
-    Arima Notebooks is part of the <strong>Arima</strong> platform. It is a
-    <strong>ground-up modernization of the notebook</strong> — a locally-hosted,
-    browser-based environment that treats many rich languages as equals and is built for a world where
-    humans and AI agents work on code together. Eight languages run side by side today — JavaScript,
-    TypeScript, C#, F#, C++, Java, and JShell, with <strong>more to come</strong> — each with real
-    compilation, real dependencies, and real tooling. Three AI co-pilots (Claude, GitHub Copilot,
-    Antigravity) are wired in <strong>locally</strong> (CLI subprocesses + the GitHub Copilot SDK), and
-    the <strong>whole system is exposed via MCP</strong> so any agent can drive it. The notebook becomes a
-    <strong>shared artifact</strong> — you, the UI, an AI co-pilot, and any MCP agent are all first-class
-    users of it. Everything runs on your machine. No cloud account. No telemetry.
+    Arima Notebooks is part of the <strong>Arima</strong> platform — a
+    <strong>ground-up modernization of the notebook</strong>, locally hosted and browser-based, that
+    treats many rich languages as equals and is built for a world where humans and AI agents work on
+    code together. Eight languages run side by side today — JavaScript, TypeScript, C#, F#, C++, Java,
+    JShell, and Python, with <strong>more to come</strong> — each with real compilation, real
+    dependencies, and real tooling. Alongside them sits a genuinely new unit of software: the
+    <strong>Agent</strong> — a cell whose body is <strong>natural language</strong> rather than code,
+    executed by a local <strong>agent CLI</strong>. Three AI co-pilots (Claude, GitHub Copilot,
+    Antigravity) are wired in <strong>locally</strong>, and the <strong>whole system is exposed via
+    MCP</strong> so any agent can drive it. The notebook becomes a <strong>shared artifact</strong> —
+    you, the UI, an AI co-pilot, and any MCP agent are all first-class users of it. Everything runs on
+    your machine. No cloud account. No telemetry.
   </p>
 
   <div class="callout">
@@ -398,13 +418,12 @@
   </div>
 
   <p style="margin-top:8px">
-    Arima Notebooks is <strong>additive, not adversarial</strong>. If you already love another notebook tool,
-    keep using it. Arima Notebooks reads and writes <code>.ipynb</code> alongside its native <code>.vnb</code>
-    format — so you can prototype here, export there, and back, freely. Use what fits the moment;
+    Arima Notebooks is <strong>additive, not adversarial</strong>. It reads and writes <code>.ipynb</code>
+    alongside its native <code>.vnb</code> format, so you can prototype here and export there freely —
     pick the canvas that gives you the best leverage.
   </p>
 
-  <h3 style="margin-top:18px">What's inside this brochure</h3>
+  <h3 style="margin-top:9px">What's inside this brochure</h3>
   <nav class="toc">
     <a><span><span class="num">01</span> &nbsp; What is Arima Notebooks?</span><span class="pg">02</span></a>
     <a><span><span class="num">02</span> &nbsp; Capabilities &amp; Features</span><span class="pg">03</span></a>
@@ -413,12 +432,13 @@
     <a><span><span class="num">05</span> &nbsp; Install &amp; quick start</span><span class="pg">06</span></a>
     <a><span><span class="num">06</span> &nbsp; Your first notebook</span><span class="pg">07</span></a>
     <a><span><span class="num">07</span> &nbsp; AI assistance &amp; the MCP server</span><span class="pg">08</span></a>
-    <a><span><span class="num">08</span> &nbsp; Contributor playbook</span><span class="pg">09</span></a>
-    <a><span><span class="num">09</span> &nbsp; Security &amp; quality gates</span><span class="pg">10</span></a>
-    <a><span><span class="num">10</span> &nbsp; About &amp; contact</span><span class="pg">11</span></a>
+    <a><span><span class="num">08</span> &nbsp; Agents &amp; Skills</span><span class="pg">09</span></a>
+    <a><span><span class="num">09</span> &nbsp; Contributor playbook</span><span class="pg">10</span></a>
+    <a><span><span class="num">10</span> &nbsp; Security &amp; quality gates</span><span class="pg">11</span></a>
+    <a><span><span class="num">11</span> &nbsp; About &amp; contact</span><span class="pg">12</span></a>
   </nav>
 
-  <h3 style="margin-top:14px">At a glance</h3>
+  <h3 style="margin-top:8px">At a glance</h3>
   <div class="grid-4">
     <div class="card"><div class="ttl"><span class="dot"></span>8 languages</div><p>JShell · Java · JS · TS · C# · F# · C++ · Python — one UI.</p></div>
     <div class="card"><div class="ttl"><span class="dot"></span>CLI inside</div><p>Claude · Copilot · Antigravity, all local.</p></div>
@@ -483,19 +503,22 @@
       <p>STOMP over SockJS streams stdout/stderr live as the cell runs. No polling, no buffering surprises.</p>
     </div>
     <div class="card">
-      <div class="ttl"><span class="dot"></span>Maven package manager</div>
-      <p>Type <code>groupId:artifactId:version</code>, click Install. Arima Notebooks downloads from Maven Central
-      and injects the JAR into the active JShell classpath immediately.</p>
+      <div class="ttl"><span class="dot"></span>Python via <code>python3</code></div>
+      <p>Cells run in a <code>python3</code> subprocess with <code>data/pypi-packages/</code> on
+      <code>PYTHONPATH</code>. Anchors are injected as comments so pipelines work unchanged.</p>
     </div>
     <div class="card">
-      <div class="ttl"><span class="dot"></span>npm package manager</div>
-      <p>One-click install for JavaScript <em>and</em> TypeScript cells. Modules land in
-      <code>data/npm-modules/node_modules/</code>; <code>require()</code> resolves automatically.</p>
+      <div class="ttl"><span class="dot"></span>Four package managers</div>
+      <p><strong>Maven</strong> (<code>groupId:artifactId:version</code> → JShell classpath),
+      <strong>npm</strong> (JS + TS, <code>data/npm-modules/</code>), <strong>NuGet</strong>
+      (C# <code>&lt;PackageReference&gt;</code> / F# <code>#r "nuget:"</code>), and <strong>PyPI</strong>
+      (<code>pip --target</code> with a live install log). One-click install in every case.</p>
     </div>
     <div class="card">
-      <div class="ttl"><span class="dot"></span>NuGet package manager</div>
-      <p>Same flow for C# and F#. Installed packages are wired into every C# project file and every F#
-      script as <code>#r "nuget:"</code> on the first line.</p>
+      <div class="ttl"><span class="dot"></span>Agents &amp; Skills</div>
+      <p>Author an agent as a notebook, then list and run it from the <strong>Agents</strong> tab or
+      over MCP (<code>barista_list_agents</code>, <code>barista_run_agent</code>). Agents compose into
+      pipelines like any other cell — including multi-agent review chains.</p>
     </div>
     <div class="card">
       <div class="ttl"><span class="dot"></span>Pipeline orchestration</div>
@@ -531,9 +554,10 @@
       across all runtimes.</p>
     </div>
     <div class="card">
-      <div class="ttl"><span class="dot"></span>28 built-in tutorials</div>
-      <p>Read-only curriculum from <em>JShell-101</em> through <em>C++-301</em> — generators in every
-      language at every level. Personal notebooks stay separate.</p>
+      <div class="ttl"><span class="dot"></span>39 built-in tutorials</div>
+      <p>Read-only curriculum from <em>JShell-101</em> through <em>Python-301</em>, plus a dedicated
+      <strong>Agents &amp; Skills</strong> track (<em>agent-101</em> → <em>agent-601</em>). Organised
+      into per-language tabs; personal notebooks stay separate.</p>
     </div>
   </div>
 
@@ -605,11 +629,13 @@
       global scope, statements stay in <code>main()</code>. Helpers: <code>baristaHtml</code>,
       <code>baristaDisplay</code>, <code>baristaTable</code>.</p>
     </div>
-    <div class="card">
-      <div class="ttl"><span class="dot"></span>Cross-language pipelines</div>
-      <p>The <code>//@ anchor</code> / <code>//@ depends</code> DSL is identical across every runtime.
-      The orchestration service builds the DAG once and dispatches each step to its language-specific
-      execution service.</p>
+    <div class="card lang python">
+      <div class="ttl"><span class="dot" style="background:var(--python)"></span>Python — <code>python3</code></div>
+      <p>Cells run in a <code>python3</code> subprocess with <code>data/pypi-packages/</code> on
+      <code>PYTHONPATH</code>, so anything installed from PyPI imports normally. Install packages
+      from the Packages tab (<code>pip --target</code> under the hood) and watch the live pip log.
+      Pipeline anchors are injected as comments, so <code>#@ anchor</code> / <code>#@ depends</code>
+      work exactly as in every other language.</p>
     </div>
   </div>
 
@@ -666,7 +692,8 @@ flowchart TB
 
   subgraph S["Arima Notebooks Server  ·  Spring Boot 3.2  ·  Java 21"]
     direction TB
-    REST["REST Controllers<br/>NotebookCtl · ShellCtl · PackageCtl<br/>NuGetCtl · LLMCtl · SettingsCtl"]
+    REST["REST Controllers<br/>NotebookCtl · ShellCtl · PackageCtl<br/>NuGetCtl · LLMCtl · SettingsCtl · AgentCtl"]
+    MCP["McpController<br/>/api/mcp · SSE + JSON-RPC 2.0<br/>(ten barista_* tools)"]
     WS["STOMP / SockJS<br/>/ws  (live stdout, stderr)"]
     ORCH["OrchestrationService<br/>(DAG · topo-sort · cross-notebook)"]
 
@@ -678,6 +705,7 @@ flowchart TB
       TS["TypeScriptExecutionService"]
       DN["DotNetExecutionService<br/>(C# + F#)"]
       CPP["CppExecutionService<br/>(MSVC / GCC / Clang)"]
+      PY["PythonExecutionService<br/>(python3 subprocess)"]
     end
 
     subgraph AI["AI Services"]
@@ -685,6 +713,7 @@ flowchart TB
       CL["ClaudeService"]
       CP["CopilotCliService"]
       GM["GeminiService"]
+      AG["AgentService<br/>(agent / skill notebooks)"]
     end
 
     subgraph DT["Persistence  ·  data/  +  notebooks/"]
@@ -693,6 +722,7 @@ flowchart TB
       PKG[("Maven JARs<br/>data/packages")]
       NPM[("npm modules<br/>data/npm-modules")]
       NUGET[("NuGet packages<br/>data/nuget-packages.json")]
+      PYPI[("PyPI packages<br/>data/pypi-packages")]
       CFG[("settings.json")]
     end
   end
@@ -700,7 +730,9 @@ flowchart TB
   MAVEN["Maven Central"]:::ext
   NPMREG["npm registry"]:::ext
   NUGETREG["NuGet.org"]:::ext
+  PYPIREG["PyPI"]:::ext
   CLI["Claude · Copilot · Antigravity<br/>(local CLI + Copilot SDK)"]:::ext
+  AGENT["Any MCP client<br/>(Claude Code · Desktop · custom)"]:::ext
 
   UI -- "REST /api/*" --> REST
   UI -- "STOMP /ws"   --> WS
@@ -710,21 +742,28 @@ flowchart TB
   REST --> AI
   AI --> CLI
 
+  AGENT -- "MCP" --> MCP
+  MCP --> ORCH
+  MCP --> AG
+
   EX --> NB
   EX --> PKG
   EX --> NPM
   EX --> NUGET
+  EX --> PYPI
   REST --> CFG
 
   JC -. uses .-> MAVEN
   ND -. uses .-> NPMREG
   TS -. uses .-> NPMREG
   DN -. uses .-> NUGETREG
+  PY -. uses .-> PYPIREG
+  AG -. uses .-> CLI
 
-  class REST,WS,ORCH shell;
-  class JS_,JC,ND,TS,DN,CPP exec;
-  class CL,CP,GM ai;
-  class NB,PKG,NPM,NUGET,CFG data;
+  class REST,WS,ORCH,MCP shell;
+  class JS_,JC,ND,TS,DN,CPP,PY exec;
+  class CL,CP,GM,AG ai;
+  class NB,PKG,NPM,NUGET,PYPI,CFG data;
     </div>
     <div class="arch-cap">Figure 1 — Component map. Browser ↔ Spring Boot ↔ language-specific execution services ↔ local disk &amp; package registries.</div>
   </div>
@@ -773,8 +812,8 @@ sequenceDiagram
     <h2>Install &amp; <span class="accent">quick start</span></h2>
   </div>
 
-  <p>Arima Notebooks is a single Java app. There is one JAR, one config file, and one port. The <code>arima</code>
-  launcher detects what is missing, builds the JAR if needed, starts the server, and opens your browser.</p>
+  <p>One JAR, one config file, one port. The <code>arima</code> launcher detects what is missing, builds
+  the JAR if needed, starts the server, and opens your browser.</p>
 
   <h3>Prerequisites</h3>
   <table class="feat">
@@ -784,6 +823,7 @@ sequenceDiagram
     <tr><td>Node.js</td><td>18+ (22.6+ for TS)</td><td>JavaScript / TypeScript cells + npm packages.</td></tr>
     <tr><td>.NET SDK</td><td>6.0+</td><td>C# (<code>dotnet run</code>) and F# (<code>dotnet fsi</code>).</td></tr>
     <tr><td>C++ compiler</td><td>any</td><td>MSVC on Windows, GCC or Clang on Linux/macOS — auto-detected.</td></tr>
+    <tr><td>Python</td><td>3.9+</td><td>Python cells + PyPI packages. Without it, the other seven languages work normally.</td></tr>
     <tr><td>AI CLI</td><td>latest</td><td>Optional. Claude CLI / GitHub Copilot CLI (SDK) / Antigravity CLI (<code>agy</code>).</td></tr>
   </table>
 
@@ -799,15 +839,15 @@ sequenceDiagram
     </div>
     <div class="step">
       <div class="st-ttl">Open the browser</div>
-      <p>The launcher opens <code>http://localhost:8585</code> automatically. The first build downloads Maven deps.</p>
+      <p>Opens <code>http://localhost:8585</code> automatically. The first build downloads Maven deps.</p>
     </div>
     <div class="step">
       <div class="st-ttl">Create your first notebook</div>
-      <p>Click the folder icon → <strong>+ New Notebook</strong>. Name it. A starter code cell opens immediately.</p>
+      <p>Folder icon → <strong>+ New Notebook</strong>. A starter code cell opens immediately.</p>
     </div>
     <div class="step">
       <div class="st-ttl">(Optional) Enable AI</div>
-      <p>Install a CLI: <code>claude</code>, <code>copilot</code>, or <code>agy</code>. Pick the provider in <strong>Settings → AI Provider</strong>. No API keys touch Arima Notebooks. <code>arima stop</code> · <code>arima status</code> · <code>arima rebuild</code> manage the lifecycle.</p>
+      <p>Install <code>claude</code>, <code>copilot</code>, or <code>agy</code>; pick it in <strong>Settings → AI Provider</strong>. No API keys touch Arima Notebooks.</p>
     </div>
   </div>
 
@@ -841,8 +881,8 @@ sequenceDiagram
     <h2>Your first <span class="accent">notebook</span></h2>
   </div>
 
-  <p>Arima Notebooks opens with a single empty code cell in JShell mode. From here, you can switch modes, install
-  packages, chain dependencies, and ask an AI to fill in the body.</p>
+  <p>Arima Notebooks opens with one empty JShell cell. From here you can switch modes, install packages,
+  chain dependencies, and ask an AI to fill in the body.</p>
 
   <h3>JShell mode — shared state across cells</h3>
 <pre class="code"><span class="tok-cmt">// Cell 1 (JShell)</span>
@@ -864,8 +904,8 @@ System.out.printf(<span class="tok-str">"Hello from %s v%.1f%n"</span>, name, ve
 }</pre>
 
   <h3>Installing a Maven package</h3>
-  <p>Open the <strong>Packages</strong> tab → enter <code>com.google.code.gson:gson:2.10.1</code> → click <strong>Install</strong>.
-  The JAR downloads from Maven Central and is added to the active JShell classpath in seconds — no restart required.</p>
+  <p><strong>Packages</strong> tab → <code>com.google.code.gson:gson:2.10.1</code> → <strong>Install</strong>. The JAR
+  lands on the active JShell classpath in seconds — no restart.</p>
 
   <h3>Pipeline orchestration — cells with dependencies</h3>
 <pre class="code"><span class="tok-cmt">//@ anchor: parse</span>
@@ -877,9 +917,8 @@ System.out.printf(<span class="tok-str">"Hello from %s v%.1f%n"</span>, name, ve
 <span class="tok-cmt">//@ depends: parse</span>
 barista.display(obj);</pre>
 
-  <p>Click <strong>Run with Dependencies</strong> on the <em>render</em> cell, and Arima Notebooks automatically
-  runs <em>parse</em> first, then <em>render</em> — in topological order. The same syntax works in C#,
-  F#, C++, JS, and TS.</p>
+  <p><strong>Run with Dependencies</strong> on <em>render</em> runs <em>parse</em> first, in topological
+  order. The same syntax works in Java, JS, TS, C#, F#, C++, and Python.</p>
 
   <h3>Keyboard shortcuts</h3>
   <table class="feat">
@@ -943,13 +982,15 @@ barista.display(obj);</pre>
   <p>Pick the canvas that fits the moment. Drive Arima Notebooks from your terminal, from Claude Code or Claude
   Desktop, from a custom agent — or from Arima Notebooks itself. Same capability surface, three ways in.</p>
 
+  <p style="font-size:10pt;">Ten tools over JSON-RPC 2.0, at <code>/api/mcp/sse</code> + <code>/api/mcp/messages</code>:</p>
   <table class="feat">
-    <tr><td>List notebooks</td><td>Read directory of <code>.vnb</code> files including tutorials.</td></tr>
-    <tr><td>Read &amp; write cells</td><td>Append, modify, and reorder cells programmatically.</td></tr>
-    <tr><td>Execute cells</td><td>Run any cell in any of the seven modes; get the full execution result.</td></tr>
-    <tr><td>Manage packages</td><td>Install Maven, npm, or NuGet packages on behalf of an agent.</td></tr>
-    <tr><td>Inspect state</td><td>Query live variables in JShell, JS, TS, C#, F#, C++, and Python sessions.</td></tr>
-    <tr><td>Import / export <code>.ipynb</code></td><td>Round-trip between Arima Notebooks and Jupyter so you pick the canvas, not the tool.</td></tr>
+    <tr><td><code>barista_execute_code</code></td><td>Run code in any of the eight modes; returns the full execution result.</td></tr>
+    <tr><td><code>barista_list_notebooks</code><br><code>barista_read_notebook</code></td><td>Enumerate <code>.vnb</code> files including tutorials, and read one back.</td></tr>
+    <tr><td><code>barista_create_notebook</code><br><code>barista_append_cell</code></td><td>Create notebooks and append cells programmatically.</td></tr>
+    <tr><td><code>barista_search_cells</code></td><td>Search across every cell in every notebook.</td></tr>
+    <tr><td><code>barista_run_pipeline</code></td><td>Execute an anchor DAG, ancestors first.</td></tr>
+    <tr><td><code>barista_load_module</code></td><td>Install Maven, npm, NuGet, or PyPI packages on behalf of an agent.</td></tr>
+    <tr><td><code>barista_list_agents</code><br><code>barista_run_agent</code></td><td>Discover the agents defined in this workspace and run one against a task.</td></tr>
   </table>
 
   <div class="callout">
@@ -970,21 +1011,102 @@ barista.display(obj);</pre>
 
 
 <!-- ════════════════════════════════════════════════════════════════
-     PAGE 9 — CONTRIBUTOR PLAYBOOK
+     PAGE 9 — AGENTS & SKILLS
      ════════════════════════════════════════════════════════════════ -->
-<section class="page">
+<section class="page compact">
   <div class="section-head">
     <span class="section-num">08</span>
+    <h2>Agents &amp; <span class="accent">Skills</span></h2>
+  </div>
+
+  <p>An agent is <strong>a new kind of software entity</strong> — and the first one in Arima Notebooks
+  whose logic is not code. A function is written in syntax and executed by a runtime. An agent is
+  <strong>written in natural language</strong> and executed by an <strong>agent CLI</strong>: you state
+  the intent, and Claude, Copilot, or Antigravity carries it out. Same call sites, same pipelines,
+  same MCP surface as everything else — but the body is prose, not a language.</p>
+
+  <p>Concretely, an agent is a notebook: any <code>.vnb</code> with
+  <code>metadata.kind = "agent"</code> (or <code>"skill"</code>) becomes a callable unit that cells,
+  pipelines, and external MCP clients can invoke — authored, versioned, and shared like any other notebook.</p>
+
+  <h3>The agent cell</h3>
+  <p>Inside a normal notebook, an <em>agent cell</em> names the agent to call and the task to give it.
+  Anchors from the surrounding notebook are interpolated with <code>{{…}}</code>, so an agent can read
+  the live output of the cells above it:</p>
+
+<pre class="code"><span class="tok-cmt">//@ agent: code-reviewer</span>
+<span class="tok-cmt">//@ bind: review</span>
+<span class="tok-cmt">//@ depends: build-report</span>
+Review the following output for correctness and style.
+Flag anything that would fail CI:
+
+{{build-report}}</pre>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="ttl"><span class="dot" style="background:var(--accent)"></span><code>//@ agent:</code></div>
+      <p>Which agent notebook to dispatch to. Resolved by id against the agents in your workspace.</p>
+    </div>
+    <div class="card">
+      <div class="ttl"><span class="dot" style="background:var(--green)"></span><code>//@ bind:</code></div>
+      <p>Binds the agent's answer into a JShell variable, so downstream cells can use the result as
+      data rather than prose.</p>
+    </div>
+    <div class="card">
+      <div class="ttl"><span class="dot" style="background:var(--purple)"></span><code>{{anchor}}</code></div>
+      <p>Interpolates the current output of any anchored cell into the task text — the agent sees
+      real results, not a stale copy.</p>
+    </div>
+    <div class="card">
+      <div class="ttl"><span class="dot" style="background:var(--java)"></span><code>//@ depends:</code></div>
+      <p>The same orchestration DSL as every other cell. Agents are ordinary nodes in the DAG and run
+      in dependency order.</p>
+    </div>
+  </div>
+
+  <h3>Three ways to run one</h3>
+  <table class="feat">
+    <tr><td>Agents tab</td><td>Browse every agent and skill in the workspace, give it a task, and watch the run stream live.</td></tr>
+    <tr><td>In a pipeline</td><td>An agent cell is a DAG node — chain several to get multi-agent review, where one agent grades another's output.</td></tr>
+    <tr><td>Over MCP</td><td><code>barista_list_agents</code> discovers them; <code>barista_run_agent</code> runs one. External agents can call your agents.</td></tr>
+  </table>
+
+  <p style="font-size:9.4pt;">Runs stream over the notebook's existing STOMP <code>partial_output</code>
+  channel, so output appears token-by-token with no extra endpoints. Providers are pluggable behind an
+  <code>AgentProvider</code> interface — Claude ships today; another is a single new bean.</p>
+
+  <div class="callout">
+    <strong>Learn it by running it.</strong> The tutorial library ships a full
+    <strong>Agents &amp; Skills</strong> track — <em>agent-101</em> (Explain Code) through
+    <em>agent-601</em> (MCP-driven Agent), taking in a code reviewer, a test writer, a reviewer inside
+    a pipeline, and a multi-agent review chain along the way.
+  </div>
+
+  <div class="page-foot">
+    <div class="mark">
+      <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#f5a623"/></svg>
+      ARIMA NOTEBOOKS
+    </div>
+    <div>page 09 · agents &amp; skills</div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 10 — CONTRIBUTOR PLAYBOOK
+     ════════════════════════════════════════════════════════════════ -->
+<section class="page compact">
+  <div class="section-head">
+    <span class="section-num">09</span>
     <h2>Personalize &amp; <span class="accent">contribute</span></h2>
   </div>
 
-  <p>Arima Notebooks is meant to be <strong>shaped by the people who use it</strong>. The loop is short: clone,
-  describe the change to your AI CLI, verify, ask the same CLI to package the PR. The repo ships with
-  explicit instruction files for Claude, Copilot, and Antigravity so the agent respects the architecture
-  while it works.</p>
+  <p>Arima Notebooks is meant to be <strong>shaped by the people who use it</strong>. Clone, describe the
+  change to your AI CLI, verify, ask the same CLI to package the PR. Instruction files for Claude,
+  Copilot, and Antigravity keep the agent inside the architecture.</p>
 
   <h3>1 — Fork &amp; clone</h3>
-<pre class="code">git clone https://github.com/&lt;your-fork&gt;/Arima.git
+<pre class="code">git clone https://github.com/&lt;your-fork&gt;/arima-notebooks.git
 cd arima-notebooks
 git remote add upstream https://github.com/snchande/arima-notebooks.git
 git checkout -b feat/&lt;short-name&gt;</pre>
@@ -1008,9 +1130,8 @@ git checkout -b feat/&lt;short-name&gt;</pre>
   </div>
 
   <h3>3 — Describe the feature, let the CLI write it</h3>
-  <p>Open your AI CLI in the repo root and describe the capability you want. The agent files from
-  step 2 keep it inside the layered architecture: <em>model → service → controller → static UI</em>.
-  No layer-merging, no smuggling backends into the frontend, no surprise network calls.</p>
+  <p>Describe the capability you want. The agent files keep it inside the layered architecture —
+  <em>model → service → controller → static UI</em>. No layer-merging, no surprise network calls.</p>
 
   <h3>4 — Verify locally</h3>
 <pre class="code">arima rebuild
@@ -1020,15 +1141,14 @@ mvn test
 pwsh ./scripts/security-check.ps1   <span class="tok-cmt"># or .sh on Linux/macOS</span></pre>
 
   <h3>5 — Ask your CLI to package and PR</h3>
-  <p>Same CLI, one more prompt: <em>"package these changes as a PR against <code>master</code>, fill
-  the PR template, attach screenshots if UI."</em> Push, open, done. If the change personalizes
-  Arima Notebooks only for you, keep it local. If it helps others, ship it back.</p>
+  <p>One more prompt: <em>"package these changes as a PR against <code>master</code>, fill the PR
+  template, attach screenshots if UI."</em> If it helps others, ship it back.</p>
 
   <h3>6 — Wait for the green checks</h3>
   <p>Every PR triggers GitHub Actions checks before review:</p>
   <table class="feat">
     <tr><td><code>build</code></td><td>Maven compile + unit tests on JDK 21.</td></tr>
-    <tr><td><code>security-scan</code></td><td>Runs <code>scripts/security-check.ps1</code> / <code>.sh</code> — see page 10.</td></tr>
+    <tr><td><code>security-scan</code></td><td>Runs <code>scripts/security-check.ps1</code> / <code>.sh</code> — see page 11.</td></tr>
     <tr><td><code>architecture-lint</code></td><td>Verifies you didn't break layer boundaries the agent files describe.</td></tr>
     <tr><td><strong>Founder review</strong></td><td>Required code-owner review by Suresh Chande before merge to <code>master</code>.</td></tr>
   </table>
@@ -1044,23 +1164,22 @@ pwsh ./scripts/security-check.ps1   <span class="tok-cmt"># or .sh on Linux/macO
       <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#f5a623"/></svg>
       ARIMA NOTEBOOKS
     </div>
-    <div>page 09 · contributing</div>
+    <div>page 10 · contributing</div>
   </div>
 </section>
 
 
 <!-- ════════════════════════════════════════════════════════════════
-     PAGE 10 — SECURITY & QUALITY GATES
+     PAGE 11 — SECURITY & QUALITY GATES
      ════════════════════════════════════════════════════════════════ -->
-<section class="page">
+<section class="page compact">
   <div class="section-head">
-    <span class="section-num">09</span>
+    <span class="section-num">10</span>
     <h2>Security &amp; <span class="accent">quality gates</span></h2>
   </div>
 
-  <p>Every pull request runs through an automated security check before it can be marked
-  <strong>ready for review</strong>. The intent is simple: catch obvious risk before a human spends
-  time on it.</p>
+  <p>Every pull request runs an automated security check before it can be marked <strong>ready for
+  review</strong> — catch obvious risk before a human spends time on it.</p>
 
   <h3>The PR security pipeline</h3>
   <div class="arch">
@@ -1090,7 +1209,7 @@ flowchart LR
         <td>The settings file is <code>.gitignore</code>-d for a reason. Blocks.</td></tr>
     <tr><td>Calls to <code>Runtime.exec</code> with user-controlled strings</td>
         <td>Command-injection risk in execution services. Blocks.</td></tr>
-    <tr><td>New outbound HTTP hosts (anything beyond Maven Central, npm, NuGet, AI CLIs)</td>
+    <tr><td>New outbound HTTP hosts (beyond Maven Central, npm, NuGet, PyPI, AI CLIs)</td>
         <td>Preserves the local-first guarantee. Blocks unless allow-listed.</td></tr>
     <tr><td>Dependency vulnerabilities (<code>mvn dependency:check</code>)</td>
         <td>Known-CVE detection. High-severity blocks; medium warns.</td></tr>
@@ -1107,8 +1226,7 @@ pwsh ./scripts/security-check.ps1
 <span class="tok-cmt"># Linux / macOS</span>
 ./scripts/security-check.sh</pre>
 
-  <p>Run this before you push. The local script is identical to the one CI runs. <strong>If it fails locally,
-  the PR will fail in CI.</strong></p>
+  <p>Run before you push — the local script is identical to CI's. <strong>If it fails locally, it fails in CI.</strong></p>
 
   <div class="callout">
     <strong>Founding contributor review.</strong> Even after green checks, every change to
@@ -1121,17 +1239,17 @@ pwsh ./scripts/security-check.ps1
       <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#f5a623"/></svg>
       ARIMA NOTEBOOKS
     </div>
-    <div>page 10 · security</div>
+    <div>page 11 · security</div>
   </div>
 </section>
 
 
 <!-- ════════════════════════════════════════════════════════════════
-     PAGE 11 — ABOUT & CONTACT
+     PAGE 12 — ABOUT & CONTACT
      ════════════════════════════════════════════════════════════════ -->
 <section class="page">
   <div class="section-head">
-    <span class="section-num">10</span>
+    <span class="section-num">11</span>
     <h2>About &amp; <span class="accent">contact</span></h2>
   </div>
 
@@ -1164,7 +1282,7 @@ pwsh ./scripts/security-check.ps1
     </div>
     <div class="card">
       <div class="ttl"><span class="dot"></span>Send a PR</div>
-      <p>Follow the <em>Contributor Playbook</em> on page 09. Small, focused PRs are merged fastest.</p>
+      <p>Follow the <em>Contributor Playbook</em> on page 10. Small, focused PRs are merged fastest.</p>
     </div>
     <div class="card">
       <div class="ttl"><span class="dot"></span>Share a tutorial</div>
@@ -1191,7 +1309,7 @@ pwsh ./scripts/security-check.ps1
       <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#f5a623"/></svg>
       ARIMA NOTEBOOKS
     </div>
-    <div>page 11 · contact &amp; licence</div>
+    <div>page 12 · contact &amp; licence</div>
   </div>
 </section>
 

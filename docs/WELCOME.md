@@ -30,7 +30,7 @@ Arima Notebooks runs an **MCP (Model Context Protocol) server** while it's up, s
 
 Available MCP tools: `barista_execute_code`, `barista_list_notebooks`, `barista_read_notebook`,
 `barista_run_pipeline`, `barista_search_cells`, `barista_load_module`, `barista_create_notebook`,
-`barista_append_cell`.
+`barista_append_cell`, `barista_list_agents`, `barista_run_agent`.
 
 The plain **`arima` command line** manages the lifecycle (`start` · `stop` · `status` · `open` · `logs`) and shows you how to connect. **It does not modify Arima Notebooks' own code** — it operates Arima Notebooks, it doesn't personalize it.
 

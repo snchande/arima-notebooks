@@ -24,9 +24,9 @@ Walk the proposed change against this checklist:
    - Frontend talks to backend only via REST `/api/*` and STOMP `/ws`. No `jdbc:`, no `java.sql`, no references to `com.arima.shell.*`.
 
 2. **Execution-service contract**
-   - Each language has exactly one service (`JShellManager`, `JavaCompilerService`, `NodeJsExecutionService`, `TypeScriptExecutionService`, `DotNetExecutionService`, `CppExecutionService`).
+   - Each language has exactly one service (`JShellManager`, `JavaCompilerService`, `NodeJsExecutionService`, `TypeScriptExecutionService`, `DotNetExecutionService`, `CppExecutionService`, `PythonExecutionService`).
    - All return a unified `ExecutionResult`. New runtimes must conform.
-   - The `//@ anchor` / `//@ depends` DSL is identical across all seven languages.
+   - The `//@ anchor` / `//@ depends` DSL is identical across all eight languages, and agent cells join the same DAG.
 
 3. **Local-first guarantee**
    - No new outbound HTTP hosts beyond Maven Central, npm, NuGet.org, AI CLI subprocesses.

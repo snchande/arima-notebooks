@@ -24,6 +24,37 @@ const NotebookEditor = (() => {
   const tabOrder  = [];        // ordered list of open tab IDs
   let   activeTabId = null;
 
+  /* ── Code-cell expansion ───────────────────────────────────────────────
+     A code cell shows ~4 lines when idle and opens to its full height when
+     you hover it, focus it, press → on it, or pin it. Three states stack:
+
+       hover  — transient, closes when the pointer leaves (or on ←)
+       pinned — sticky per cell, survives reload via localStorage
+       all    — the toolbar's "Expand all" toggle, opens every cell at once
+
+     A cell whose height the user set by hand (drag handle / double-click
+     minimize → .user-sized or .minimized) opts out of all three; their
+     explicit size always wins. */
+  const MD_PLACEHOLDER   = '<span style="color:var(--text-3)">Double-click to edit…</span>';
+  const HOVER_OPEN_DELAY = 180;   // ms of dwell before hover opens a cell
+  let   pinnedCells      = new Set();
+  let   hoverCellId      = null;
+
+  function pinStorageKey() { return `nb-pinned:${notebook?.id || '_'}`; }
+
+  function loadPinnedCells() {
+    pinnedCells = new Set();
+    try {
+      const raw = JSON.parse(localStorage.getItem(pinStorageKey()) || '[]');
+      if (Array.isArray(raw)) pinnedCells = new Set(raw.filter(v => typeof v === 'string'));
+    } catch { /* ignore corrupt value */ }
+  }
+
+  function savePinnedCells() {
+    try { localStorage.setItem(pinStorageKey(), JSON.stringify([...pinnedCells])); }
+    catch { /* private mode / quota */ }
+  }
+
   /* ── Mode helpers ─────────────────────────────────── */
   function modeLabelFor(mode) {
     return { jshell:'JShell', java:'Java', nodejs:'JS', typescript:'TS', csharp:'C#', fsharp:'F#', cpp:'C++', python:'Python', agent:'Agent' }[mode] || 'JShell';
@@ -107,6 +138,24 @@ const NotebookEditor = (() => {
         }
       }
     }, true); // capture phase so it runs before CM's own ESC handler
+
+    // → opens the cell under the pointer, ← closes it. Both map onto the pin
+    // state so a keyboard-opened cell stays open when the mouse moves away.
+    // Ignored while typing — inside CodeMirror the arrows must move the caret.
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      const t = e.target;
+      if (t?.closest?.('.CodeMirror, input, textarea, [contenteditable="true"]')) return;
+
+      const cellId = hoverCellId || focusedCellId;
+      if (!cellId) return;
+      const el = document.getElementById(`cell-${cellId}`);
+      if (!el || hasManualHeight(el)) return;
+
+      toggleCellPin(cellId, e.key === 'ArrowRight');
+      e.preventDefault();
+    });
   }
 
   /* ── Notebook browser ─────────────────────────────── */
@@ -350,8 +399,17 @@ const NotebookEditor = (() => {
           if (e.target.closest('.nbb-delete-btn')) return; // handled by delete handler
           if (e.target.closest('.nbb-meta-btn'))   return; // handled by meta handler
           if (e.target.closest('.nbb-guided-btn')) return; // handled by guided handler
+          if (e.target.closest('.nbb-reveal-btn')) return; // handled by reveal handler
           overlay.classList.remove('open');
           loadNotebook(card.dataset.id, card.dataset.tutorial === 'true');
+        });
+      });
+
+      // Bind "open file location"
+      listEl.querySelectorAll('.nbb-reveal-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          revealNotebookFile(btn.dataset.revealId);
         });
       });
 
@@ -445,9 +503,10 @@ const NotebookEditor = (() => {
       // New notebook button
       document.getElementById('nbb-new-btn')?.addEventListener('click', async () => {
         overlay.classList.remove('open');
-        const name = prompt('Notebook name:', 'Untitled Notebook');
-        if (!name) return;
-        const nb = await Arima.api('POST', '/notebooks', { name });
+        const created = await promptNewNotebook();
+        if (!created) return;
+        rememberMode(created.mode);
+        const nb = await Arima.api('POST', '/notebooks', created);
         await refreshList(); loadNotebook(nb.id);
       });
     }
@@ -473,11 +532,158 @@ const NotebookEditor = (() => {
       const guided = isTutorial ? `<button class="nbb-guided-btn" data-guided-id="${nb.id}" title="Play this tutorial with narration &amp; voice Q&amp;A">
         <svg viewBox="0 0 16 16" fill="none" width="11" height="11"><path d="M5 3.5v9l7-4.5-7-4.5z" fill="currentColor"/></svg> Guided
       </button>` : '';
+      const reveal = `<button class="nbb-reveal-btn" data-reveal-id="${nb.id}" title="Open this notebook's file location">
+        <svg viewBox="0 0 16 16" fill="none" width="11" height="11"><path d="M1 4h5l1.5 2H15v7H1V4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      </button>`;
       return `<div class="nb-browser-card" data-id="${nb.id}" data-tutorial="${isTutorial}">
         <div class="nb-browser-card-name">${nb.name}${level}${tagHtml}</div>
-        <div class="nb-browser-card-meta">${cells} cell${cells!==1?'s':''} ${lang}${ro}${editMeta}${del}${guided}</div>
+        <div class="nb-browser-card-meta">${cells} cell${cells!==1?'s':''} ${lang}${ro}${editMeta}${reveal}${del}${guided}</div>
       </div>`;
     }
+  }
+
+  /* ── Open file location ───────────────────────────────────────────
+     Asks the server to reveal the .vnb in the OS file manager. The browser
+     cannot do this itself, and the server is already local. */
+  async function revealNotebookFile(id) {
+    if (!id) { Arima.toast?.('Open a notebook first.', 'warn'); return; }
+    try {
+      const r = await Arima.api('POST', `/notebooks/${encodeURIComponent(id)}/reveal`);
+      if (r?.ok) Arima.toast?.('Opened file location', 'ok');
+      else Arima.toast?.(`Could not open the file manager. Path: ${r?.path || '?'}`, 'warn');
+    } catch (e) {
+      Arima.toast?.(`Could not locate the notebook file: ${e.message || e}`, 'error');
+    }
+  }
+
+  /* ── New-notebook dialog ──────────────────────────────────────────
+     A new notebook starts EMPTY — no starter cell — so the first thing in
+     it is whatever the user chooses to add. The default language is asked
+     for here and stored on the notebook (metadata.defaultMode); new code
+     cells adopt it instead of always defaulting to JShell. */
+  const NOTEBOOK_MODES = [
+    { id: 'jshell',     label: 'JShell',     hint: 'Java snippets, shared session' },
+    { id: 'java',       label: 'Java',       hint: 'Full class compile + run' },
+    { id: 'nodejs',     label: 'JavaScript', hint: 'Node.js subprocess' },
+    { id: 'typescript', label: 'TypeScript', hint: 'Node type-stripping + tsc' },
+    { id: 'csharp',     label: 'C#',         hint: 'dotnet run' },
+    { id: 'fsharp',     label: 'F#',         hint: 'dotnet fsi' },
+    { id: 'cpp',        label: 'C++',        hint: 'MSVC / GCC / Clang' },
+    { id: 'python',     label: 'Python',     hint: 'python3 subprocess' },
+  ];
+
+  /**
+   * Notebooks created before metadata.defaultMode existed (and tutorials) carry no
+   * default. Infer one from the last code cell — a notebook is nearly always
+   * single-language, so its own cells are the most reliable signal.
+   */
+  function inferDefaultMode() {
+    if (!notebook) return;
+    notebook.metadata = notebook.metadata || {};
+    if (isKnownMode(notebook.metadata.defaultMode)) return;
+    const codeCells = (notebook.cells || []).filter(c => c.type === 'CODE' && isKnownMode(c.mode));
+    if (codeCells.length) notebook.metadata.defaultMode = codeCells[codeCells.length - 1].mode;
+  }
+
+  const LAST_MODE_KEY = 'arima.lastNotebookMode';
+
+  function isKnownMode(m) { return NOTEBOOK_MODES.some(x => x.id === m); }
+
+  /** The language the user last worked in, across notebooks and sessions. */
+  function lastUsedMode() {
+    try {
+      const m = localStorage.getItem(LAST_MODE_KEY);
+      if (isKnownMode(m)) return m;
+    } catch { /* private mode */ }
+    return 'jshell';
+  }
+
+  /**
+   * Record the language the user just chose. A notebook is nearly always
+   * single-language, so this becomes the default for the next cell in this
+   * notebook (via metadata.defaultMode) and the pre-selection for the next
+   * new notebook (via localStorage).
+   */
+  function rememberMode(mode) {
+    if (!isKnownMode(mode)) return;   // 'agent' cells are not a notebook language
+    if (notebook) {
+      notebook.metadata = notebook.metadata || {};
+      notebook.metadata.defaultMode = mode;
+    }
+    try { localStorage.setItem(LAST_MODE_KEY, mode); } catch { /* private mode */ }
+  }
+
+  /**
+   * Resolve the language a new code cell should use: the notebook's own default
+   * (which tracks the most recent cell language in this notebook), then the last
+   * language used anywhere, then JShell.
+   */
+  function notebookDefaultMode(nb) {
+    const m = (nb || notebook)?.metadata?.defaultMode;
+    return isKnownMode(m) ? m : lastUsedMode();
+  }
+
+  /** Ask for a name + default language. Resolves to {name, mode} or null if cancelled. */
+  function promptNewNotebook() {
+    return new Promise(resolve => {
+      const prev = document.getElementById('new-nb-dialog');
+      if (prev) prev.remove();
+
+      // Default to whatever language the user last worked in.
+      const preselect = lastUsedMode();
+
+      const wrap = document.createElement('div');
+      wrap.id = 'new-nb-dialog';
+      wrap.className = 'nb-dialog-backdrop';
+      wrap.innerHTML = `
+        <div class="nb-dialog" role="dialog" aria-modal="true" aria-labelledby="new-nb-title">
+          <h3 id="new-nb-title">New notebook</h3>
+          <label class="nb-dialog-label" for="new-nb-name">Name</label>
+          <input class="nb-dialog-input" id="new-nb-name" type="text" value="Untitled Notebook" autocomplete="off">
+          <label class="nb-dialog-label">Default language</label>
+          <p class="nb-dialog-hint">Applied to new code cells. You can still switch any cell's mode later.</p>
+          <div class="nb-mode-grid">
+            ${NOTEBOOK_MODES.map(m => `
+              <button type="button" class="nb-mode-opt${m.id === preselect ? ' selected' : ''}" data-mode="${m.id}">
+                <span class="nb-mode-name">${m.label}</span>
+                <span class="nb-mode-hint">${m.hint}</span>
+              </button>`).join('')}
+          </div>
+          <div class="nb-dialog-actions">
+            <button type="button" class="nb-dialog-btn" id="new-nb-cancel">Cancel</button>
+            <button type="button" class="nb-dialog-btn primary" id="new-nb-create">Create</button>
+          </div>
+        </div>`;
+      document.body.appendChild(wrap);
+
+      let mode = preselect;
+      wrap.querySelectorAll('.nb-mode-opt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          wrap.querySelectorAll('.nb-mode-opt').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          mode = btn.dataset.mode;
+        });
+      });
+
+      const nameEl = wrap.querySelector('#new-nb-name');
+      const close = (val) => { wrap.remove(); document.removeEventListener('keydown', onKey); resolve(val); };
+      const submit = () => {
+        const name = nameEl.value.trim();
+        if (!name) { nameEl.focus(); return; }
+        close({ name, mode });
+      };
+      function onKey(e) {
+        if (e.key === 'Escape') close(null);
+        else if (e.key === 'Enter' && document.activeElement === nameEl) submit();
+      }
+      document.addEventListener('keydown', onKey);
+      wrap.addEventListener('click', e => { if (e.target === wrap) close(null); });
+      wrap.querySelector('#new-nb-cancel').addEventListener('click', () => close(null));
+      wrap.querySelector('#new-nb-create').addEventListener('click', submit);
+
+      nameEl.focus();
+      nameEl.select();
+    });
   }
 
   /* ── Notebook list ────────────────────────────────── */
@@ -710,6 +916,8 @@ const NotebookEditor = (() => {
     const container = document.getElementById('cells-container');
     container.innerHTML = '';
     editors = {};
+    loadPinnedCells();   // pins are per notebook and survive reload
+    inferDefaultMode();  // older notebooks have no metadata.defaultMode
     // Agent/skill notebooks get an authoring banner + run dock (agent.js); normal notebooks clear it.
     if (window.Agent) Agent.onNotebookLoaded(notebook);
     if (!notebook?.cells?.length) {
@@ -720,6 +928,8 @@ const NotebookEditor = (() => {
     }
     notebook.cells.forEach((cell, i) => renderCell(cell, i, container));
     rebuildAnchorMap();
+    // Cells are in the DOM now — size any pinned/expand-all cells to their content.
+    requestAnimationFrame(() => Object.keys(editors).forEach(applyCellOpenState));
 
     // Show "last session" summary banner for notebooks that have prior execution state
     _showLastSessionSummary();
@@ -837,6 +1047,9 @@ const NotebookEditor = (() => {
           </button>
           <button class="cell-btn dup-btn" title="Duplicate cell">
             <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="8" height="9" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="6" y="2" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
+          </button>
+          <button class="cell-btn pin-btn" id="pin-btn-${cell.id}" title="Pin cell open (keeps the full code visible)">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M9.5 1.5l5 5-1.8.6-2.4 2.4-.5 3.4-4.7-4.7-3.4.5 2.4-2.4.6-1.8 5-5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M5.6 10.4L2 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
           </button>` : ''}
           <button class="cell-btn ai-btn" title="Ask AI about this cell">
             <svg viewBox="0 0 16 16"><path d="M8 1c3.87 0 7 2.69 7 6s-3.13 6-7 6c-1.08 0-2.1-.23-3-.65L1 14l.65-4C1.23 9.1 1 8.08 1 7c0-3.31 3.13-6 7-6z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
@@ -1072,6 +1285,121 @@ const NotebookEditor = (() => {
     });
   }
 
+  /* ── Code-cell expansion helpers ──────────────────── */
+
+  /** True when the user has set this cell's height by hand — peek must not fight it. */
+  function hasManualHeight(cellEl) {
+    const ed = cellEl?.querySelector('.cell-editor');
+    return !!ed && (ed.classList.contains('user-sized') || ed.classList.contains('minimized'));
+  }
+
+  /* Height is driven from JS, not CSS. Relying on `max-height: none` alone left
+     the last lines clipped: CodeMirror's scroller ships height:100% plus a
+     margin-bottom:-50px / padding-bottom:50px scrollbar trick, and the exact
+     resulting height depends on whether a horizontal scrollbar is present. So
+     we ask CodeMirror what the content actually measures and set that height
+     explicitly — no guessing about how the CSS composes. */
+
+  function scrollerOf(cellId) {
+    return document.getElementById(`cell-${cellId}`)?.querySelector('.CodeMirror-scroll') || null;
+  }
+
+  /** Grow the editor to exactly its content height, so no line is cut off. */
+  function openEditorFully(cellId) {
+    const cm = editors[cellId], scroller = scrollerOf(cellId);
+    if (!cm || !scroller) return;
+    // Let it size to content first, then measure and pin that height.
+    scroller.style.maxHeight = 'none';
+    scroller.style.height    = 'auto';
+    cm.refresh();
+    requestAnimationFrame(() => {
+      if (!editors[cellId]) return;
+      // getScrollInfo().height is the full scrollable content height.
+      const h = Math.ceil(cm.getScrollInfo().height);
+      if (h > 0) {
+        scroller.style.height    = h + 'px';
+        scroller.style.maxHeight = 'none';
+      }
+      cm.refresh();
+    });
+  }
+
+  /** Hand the height back to the CSS preview cap. */
+  function collapseEditor(cellId) {
+    const cm = editors[cellId], scroller = scrollerOf(cellId);
+    if (!cm || !scroller) return;
+    scroller.style.height    = '';
+    scroller.style.maxHeight = '';
+    cm.refresh();
+  }
+
+  /** A cell is open when focused, hovered, pinned, or "Expand all" is on. */
+  function shouldBeOpen(cellId) {
+    const el = document.getElementById(`cell-${cellId}`);
+    if (!el || hasManualHeight(el)) return false;
+    const wrap = document.getElementById('cells-container');
+    return focusedCellId === cellId
+        || el.classList.contains('cell-peek')
+        || pinnedCells.has(cellId)
+        || !!wrap?.classList.contains('nb-all-expanded');
+  }
+
+  /** Single place that reconciles a cell's height with its current state. */
+  function applyCellOpenState(cellId) {
+    if (!editors[cellId]) return;
+    if (shouldBeOpen(cellId)) openEditorFully(cellId);
+    else collapseEditor(cellId);
+  }
+
+  /** Open/close a cell for hover ("peek"). Pinned cells ignore the close. */
+  function setCellPeek(cellId, open) {
+    const el = document.getElementById(`cell-${cellId}`);
+    if (!el || hasManualHeight(el)) return;
+    if (el.classList.contains('cell-peek') === open) return;
+    el.classList.toggle('cell-peek', open);
+    applyCellOpenState(cellId);
+  }
+
+  /** Pin (or unpin) a cell so it stays fully open regardless of hover. */
+  function toggleCellPin(cellId, force) {
+    const el = document.getElementById(`cell-${cellId}`);
+    const pinned = force !== undefined ? force : !pinnedCells.has(cellId);
+    if (pinned) pinnedCells.add(cellId); else pinnedCells.delete(cellId);
+    savePinnedCells();
+    if (el) {
+      el.classList.toggle('cell-pinned', pinned);
+      const btn = el.querySelector(`#pin-btn-${cellId}`);
+      btn?.classList.toggle('active', pinned);
+      if (btn) btn.title = pinned ? 'Unpin cell (collapse back to preview)' : 'Pin cell open (keeps the full code visible)';
+      applyCellOpenState(cellId);
+    }
+  }
+
+  /** Re-apply the stored pin state after a render. */
+  function applyPinnedState(cell, div) {
+    if (!pinnedCells.has(cell.id)) return;
+    div.classList.add('cell-pinned');
+    const btn = div.querySelector(`#pin-btn-${cell.id}`);
+    btn?.classList.add('active');
+    if (btn) btn.title = 'Unpin cell (collapse back to preview)';
+  }
+
+  /** Toolbar toggle: open every code cell at once (or return them all to preview). */
+  function toggleExpandAll(force) {
+    const wrap = document.getElementById('cells-container') || document.body;
+    const on = force !== undefined ? force : !wrap.classList.contains('nb-all-expanded');
+    wrap.classList.toggle('nb-all-expanded', on);
+    const btn = document.getElementById('btn-expand-all');
+    btn?.classList.toggle('active', on);
+    if (btn) {
+      btn.title = on ? 'Collapse all cells back to preview height' : 'Expand all cells to show their full code';
+      const label = btn.querySelector('.expand-all-label');
+      if (label) label.textContent = on ? 'Collapse All' : 'Expand All';
+    }
+    Object.keys(editors).forEach(applyCellOpenState);
+    return on;
+  }
+
   /* ── Build CODE cell ──────────────────────────────── */
   function buildCodeCell(cell, div, bodyWrap) {
     const editorDiv = document.createElement('div');
@@ -1105,19 +1433,38 @@ const NotebookEditor = (() => {
     editorDiv.appendChild(resizer);
     attachEditorResizer(editorDiv, cm, resizer);
 
-    // Expand on focus, collapse on blur — refresh CM so it recalculates line layout
-    cm.on('focus', () => {
-      _setFocusedCell(cell.id);
-      // Wait for CSS transition then refresh so all lines render
-      setTimeout(() => cm.refresh(), 260);
+    // ── Hover to open, leave to close ────────────────────────────────────
+    // A short dwell delay keeps cells from popping open as the pointer just
+    // passes over them on its way somewhere else.
+    let hoverTimer = null;
+    div.addEventListener('mouseenter', () => {
+      hoverCellId = cell.id;
+      clearTimeout(hoverTimer);
+      hoverTimer = setTimeout(() => setCellPeek(cell.id, true), HOVER_OPEN_DELAY);
     });
+    div.addEventListener('mouseleave', () => {
+      clearTimeout(hoverTimer);
+      if (hoverCellId === cell.id) hoverCellId = null;
+      setCellPeek(cell.id, false);
+    });
+
+    // ── Pin ──────────────────────────────────────────────────────────────
+    div.querySelector(`#pin-btn-${cell.id}`)?.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleCellPin(cell.id);
+    });
+    applyPinnedState(cell, div);
+
+    // Expand on focus, collapse on blur — applyCellOpenState owns the height.
+    cm.on('focus', () => _setFocusedCell(cell.id));
     cm.on('blur', () => {
       // Only collapse if another cell isn't already focused
       setTimeout(() => {
         if (focusedCellId === cell.id) _setFocusedCell(null);
-        cm.refresh();
       }, 100);
     });
+    // Typing changes the line count — keep an open cell sized to its content.
+    cm.on('changes', () => { if (shouldBeOpen(cell.id)) openEditorFully(cell.id); });
 
     // Parse annotations and update dep badges on every change (debounced)
     let annotationTimer = null;
@@ -1196,6 +1543,10 @@ const NotebookEditor = (() => {
       // Switch CodeMirror syntax highlighting
       const cm = editors[cell.id];
       if (cm) cm.setOption('mode', cmModeFor(cell.mode));
+
+      // Switching a cell's language is a strong signal about the notebook's
+      // language — remember it so the next cell (and the next notebook) follow.
+      rememberMode(cell.mode);
 
       Arima.markDirty(true);
 
@@ -1422,7 +1773,8 @@ const NotebookEditor = (() => {
   function buildMdCell(cell, div, bodyWrap) {
     const rendered = document.createElement('div');
     rendered.className = 'cell-md-rendered';
-    rendered.innerHTML = cell.source ? marked.parse(cell.source) : '<span style="color:var(--text-3)">Click to edit…</span>';
+    rendered.innerHTML = cell.source ? marked.parse(cell.source) : MD_PLACEHOLDER;
+    rendered.title = 'Double-click to edit';
 
     const editor = document.createElement('textarea');
     editor.className = 'cell-md-edit';
@@ -1431,12 +1783,14 @@ const NotebookEditor = (() => {
     bodyWrap.appendChild(rendered);
     bodyWrap.appendChild(editor);
 
-    rendered.addEventListener('click', () => {
+    // Double-click to edit — a single click leaves the rendered markdown alone
+    // so links and text inside it stay selectable/clickable.
+    rendered.addEventListener('dblclick', () => {
       rendered.classList.add('editing'); editor.classList.add('editing'); editor.focus();
     });
     editor.addEventListener('blur', () => {
       cell.source = editor.value;
-      rendered.innerHTML = editor.value ? marked.parse(editor.value) : '<span style="color:var(--text-3)">Click to edit…</span>';
+      rendered.innerHTML = editor.value ? marked.parse(editor.value) : MD_PLACEHOLDER;
       rendered.classList.remove('editing'); editor.classList.remove('editing');
       Arima.markDirty(true);
     });
@@ -1450,33 +1804,207 @@ const NotebookEditor = (() => {
   function renderDepBadges(cell, bodyWrap) {
     bodyWrap.querySelectorAll('.dep-badges-row').forEach(el => el.remove());
     const deps = cell.dependsOn || [];
-    if (deps.length === 0) return;
+    // An anchored cell gets the row even with no dependencies of its own — the
+    // most useful impact question is "what depends on THIS?", and that is asked
+    // of source cells, which by definition have nothing upstream.
+    if (deps.length === 0 && !cell.anchor) return;
 
     const row = document.createElement('div');
     row.className = 'dep-badges-row';
-    row.innerHTML = `<span class="dep-badges-label">needs:</span>` +
+    row.innerHTML = (deps.length ? `<span class="dep-badges-label">needs:</span>` : '') +
       deps.map(d => {
         const s = Orchestration.getStatus(d);
-        return `<span class="dep-badge ${s.status}" data-anchor="${escapeHtml(d)}"
-          title="${d}: ${s.status}">${escapeHtml(d)}</span>`;
-      }).join('');
+        const cross = d.startsWith('notebook:');
+        return `<span class="dep-badge ${s.status} dep-link${cross ? ' cross' : ''}" data-anchor="${escapeHtml(d)}"
+          title="${escapeHtml(d)}: ${s.status} — click to jump to this cell">${escapeHtml(d)}</span>`;
+      }).join('') +
+      `<button class="impact-btn" data-cell="${cell.id}" title="Show everything downstream of this cell">
+         <svg viewBox="0 0 16 16" fill="none" width="11" height="11"><circle cx="4" cy="4" r="2" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 4h3a3 3 0 0 1 3 3v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+         impact
+       </button>`;
+
+    row.querySelectorAll('.dep-link').forEach(b =>
+      b.addEventListener('click', () => jumpToAnchor(b.dataset.anchor)));
+    row.querySelector('.impact-btn')?.addEventListener('click', () => showImpact(cell));
+
     // Insert before the output section (direct child of bodyWrap), or at end
     const firstOutput = bodyWrap.querySelector(':scope > .cell-output-section');
     if (firstOutput) bodyWrap.insertBefore(row, firstOutput);
     else bodyWrap.appendChild(row);
   }
 
+  /* ── Dependency navigation ────────────────────────────────────────
+     A `//@ depends:` reference is a link. Local anchors scroll to the cell in
+     this notebook; `notebook:<id>/<anchor>` opens that notebook first. */
+  function jumpToAnchor(ref) {
+    if (!ref) return;
+    if (ref.startsWith('notebook:')) {
+      const rest = ref.slice('notebook:'.length);
+      const slash = rest.indexOf('/');
+      const nbId  = slash === -1 ? rest : rest.slice(0, slash);
+      const anch  = slash === -1 ? null : rest.slice(slash + 1);
+      loadNotebook(nbId).then(() => {
+        if (!anch) return;
+        setTimeout(() => {
+          const target = anchorMap[anch];
+          if (target) focusCell(target.id);
+          else Arima.toast?.(`Anchor "${anch}" not found in that notebook`, 'warn');
+        }, 300);
+      });
+      return;
+    }
+    const target = anchorMap[ref];
+    if (target) focusCell(target.id);
+    else Arima.toast?.(`No cell declares anchor "${ref}"`, 'warn');
+  }
+
+  /* ── Impact chain ─────────────────────────────────────────────────
+     "What breaks if I change this?" Walks the dependency graph in both
+     directions: what this cell stands on (upstream) and what stands on it
+     (downstream), transitively — then asks the server which OTHER notebooks
+     reference it, since cross-notebook links are invisible from here. */
+
+  /** Transitive upstream: everything this cell depends on, nearest first. */
+  function upstreamChain(cell, seen = new Set(), depth = 1, out = []) {
+    for (const dep of cell.dependsOn || []) {
+      if (seen.has(dep)) continue;
+      seen.add(dep);
+      const t = anchorMap[dep];
+      out.push({ anchor: dep, cell: t, depth, external: dep.startsWith('notebook:') });
+      if (t) upstreamChain(t, seen, depth + 1, out);
+    }
+    return out;
+  }
+
+  /** Transitive downstream within this notebook: everything standing on this cell. */
+  function downstreamChain(anchor, seen = new Set(), depth = 1, out = []) {
+    if (!anchor) return out;
+    for (const c of notebook?.cells || []) {
+      if (!(c.dependsOn || []).includes(anchor)) continue;
+      if (seen.has(c.id)) continue;
+      seen.add(c.id);
+      out.push({ cell: c, anchor: c.anchor, depth });
+      if (c.anchor) downstreamChain(c.anchor, seen, depth + 1, out);
+    }
+    return out;
+  }
+
+  /** Returns HTML-escaped text — callers must NOT escape it again. */
+  function cellLabel(c) {
+    if (!c) return '(missing cell)';
+    const line = (c.source || '').split('\n')
+      .find(l => l.trim() && !l.trim().startsWith('//@') && !l.trim().startsWith('#@')
+                 && !l.trim().startsWith('//') && !l.trim().startsWith('#'));
+    const idx = (notebook?.cells || []).indexOf(c);
+    return `Cell ${idx >= 0 ? idx + 1 : '?'} · ${escapeHtml((line || '(empty)').slice(0, 60))}`;
+  }
+
+  async function showImpact(cell) {
+    document.getElementById('impact-dialog')?.remove();
+    const up   = upstreamChain(cell);
+    const down = downstreamChain(cell.anchor);
+
+    const wrap = document.createElement('div');
+    wrap.id = 'impact-dialog';
+    wrap.className = 'nb-dialog-backdrop';
+    const anchorLabel = cell.anchor
+      ? `<code>${escapeHtml(cell.anchor)}</code>`
+      : `<em>no anchor</em>`;
+    wrap.innerHTML = `
+      <div class="nb-dialog impact-dialog" role="dialog" aria-modal="true">
+        <h3>Impact chain — ${anchorLabel}</h3>
+        <p class="nb-dialog-hint">${cellLabel(cell)}</p>
+
+        <div class="impact-section">
+          <h4>Upstream — this cell needs <span class="impact-count">${up.length}</span></h4>
+          <div class="impact-list" id="impact-up">${
+            up.length ? up.map(u => `
+              <button class="impact-row${u.cell ? '' : ' missing'}" data-anchor="${escapeHtml(u.anchor)}">
+                <span class="impact-depth">${'→'.repeat(u.depth)}</span>
+                <span class="impact-anchor">${escapeHtml(u.anchor)}</span>
+                <span class="impact-label">${u.cell ? cellLabel(u.cell) : 'not found in this notebook'}</span>
+              </button>`).join('')
+            : '<div class="impact-empty">Nothing — this cell stands on its own.</div>'}</div>
+        </div>
+
+        <div class="impact-section">
+          <h4>Downstream — depends on this <span class="impact-count">${down.length}</span></h4>
+          <div class="impact-list" id="impact-down">${
+            !cell.anchor
+              ? '<div class="impact-empty">Give this cell an <code>//@ anchor</code> so other cells can reference it.</div>'
+              : down.length ? down.map(x => `
+                  <button class="impact-row" data-cell="${x.cell.id}">
+                    <span class="impact-depth">${'→'.repeat(x.depth)}</span>
+                    <span class="impact-anchor">${escapeHtml(x.anchor || '—')}</span>
+                    <span class="impact-label">${cellLabel(x.cell)}</span>
+                  </button>`).join('')
+                : '<div class="impact-empty">Nothing in this notebook depends on it.</div>'}</div>
+        </div>
+
+        <div class="impact-section">
+          <h4>Other notebooks <span class="impact-count" id="impact-ext-count">…</span></h4>
+          <div class="impact-list" id="impact-ext">
+            <div class="impact-empty">Scanning…</div>
+          </div>
+        </div>
+
+        <div class="nb-dialog-actions">
+          <button type="button" class="nb-dialog-btn primary" id="impact-close">Close</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+
+    const close = () => wrap.remove();
+    wrap.addEventListener('click', e => { if (e.target === wrap) close(); });
+    wrap.querySelector('#impact-close').addEventListener('click', close);
+
+    wrap.querySelectorAll('.impact-row[data-anchor]').forEach(b =>
+      b.addEventListener('click', () => { close(); jumpToAnchor(b.dataset.anchor); }));
+    wrap.querySelectorAll('.impact-row[data-cell]').forEach(b =>
+      b.addEventListener('click', () => { close(); focusCell(b.dataset.cell); }));
+
+    // Cross-notebook references need the server — only it can see other files.
+    const extBox = wrap.querySelector('#impact-ext');
+    const extCnt = wrap.querySelector('#impact-ext-count');
+    if (!cell.anchor || !notebook?.id) {
+      extBox.innerHTML = '<div class="impact-empty">Needs an anchor to search for.</div>';
+      extCnt.textContent = '0';
+      return;
+    }
+    try {
+      const refs = (await Arima.api('GET',
+        `/notebooks/${encodeURIComponent(notebook.id)}/references?anchor=${encodeURIComponent(cell.anchor)}`) || [])
+        .filter(r => r.notebookId !== notebook.id);
+      extCnt.textContent = String(refs.length);
+      extBox.innerHTML = refs.length ? refs.map(r => `
+        <button class="impact-row" data-nb="${escapeHtml(r.notebookId)}" data-target="${escapeHtml(r.cellId)}">
+          <span class="impact-depth">↗</span>
+          <span class="impact-anchor">${escapeHtml(r.notebookName || r.notebookId)}</span>
+          <span class="impact-label">${escapeHtml(r.preview || '(no preview)')}</span>
+        </button>`).join('')
+        : '<div class="impact-empty">No other notebook references this cell.</div>';
+      extBox.querySelectorAll('.impact-row[data-nb]').forEach(b =>
+        b.addEventListener('click', async () => {
+          close();
+          await loadNotebook(b.dataset.nb);
+          setTimeout(() => focusCell(b.dataset.target), 300);
+        }));
+    } catch (e) {
+      extCnt.textContent = '!';
+      extBox.innerHTML = `<div class="impact-empty">Could not scan other notebooks: ${escapeHtml(String(e.message || e))}</div>`;
+    }
+  }
+
   /* ── Cell focus indicator ────────────────────────── */
   function _setFocusedCell(cellId) {
     if (focusedCellId === cellId) return;
-    // Collapse previously focused cell
-    if (focusedCellId) {
-      const prev = document.getElementById(`cell-${focusedCellId}`);
-      prev?.classList.remove('cell-focused');
-      // Refresh its CM after the collapse transition
-      setTimeout(() => editors[focusedCellId]?.refresh(), 270);
+    // Collapse previously focused cell — unless hover/pin/expand-all keeps it open
+    const prevId = focusedCellId;
+    if (prevId) {
+      document.getElementById(`cell-${prevId}`)?.classList.remove('cell-focused');
     }
     focusedCellId = cellId;
+    if (prevId) applyCellOpenState(prevId);
     AIAssistant?.updateCellContext(cellId);
     // Mirror focus in the Variable Inspector: scroll its corresponding
     // section into view + flash. Silently no-ops when the drawer is
@@ -1485,8 +2013,7 @@ const NotebookEditor = (() => {
     if (!cellId) return;
     const el = document.getElementById(`cell-${cellId}`);
     el?.classList.add('cell-focused');
-    // Refresh the newly expanded cell's CM after transition
-    setTimeout(() => editors[cellId]?.refresh(), 270);
+    applyCellOpenState(cellId);
   }
 
   /* ── Scroll & focus helpers ───────────────────────── */
@@ -2729,10 +3256,11 @@ const NotebookEditor = (() => {
       source = '//@ pipeline: my-pipeline\n//@ steps: anchor1, anchor2\n//@ description: My pipeline';
     }
     const cell = {
-      id: `cell-${Date.now()}`, type: type || 'CODE', mode: 'jshell',
+      id: `cell-${Date.now()}`, type: type || 'CODE', mode: notebookDefaultMode(),
       source, output: '', error: '', executed: false,
       anchor: null, dependsOn: [], pipelineSteps: []
     };
+    if (cell.type === 'CODE') rememberMode(cell.mode);
     notebook.cells.push(cell);
     const container = document.getElementById('cells-container');
     container.querySelector('.empty-state')?.remove();
@@ -2752,7 +3280,7 @@ const NotebookEditor = (() => {
   function addCellWithSource(type, source) {
     if (!notebook) return;
     const cell = {
-      id: `cell-${Date.now()}`, type: type || 'CODE', mode: 'jshell',
+      id: `cell-${Date.now()}`, type: type || 'CODE', mode: notebookDefaultMode(),
       source: source || '', output: '', error: '', executed: false,
       anchor: null, dependsOn: [], pipelineSteps: []
     };
@@ -2837,6 +3365,17 @@ const NotebookEditor = (() => {
     document.getElementById('btn-new')?.addEventListener('click', createUntitled);
     document.getElementById('btn-create-first')?.addEventListener('click', createUntitled);
     document.getElementById('btn-save')?.addEventListener('click', save);
+
+    document.getElementById('btn-reveal-nb')?.addEventListener('click', () =>
+      revealNotebookFile(notebook?.id));
+
+    document.getElementById('btn-delete-nb')?.addEventListener('click', async () => {
+      if (!notebook?.id) { Arima.toast?.('Open a notebook first.', 'warn'); return; }
+      if (notebook.readOnly) { Arima.toast?.('Tutorials are read-only.', 'warn'); return; }
+      // Deleting removes the .vnb from disk — always confirm, never silently.
+      if (!confirm(`Delete "${notebook.name}" from disk?\n\nThis cannot be undone.`)) return;
+      await deleteNotebook(notebook.id);
+    });
     document.getElementById('btn-run-all')?.addEventListener('click', runAll);
     document.getElementById('btn-stop-run')?.addEventListener('click', stopRun);
     document.getElementById('btn-add-code')?.addEventListener('click', () => addCell('CODE'));
@@ -3258,6 +3797,7 @@ const NotebookEditor = (() => {
     init, loadNotebook, save, deleteCell, deleteNotebook, moveUp, moveDown, addCell, addCellWithSource,
     insertCodeFromAI, applyCodeToCell, executeCell, getContext, focusCell, revealCell,
     runToHere, runPipeline, runWithDeps, switchTab, closeTab,
+    toggleExpandAll, toggleCellPin,
     stepStart, stepClose, stepAction, stepPrev,
     _openCrossNbPicker, _closeCrossNbPicker, _insertCrossNbRef,
     _onCrossNbNotebookChange, _onCrossNbAnchorChange

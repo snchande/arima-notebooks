@@ -1484,12 +1484,33 @@ a:hover { text-decoration: underline; }
   z-index: 1;
 }
 
-/* Focused cell — fully expand to show all code by default. The user can shrink or
-   set any height with the drag handle (or minimize via double-click); that inline
-   height then wins over this default. */
-.cell.cell-focused .cell-editor .CodeMirror-scroll {
-  max-height: none;
-  overflow: auto !important;
+/* Fully-open states — the whole cell body is shown, no inner scroll cap:
+     .cell-focused          caret is in this editor
+     .cell-peek             pointer is hovering the cell
+     .cell-pinned           pinned open via the pin button or the → key
+     .nb-all-expanded       toolbar "Expand all" is on
+   The user can still shrink or set any height with the drag handle (or minimize
+   via double-click); that inline height then wins over all of these.
+
+   CodeMirror's own .CodeMirror-scroll ships with height:100%, overflow:scroll
+   and a margin-bottom:-50px / padding-bottom:50px trick for hiding the native
+   scrollbar. Leaving overflow-y scrollable there keeps the last ~2 lines inside
+   a live scroll region even with max-height removed, so the cell looks open but
+   still scrolls. CodeMirror's documented auto-height recipe is what we use:
+   height:auto on the scroller + overflow-y:hidden (x stays scrollable for long
+   lines). cm.refresh() afterwards makes CM re-measure at the new height.
+
+   The height itself is set inline by openEditorFully() in notebook.js, measured
+   from cm.getScrollInfo(). All this rule does is kill the vertical scroll region
+   (CodeMirror sets overflow:scroll !important, so !important is required here to
+   beat it) while leaving overflow-x scrollable for long lines. The :not() guards
+   keep a hand-sized cell at the size the user dragged it to. */
+.cell.cell-focused .cell-editor:not(.user-sized):not(.minimized) .CodeMirror-scroll,
+.cell.cell-peek    .cell-editor:not(.user-sized):not(.minimized) .CodeMirror-scroll,
+.cell.cell-pinned  .cell-editor:not(.user-sized):not(.minimized) .CodeMirror-scroll,
+.nb-all-expanded .cell .cell-editor:not(.user-sized):not(.minimized) .CodeMirror-scroll {
+  overflow-y: hidden !important;
+  overflow-x: auto !important;
 }
 
 /* Drag-to-resize handle at the bottom of a cell editor */
@@ -1516,7 +1537,19 @@ a:hover { text-decoration: underline; }
 .cell-editor.user-sized .CodeMirror-scroll { overflow: auto !important; }
 .cell-editor.user-sized::after,
 .cell-editor.minimized::after { opacity: 0; }
-.cell.cell-focused .cell-editor::after { opacity: 0; }
+/* No fade hint once the cell is fully open — there is nothing left hidden */
+.cell.cell-focused .cell-editor::after,
+.cell.cell-peek    .cell-editor::after,
+.cell.cell-pinned  .cell-editor::after,
+.nb-all-expanded .cell .cell-editor::after { opacity: 0; }
+
+/* Pinned-open cells keep a visible marker so the state is obvious at a glance */
+.cell-btn.pin-btn.active {
+  color: var(--accent);
+  background: rgba(99,102,241,.14);
+}
+.cell.cell-pinned > .cell-header { box-shadow: inset 2px 0 0 var(--accent); }
+.nb-tool#btn-expand-all.active { color: var(--accent); border-color: var(--accent); }
 
 /* Maximized cell (Ctrl+M / expand button) keeps full screen height */
 .cell-maximized .cell-editor .CodeMirror-scroll {
@@ -2218,12 +2251,15 @@ input:checked + .slider::before { transform: translateX(16px); background: #fff;
 .ai-backdrop.visible { opacity: 1; pointer-events: auto; }
 
 /* ── Floating AI launcher (FAB) ──────────────────────────────────────
-   Visible whenever the AI panel is hidden. Draggable to any position on
-   the viewport; position persists via localStorage. Click opens AI. */
+   Visible whenever the AI panel is hidden. Parked under the Shutdown
+   button — app.js sets left/top and re-anchors on every layout change.
+   Dragging overrides that as an offset from the anchor; dropping it back
+   on the anchor resets it. The right/top here are only the pre-script
+   fallback. Click opens AI. */
 .ai-fab {
   position: fixed;
   right: 24px;
-  bottom: 24px;
+  top: 82px;
   width: 58px; height: 58px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
@@ -4669,3 +4705,122 @@ body.fre-on #fre-tip { display: block; }
 .fre-back:hover { background: var(--surface-5); }
 .fre-next { background: var(--accent); color: #0b0b12; }
 .fre-next:hover { background: var(--accent-hover); }
+
+/* ══════════════════════════════════════════════════════
+   NEW-NOTEBOOK DIALOG
+   A new notebook is created EMPTY (no starter cell) and carries a default
+   language chosen here, stored as metadata.defaultMode and adopted by new
+   code cells. Replaces the old window.prompt() name-only flow.
+   ══════════════════════════════════════════════════════ */
+.nb-dialog-backdrop {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.nb-dialog {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  width: 100%; max-width: 520px;
+  max-height: calc(100vh - 48px); overflow-y: auto;
+  padding: 20px 22px;
+}
+.nb-dialog h3 { margin: 0 0 14px; font-size: 16px; color: var(--text-1); }
+.nb-dialog-label {
+  display: block; margin: 12px 0 5px;
+  font-size: 12px; font-weight: 600; color: var(--text-2);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.nb-dialog-hint { margin: 0 0 8px; font-size: 12px; color: var(--text-3); }
+.nb-dialog-input {
+  width: 100%; padding: 9px 11px;
+  background: var(--surface-2); color: var(--text-1);
+  border: 1px solid var(--border); border-radius: 6px;
+  font-size: 13.5px; font-family: inherit;
+}
+.nb-dialog-input:focus { outline: none; border-color: var(--accent); }
+
+.nb-mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+@media (max-width: 520px) { .nb-mode-grid { grid-template-columns: 1fr; } }
+.nb-mode-opt {
+  display: flex; flex-direction: column; gap: 2px;
+  text-align: left; padding: 8px 11px; cursor: pointer;
+  background: var(--surface-2); color: var(--text-1);
+  border: 1px solid var(--border); border-radius: 7px;
+  font: inherit; transition: border-color .15s, background .15s;
+}
+.nb-mode-opt:hover { border-color: var(--text-3); }
+.nb-mode-opt.selected { border-color: var(--accent); background: rgba(99,102,241,.14); }
+.nb-mode-name { font-size: 13px; font-weight: 600; }
+.nb-mode-hint { font-size: 11.5px; color: var(--text-3); }
+
+.nb-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.nb-dialog-btn {
+  padding: 8px 16px; border-radius: 6px; cursor: pointer;
+  font-size: 13px; font-family: inherit;
+  background: transparent; color: var(--text-2);
+  border: 1px solid var(--border);
+}
+.nb-dialog-btn:hover { color: var(--text-1); border-color: var(--text-3); }
+.nb-dialog-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.nb-dialog-btn.primary:hover { filter: brightness(1.1); }
+
+/* ══════════════════════════════════════════════════════
+   DEPENDENCY NAVIGATION + IMPACT CHAIN
+   A `//@ depends:` badge is a link to the cell it names; the "impact" button
+   opens the chain in both directions so you can see what a change reaches.
+   ══════════════════════════════════════════════════════ */
+.dep-badge.dep-link { cursor: pointer; transition: filter .15s, border-color .15s; }
+.dep-badge.dep-link:hover { filter: brightness(1.25); text-decoration: underline; }
+.dep-badge.dep-link.cross { border-style: dashed; }
+
+.impact-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: 8px; padding: 2px 8px;
+  font-size: 11px; font-family: inherit; cursor: pointer;
+  background: transparent; color: var(--text-3);
+  border: 1px solid var(--border); border-radius: 999px;
+}
+.impact-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+.impact-dialog { max-width: 680px; }
+.impact-section { margin-top: 14px; }
+.impact-section h4 {
+  margin: 0 0 6px; font-size: 12px; font-weight: 600;
+  color: var(--text-2); text-transform: uppercase; letter-spacing: .04em;
+  display: flex; align-items: center; gap: 8px;
+}
+.impact-count {
+  font-size: 11px; padding: 1px 7px; border-radius: 999px;
+  background: var(--surface-2); color: var(--text-3);
+  border: 1px solid var(--border); text-transform: none; letter-spacing: 0;
+}
+.impact-list {
+  display: flex; flex-direction: column; gap: 3px;
+  max-height: 190px; overflow-y: auto;
+}
+.impact-row {
+  display: grid; grid-template-columns: auto minmax(90px, auto) 1fr;
+  align-items: baseline; gap: 9px;
+  width: 100%; text-align: left; padding: 6px 9px; cursor: pointer;
+  background: var(--surface-2); color: var(--text-1);
+  border: 1px solid var(--border); border-radius: 6px;
+  font: inherit; font-size: 12.5px;
+}
+.impact-row:hover { border-color: var(--accent); background: rgba(99,102,241,.12); }
+.impact-row.missing { opacity: .6; }
+.impact-depth { color: var(--accent); font-family: var(--font-code); font-size: 11px; }
+.impact-anchor { font-family: var(--font-code); font-size: 11.5px; color: var(--accent); }
+.impact-label { color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.impact-empty { padding: 8px 4px; font-size: 12.5px; color: var(--text-3); }
+
+/* Reveal-in-file-manager button on notebook browser cards */
+.nbb-reveal-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-left: 6px; padding: 2px 5px; cursor: pointer;
+  background: transparent; color: var(--text-3);
+  border: 1px solid transparent; border-radius: 4px;
+}
+.nbb-reveal-btn:hover { color: var(--accent); border-color: var(--border); }
