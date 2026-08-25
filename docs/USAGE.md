@@ -107,7 +107,7 @@ Arima Notebooks has four cell types, each visually distinct:
 > C++ cells require `g++`, `clang++`, or MSVC — see [docs/SETUP.md](SETUP.md#setting-up-c-support) for install instructions.
 > Without the prerequisite, the mode is still selectable but will show a friendly install message on run.
 
-**Clicking a cell expands it** — when a cell is not focused, it shows a collapsed preview (~4 lines) to keep the notebook compact. Click anywhere on the cell to expand it to full height and place the cursor. The cell collapses again when you click elsewhere. All cells render with **VS Code Dark+ syntax highlighting** (keywords, types, functions, strings each in distinct colours).
+**Cells render in full by default** — the whole notebook is readable at a glance, no scrolling inside a cell to see its last lines. To shrink one, use its **collapse** button (or **Collapse All** in the toolbar) and it drops to a ~4-line preview; a collapsed cell still opens on hover or focus, so you can read it without expanding it, and the choice is remembered per notebook. All cells render with **VS Code Dark+ syntax highlighting** (keywords, types, functions, strings each in distinct colours).
 
 ```java
 // JShell mode (default) — snippets, shared state
@@ -227,6 +227,24 @@ Click the **✕** button on a cell to delete it.
 ### Restarting the Kernel
 
 Click **↺ Restart** to clear all JShell variables. Cell source code is preserved, output is cleared, and the session starts fresh. Installed packages are re-applied automatically.
+
+---
+
+## Sharing a Notebook or Cell
+
+Every view has its own address, so a notebook — or one cell inside it — can be linked to and shared:
+
+| URL | Opens |
+|-----|-------|
+| `/notebooks/{notebookId}` | That notebook |
+| `/notebooks/{notebookId}/cells/{cellId}` | That notebook, scrolled to and focused on one cell |
+
+- **Share** in the toolbar copies a link to the current notebook.
+- The **link icon** on any cell copies a link to that cell — code *or* markdown.
+- The address bar updates as you move around, so you can copy it directly. Focusing a cell replaces the current entry rather than adding one, so Back still steps between notebooks rather than between cells.
+- Opening a link works on a cold page load: the server serves the app for these paths and the UI then opens the right notebook and cell.
+
+These are UI routes and are separate from the REST API, which keeps its own `/api/notebooks/**` namespace.
 
 ---
 

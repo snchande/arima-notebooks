@@ -127,6 +127,11 @@ const NotebookEditor = (() => {
     });
     initNotebookBrowser();
 
+    // Deep links: open whatever /notebooks/{id}[/cells/{cellId}] points at, and keep
+    // Back/Forward working between notebooks.
+    applyRoute();
+    window.addEventListener('popstate', () => applyRoute());
+
     // ESC: restore any maximized cell (global handler)
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
@@ -716,10 +721,76 @@ const NotebookEditor = (() => {
     } catch(e) { console.error('List failed:', e); }
   }
 
+  /* ── Shareable URLs ───────────────────────────────────────────────
+     The UI is one page, so until now every notebook lived at "/" and could not
+     be linked to. Two routes are mirrored into the address bar so any view can
+     be copied and shared:
+
+         /notebooks/{notebookId}                  a notebook
+         /notebooks/{notebookId}/cells/{cellId}   a notebook, scrolled to a cell
+
+     These are UI routes only — the REST API keeps its own /api/notebooks/**
+     namespace, and the server forwards these paths back to index.html
+     (SpaRoutingConfig) so a deep link survives a page load or refresh. */
+  const ROUTE = /^\/notebooks\/([^/]+)(?:\/cells\/([^/]+))?\/?$/;
+
+  /** Parse the current address into {notebookId, cellId}, or null if we're at root. */
+  function parseRoute(pathname) {
+    const m = ROUTE.exec(pathname || location.pathname);
+    if (!m) return null;
+    return { notebookId: decodeURIComponent(m[1]), cellId: m[2] ? decodeURIComponent(m[2]) : null };
+  }
+
+  /** Build the shareable URL for a notebook, optionally focused on one cell. */
+  function routeUrl(notebookId, cellId) {
+    let p = '/notebooks/' + encodeURIComponent(notebookId);
+    if (cellId) p += '/cells/' + encodeURIComponent(cellId);
+    return location.origin + p;
+  }
+
+  /**
+   * Reflect the current view in the address bar. Uses replaceState for cell focus so
+   * that scrolling around a notebook does not bury the Back button under history.
+   */
+  function syncUrl(notebookId, cellId, { replace = false } = {}) {
+    if (!notebookId) return;
+    const url = routeUrl(notebookId, cellId);
+    if (location.href === url) return;
+    try {
+      history[replace ? 'replaceState' : 'pushState']({ notebookId, cellId }, '', url);
+    } catch { /* file:// or sandboxed — the app still works, just without deep links */ }
+  }
+
+  /** Open whatever the address bar points at. Called on first load and on back/forward. */
+  async function applyRoute() {
+    const r = parseRoute();
+    if (!r) return false;
+    if (activeTabId !== r.notebookId) {
+      // isTutorial is unknown from the URL; loadNotebook falls back to the tutorial
+      // template when the id is not one of the user's own notebooks.
+      await loadNotebook(r.notebookId, true);
+    }
+    if (r.cellId) setTimeout(() => focusCell(r.cellId), 350);
+    return true;
+  }
+
+  /** Copy a shareable link for a notebook or cell to the clipboard. */
+  async function copyShareLink(notebookId, cellId) {
+    const url = routeUrl(notebookId || notebook?.id, cellId);
+    try {
+      await navigator.clipboard.writeText(url);
+      Arima.toast?.('Link copied: ' + url, 'ok');
+    } catch {
+      // Clipboard needs a secure context; show the URL so it can be copied by hand.
+      Arima.toast?.('Copy this link: ' + url, 'info');
+    }
+    return url;
+  }
+
   /* ── Load notebook (opens in a new tab or switches to existing) ───────── */
   async function loadNotebook(id, isTutorial) {
     // If already open, just switch to it
-    if (tabStore.has(id)) { switchTab(id); return; }
+    if (tabStore.has(id)) { switchTab(id); return; }   // switchTab syncs the URL
 
     Arima.setStatus('Loading…');
     try {
@@ -753,6 +824,7 @@ const NotebookEditor = (() => {
       // Hide the delete button for tutorials — they are read-only shared resources
       const delBtn = document.getElementById('btn-delete-notebook');
       if (delBtn) { delBtn.style.display = isTutorial ? 'none' : ''; }
+      syncUrl(id, null);
       Arima.setStatus(`Loaded: ${nb.name}${isTutorial ? ' (tutorial — read-only)' : ''}`);
     } catch(e) {
       Arima.setStatus('Load error: ' + e.message);
@@ -801,6 +873,7 @@ const NotebookEditor = (() => {
     if (!notebook._readOnly) setupAutoSave();
     const delBtn = document.getElementById('btn-delete-notebook');
     if (delBtn) delBtn.style.display = notebook._readOnly ? 'none' : '';
+    syncUrl(id, null);
     Arima.setStatus(`Switched to: ${notebook.name}`);
   }
 
@@ -1055,6 +1128,9 @@ const NotebookEditor = (() => {
           <button class="cell-btn pin-btn" id="pin-btn-${cell.id}" title="Pin cell open (keeps the full code visible)">
             <svg viewBox="0 0 16 16" fill="none"><path d="M9.5 1.5l5 5-1.8.6-2.4 2.4-.5 3.4-4.7-4.7-3.4.5 2.4-2.4.6-1.8 5-5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M5.6 10.4L2 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
           </button>` : ''}
+          <button class="cell-btn share-btn" id="share-btn-${cell.id}" title="Copy a shareable link to this cell">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M6.5 9.5a3 3 0 0 0 4.2 0l2-2a3 3 0 1 0-4.2-4.2l-1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9.5 6.5a3 3 0 0 0-4.2 0l-2 2a3 3 0 1 0 4.2 4.2l1-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </button>
           <button class="cell-btn ai-btn" title="Ask AI about this cell">
             <svg viewBox="0 0 16 16"><path d="M8 1c3.87 0 7 2.69 7 6s-3.13 6-7 6c-1.08 0-2.1-.23-3-.65L1 14l.65-4C1.23 9.1 1 8.08 1 7c0-3.31 3.13-6 7-6z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
           </button>
@@ -1115,6 +1191,11 @@ const NotebookEditor = (() => {
     // ── Maximize / restore ────────────────────────────────────────────────
     const maxBtn = div.querySelector(`#max-btn-${cell.id}`);
     maxBtn?.addEventListener('click', e => { e.stopPropagation(); maximizeCell(cell.id); });
+
+    div.querySelector(`#share-btn-${cell.id}`)?.addEventListener('click', e => {
+      e.stopPropagation();
+      copyShareLink(notebook?.id, cell.id);
+    });
 
     // Click to focus
     div.addEventListener('click', () => {
@@ -3437,6 +3518,11 @@ const NotebookEditor = (() => {
     document.getElementById('btn-reveal-nb')?.addEventListener('click', () =>
       revealNotebookFile(notebook?.id));
 
+    document.getElementById('btn-share-nb')?.addEventListener('click', () => {
+      if (!notebook?.id) { Arima.toast?.('Open a notebook first.', 'warn'); return; }
+      copyShareLink(notebook.id, null);
+    });
+
     document.getElementById('btn-delete-nb')?.addEventListener('click', async () => {
       if (!notebook?.id) { Arima.toast?.('Open a notebook first.', 'warn'); return; }
       if (notebook.readOnly) { Arima.toast?.('Tutorials are read-only.', 'warn'); return; }
@@ -3834,6 +3920,7 @@ const NotebookEditor = (() => {
     if (!cellId) return;
     const el = document.getElementById(`cell-${cellId}`);
     if (!el) return;
+    if (notebook?.id) syncUrl(notebook.id, cellId, { replace: true });
     scrollCellIntoCenter(cellId);
     _setFocusedCell(cellId);
     el.classList.remove('focus-flash');
@@ -3866,6 +3953,7 @@ const NotebookEditor = (() => {
     insertCodeFromAI, applyCodeToCell, executeCell, getContext, focusCell, revealCell,
     runToHere, runPipeline, runWithDeps, switchTab, closeTab,
     toggleExpandAll, toggleCellPin, toggleCellCollapsed,
+    copyShareLink, applyRoute, routeUrl,
     stepStart, stepClose, stepAction, stepPrev,
     _openCrossNbPicker, _closeCrossNbPicker, _insertCrossNbRef,
     _onCrossNbNotebookChange, _onCrossNbAnchorChange

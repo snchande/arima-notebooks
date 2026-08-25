@@ -4841,3 +4841,7 @@ body.fre-on #fre-tip { display: block; }
   color: var(--accent);
   background: rgba(99,102,241,.14);
 }
+
+/* Share (copy deep link) button on each cell — same treatment as the other
+   cell-toolbar icons. The notebook-level twin lives in the top toolbar. */
+.cell-btn.share-btn:hover { color: var(--accent); }
