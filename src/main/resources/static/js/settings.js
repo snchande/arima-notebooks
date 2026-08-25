@@ -33,6 +33,12 @@ const SettingsPanel = (() => {
         setVal('s-fontsize',      s.editorFontSize);
         setCheck('s-linenums',    s.showLineNumbers !== false);
         setCheck('s-focus-cell',  s.focusExecutingCell !== false);
+
+        setCheck('s-pg-enabled', s.polyglotEnabled !== false);
+        setCheck('s-pg-sbs',     !!s.polyglotSideBySide);
+        setVal('s-pg-dominant',  s.polyglotDominantLanguage || '');
+        const picked = (s.polyglotCompareLanguages || '').split(',').map(x => x.trim());
+        document.querySelectorAll('.s-pg-lang').forEach(el => { el.checked = picked.includes(el.value); });
         // Apply theme swatches
         applyThemeSwatch(s.theme || 'dark');
     }
@@ -61,6 +67,11 @@ const SettingsPanel = (() => {
             editorFontSize:     parseInt(document.getElementById('s-fontsize')?.value) || 14,
             showLineNumbers:    document.getElementById('s-linenums')?.checked ?? true,
             focusExecutingCell: document.getElementById('s-focus-cell')?.checked ?? true,
+            polyglotEnabled:    document.getElementById('s-pg-enabled')?.checked ?? true,
+            polyglotSideBySide: document.getElementById('s-pg-sbs')?.checked ?? false,
+            polyglotDominantLanguage: document.getElementById('s-pg-dominant')?.value || '',
+            polyglotCompareLanguages: Array.from(document.querySelectorAll('.s-pg-lang:checked'))
+                                           .map(el => el.value).join(','),
         };
 
         try {

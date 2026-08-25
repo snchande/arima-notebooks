@@ -1162,6 +1162,8 @@ const NotebookEditor = (() => {
     else if (isMd)  buildMdCell(cell, div, bodyWrap);
     else if (isPipeline) buildPipelineCell(cell, div, bodyWrap);
 
+    if (isCode && typeof Polyglot !== 'undefined') Polyglot.attach(cell, div, bodyWrap);
+
     // Show "last run at …" footer if the cell was previously executed (loaded from notebook)
     if (isCode && cell.executed && cell.lastExecutedAt && bodyWrap) {
       const prevFooter = document.createElement('div');
