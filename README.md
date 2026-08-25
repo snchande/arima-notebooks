@@ -32,7 +32,8 @@ The notebook changed how we explore ideas, prototype, and teach: write a little 
 
 Arima Notebooks was rethought from first principles for both. It isn't a single-language tool with others bolted on — it's a **shared, cross-platform execution plane for code**, where many languages run side by side and where people and agents collaborate on the very same living document.
 
-- **Every language is first-class** — JavaScript, TypeScript, C#, F#, C++, Java, and JShell today, with more to come. Real compilation, real dependencies, real tooling for each — none of them a plugin, none an afterthought.
+- **Every language is first-class** — JavaScript, TypeScript, C#, F#, C++, Java, JShell, and Python today, with more to come. Real compilation, real dependencies, real tooling for each — none of them a plugin, none an afterthought.
+- **Agents are a new kind of cell** — a body written in natural language rather than code, executed by a local agent CLI (Claude, Copilot, Antigravity). Agents compose into pipelines and are callable over MCP like anything else.
 - **Humans and agents, together** — a built-in AI co-pilot, plus full MCP access, so any external agent can drive the same notebook you're editing. You learn faster, adapt faster, and reach a working result together.
 - **Local-first** — your notebooks and code never leave your machine. No cloud account, no sign-up.
 - **Open source, built to be reshaped** — use it, extend it, add a language, bring your own tools, and contribute back to shape where the notebook goes next.
@@ -98,9 +99,13 @@ The bar to **customize for yourself** and the bar to **contribute back** become 
 | **Pipeline Orchestration** | Chain cells with `//@ depends:` annotations — works across all 8 languages |
 | **Multi-provider AI** | Claude · GitHub Copilot · Antigravity — local (CLI + Copilot SDK), no API key needed |
 | **AI Language Conversion** | Switch a cell's language and AI converts the code automatically |
-| **MCP Server** | Expose Arima Notebooks as an MCP tool server for Claude Code, Claude Desktop, and custom agents |
+| **MCP Server** | Expose Arima Notebooks as an MCP tool server for Claude Code, Claude Desktop, and custom agents — ten tools over JSON-RPC 2.0 |
+| **MCP from the CLI** | `arima mcp tools` / `arima mcp exec "..."` — call the same MCP tools straight from CMD, PowerShell, or bash, no client needed |
+| **Agents & Skills** | Build, list, and run agents from the **Agents** tab or over MCP (`barista_list_agents`, `barista_run_agent`) |
+| **One-shot install** | `arima install` checks every dependency, installs what's missing via winget / brew / apt, builds, and reports readiness |
+| **Safe self-update** | `arima update` fast-forwards or rebases onto upstream, and refuses to touch uncommitted work |
 | **Built-in Data Science** | XChart · Commons Math · Tablesaw · simple-statistics · mathjs — pre-installed |
-| **Tutorial Library** | Built-in tutorials across JShell, Java, JavaScript, TypeScript, C#, F#, C++, and Agents & Skills — organized into per-language tabs |
+| **Tutorial Library** | Built-in tutorials across JShell, Java, JavaScript, TypeScript, C#, F#, C++, Python, and Agents & Skills — organized into per-language tabs |
 | **Guided Tutorial Player** | Play any tutorial as a **narrated** walkthrough — hands-free **autopilot** or self-paced **interactive** — and interrupt to ask questions by **voice or text** (browser-native audio, answered by your AI provider) |
 | **Docs reading mode** | One-click distraction-free reading view in the in-app documentation |
 | **Interactive Console** | Full REPL console with tab completion |
@@ -119,10 +124,12 @@ The bar to **customize for yourself** and the bar to **contribute back** become 
 | **TypeScript (tsc)** | 5.0+ | Optional — `npm install -g typescript` to enable type-check diagnostics |
 | **.NET SDK** | 6.0+ | Optional — for C# and F# cells (free from [dot.net](https://dot.net)) |
 | **C++ compiler** | Any | Optional — MSVC (Windows), GCC or Clang (Mac/Linux); auto-detected |
+| **Python** | 3.9+ | Optional — for Python cells and PyPI packages |
+| **Git** | 2.x | Optional — enables `arima update` (sync this checkout with upstream) |
 | **AI CLI** | Latest | Optional — Claude CLI, GitHub Copilot CLI (`copilot`, used by the Copilot SDK), or Antigravity CLI (`agy`) for AI features |
-| **Internet** | — | For Maven Central, npm registry, NuGet downloads |
+| **Internet** | — | For Maven Central, npm registry, NuGet, and PyPI downloads |
 
-> **Quick launch**: the `arima` CLI (`arima.cmd` for CMD, `arima.ps1` for PowerShell, `arima.sh` for Linux/macOS) handles everything — build, start, stop, status, and browser open in one command.
+> **You don't have to install these by hand.** Run `arima install` and the CLI checks every dependency, installs whatever is missing (winget on Windows; brew / apt / dnf / pacman on Linux & macOS), builds the JAR, and prints a readiness report.
 
 ---
 
@@ -135,28 +142,48 @@ git clone https://github.com/snchande/arima-notebooks.git
 cd arima-notebooks
 ```
 
-### Step 2 — Start Arima Notebooks
+### Step 2 — Install
 
-Pick the CLI for your shell — all three accept the same subcommands (`start`, `stop`, `status`, `build`, `rebuild`, `open`, `logs`, `version`, `help`):
+`install` is the one-shot setup command: it probes every dependency, offers to install the missing ones, prepares `data/`, `notebooks/` and `logs/`, wires the AI guardrails, builds the JAR, and finishes with a **readiness report**.
 
 **Windows — Command Prompt**
 ```cmd
-arima
+arima install
 ```
 
 **Windows — PowerShell**
 ```powershell
-./arima.ps1
+./arima.ps1 install
 ```
 > If PowerShell blocks the script with an execution-policy error, run once:
 > `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
 **Linux / macOS**
 ```bash
-./arima.sh
+./arima.sh install
 ```
 
-All three CLIs detect if the JAR exists, build it if needed, start the server, and open your browser automatically. Run `arima help` (or `./arima.sh help` / `./arima.ps1 help`) for the full command list.
+Useful flags: `--yes` (install without prompting), `--skip-optional` (only Java + Maven), `--no-build`, `--path` (register the folder on your PATH so plain `arima` works anywhere).
+
+### Step 3 — Start Arima Notebooks
+
+```cmd
+arima start            ::  start the server and open the browser
+arima start --bg       ::  detached, logs to arima.log
+arima                  ::  home screen: live status + every command
+```
+```powershell
+./arima.ps1 start      #   start the server and open the browser
+./arima.ps1 start -Bg
+./arima.ps1            #   home screen: live status + every command
+```
+```bash
+./arima.sh start       #   start the server and open the browser
+./arima.sh start --bg
+./arima.sh             #   home screen: live status + every command
+```
+
+`start` auto-builds the JAR if it's missing, starts the server, and opens your browser. Running the launcher with **no subcommand** shows the home screen described above. Run `arima help` for the full command list.
 
 **Maven dev mode (all platforms):**
 ```bash
@@ -171,13 +198,22 @@ java --add-opens=jdk.jshell/jdk.jshell=ALL-UNNAMED \
      -jar target/arima-notebooks-1.0.0-SNAPSHOT.jar
 ```
 
-### Step 3 — Open your browser
+### Step 4 — Open your browser
 
 Navigate to **[http://localhost:8585](http://localhost:8585)**
 
 The `arima` CLI opens this automatically on every platform.
 
-### Step 4 — (Optional) Enable AI features
+### Step 5 — Keeping up to date
+
+```bash
+arima update      # fetch upstream, fast-forward or rebase your commits, rebuild
+arima restart     # pick up the new JAR
+```
+
+`update` **never touches uncommitted work**. If your working tree is dirty it stops before doing anything and tells you to commit or stash first. If the rebase itself conflicts, it aborts the rebase automatically, restores your branch exactly as it was, and lists the conflicting files with the commands to resolve them by hand.
+
+### Step 6 — (Optional) Enable AI features
 
 Arima Notebooks supports three AI providers — all local, no API key needed. Claude & Antigravity run as CLI subprocesses; Copilot runs through the **GitHub Copilot SDK**, which drives the local `copilot` CLI:
 
@@ -306,10 +342,11 @@ Click **Run with Dependencies** on any cell to automatically execute its full de
 
 ## Tutorial Library
 
-Arima Notebooks ships with 28 built-in tutorials. Open the Notebook Browser and click **Arima Tutorials**.
+Arima Notebooks ships with **39 built-in tutorials** across all eight languages plus a dedicated **Agents & Skills** track. Open the Notebook Browser and click **Arima Tutorials** — they're organised into per-language tabs.
 
 | ID | Title | Mode | Level |
 |----|-------|------|-------|
+| `arima-101` | Getting Started with Arima Notebooks | Mixed | Beginner |
 | `jshell-101` | JShell Basics | JShell | Beginner |
 | `jshell-201` | JShell Intermediate | JShell | Intermediate |
 | `jshell-301` | JShell Advanced | JShell | Advanced |
@@ -338,44 +375,171 @@ Arima Notebooks ships with 28 built-in tutorials. Open the Notebook Browser and 
 | `cpp-101` | C++ Fundamentals | C++ | Beginner |
 | `cpp-201` | C++ Classes & STL | C++ | Intermediate |
 | `cpp-301` | C++ Templates & Algorithms | C++ | Advanced |
+| `cpp-401` | C++ Concurrency & Modern Features | C++ | Advanced |
+| `cpp-501` | C++ Systems & Performance | C++ | Advanced |
+| `python-101` | Python Fundamentals | Python | Beginner |
+| `python-201` | Python Collections & OOP | Python | Intermediate |
+| `python-301` | Python Standard Library & Functional | Python | Intermediate |
+| `python-401` | Python Networking | Python | Advanced |
+| `python-501` | Python Databases | Python | Advanced |
+| `python-601` | Python Data Science, Metrics & Reporting | Python | Advanced |
+| `agent-101` | Explain Code | Agents | Beginner |
+| `agent-201` | Code Reviewer | Agents | Intermediate |
+| `agent-301` | Test Writer | Agents | Intermediate |
+| `agent-401` | Reviewer in a Pipeline | Agents | Advanced |
+| `agent-501` | Multi-Agent Review | Agents | Advanced |
+| `agent-601` | MCP-driven Agent | Agents | Advanced |
+| `skill-101` | Commit Message | Skills | Beginner |
 
 Tutorials open in **read-only mode** — your personal notebooks are separate.
+
+Any tutorial can be played as a **narrated walkthrough** — hands-free *autopilot* or self-paced *interactive* — and you can interrupt it to ask questions by voice or text.
 
 ---
 
 ## Arima Notebooks CLI
 
-Three launchers sit in the project root — pick whichever matches your shell. They all expose the same subcommands and share the same banner:
+Three launchers sit in the project root. They are **feature-identical** — same commands, same flags, same ASCII art, same animations, same exit codes. Pick whichever matches your shell.
 
-```
-        .           A R I M A   N O T E B O O K S
-       /|\          ─────────────────────────────
-      ( @ )         Java | JS | TS | C# | F# | C++
-     /|\_/|\        Brewed by Barista · JShell + Spring Boot
-    / |   | \       Port: 8585
-```
-
-| Shell | Launcher | Background flag |
+| Shell | Launcher | Flag style |
 |---|---|---|
-| Windows CMD | `arima` (`arima.cmd`) | `arima start --bg` |
-| Windows PowerShell | `./arima.ps1` | `./arima.ps1 start -Bg` |
-| Linux / macOS bash | `./arima.sh` | `./arima.sh start --bg` |
+| Windows CMD | `arima` (`arima.cmd`) | `--bg`, `--yes`, `--purge` … |
+| Windows PowerShell | `./arima.ps1` | `-Bg`, `-Yes`, `-Purge` … |
+| Linux / macOS bash | `./arima.sh` | `--bg`, `--yes`, `--purge` … |
+
+Every command opens with Barista brewing your notebook, then the banner:
+
+```
+         ( )                 .-"""""-.      A R I M A   N O T E B O O K S
+          ) (              .'    \    '.    ------------------------------------------
+        .------.          /      )      \   Java  JShell  JS  TS  C#  F#  C++  Python
+        |######|]         \      (      /   Brewed by Barista - JShell + Spring Boot
+        |######|           '.    /    .'    Server: http://localhost:8585
+        '------'             '-.....-'
+       ~~~~~~~~~~
+   Barista serves your notebook.
+```
+
+The mascot beside the heading is a coffee bean — the same bean Barista drops into the cup below.
+
+The brew animation is a ten-frame character animation: a coffee bean drops into the cup, Barista grinds and brews it, and serves it steaming. It plays on `start`, `welcome`, a successful `install`, and on demand via `arima brew`. Disable it with `--no-anim` / `-NoAnim`; it degrades to a single static frame whenever output is piped.
+
+### Start here — just run `arima`
+
+With no subcommand the CLI shows a **home screen** that adapts to what it finds:
+
+| State | What you get |
+|---|---|
+| **Running** | A live metadata block read straight from the server — version and build, **when it started and how long it has been up**, the JVM PID, port, auth mode, Java/OS/memory, active JShell sessions, notebook counts, MCP endpoint and protocol, and which of the eight languages are ready — followed by the full command list. |
+| **Built, stopped** | Build location, the full command list, and how to start. |
+| **Nothing built yet** | A first-run walkthrough: what Arima is, a readiness check of every dependency, and an offer to install what is missing and start the server. |
+
+```
+  LIVE SERVER
+  ------------------------------------------------------------
+    [ok] Status       RUNNING at http://localhost:8585
+    [ok] Version      1.0.0-SNAPSHOT   (built 2026-08-24T22:09:23Z)
+    [ok] Started      2026-08-24 15:20:19 PDT   (up 3m 0s)
+    [ok] Process      PID 24132   port 8585   auth local
+    [ok] Java         25  --  Java HotSpot(TM) 64-Bit Server VM
+    [ok] OS           Windows 11 10.0 (amd64)  --  12 CPUs
+    [ok] Memory       37 MB used  /  80 MB heap  /  16256 MB max
+    [ok] Sessions     0 active JShell session(s)
+    [ok] Notebooks    89 total  --  54 tutorials  (notebooks/)
+    [ok] MCP          enabled  --  protocol 2024-11-05  --  http://localhost:8585/api/mcp/messages
+    [ok] Languages    7/7 ready  --  Java / JShell, JavaScript, TypeScript, C#, F#, C++, Python
+```
+
+The same block appears under `arima status`. It comes from [`GET /api/system/info`](docs/API.md#server-info); `startedAt` and `uptime` are read from the JVM itself, so they stay accurate no matter how the server was launched. If that endpoint cannot be reached — an older build, or `oauth` auth mode where `/api/**` requires a session — the launchers fall back to a port/PID summary and say so.
+
+The first-run prompt only appears in an interactive terminal. Piped or scripted invocations print guidance instead, so `arima` in a script never kicks off an unattended install.
+
+### Lifecycle
 
 | Subcommand | Description |
 |---|---|
-| `start` | Start server, auto-build if needed, open browser |
-| `start` *(background)* | Start detached; logs to `arima.log` |
+| `install` | **Checks every dependency, installs whatever is missing, builds the JAR, and prints a readiness report.** Uses winget on Windows; brew / apt / dnf / pacman on Linux & macOS. Always asks before installing system-wide packages (`--yes` to skip). |
+| `update` | Fetches upstream and **fast-forwards** (if you have no local commits) or **rebases** your commits on top. Refuses to run with a dirty working tree; auto-aborts and restores your branch on conflict. |
+| `uninstall` | Removes build output (`target/`) and logs. **Never touches `notebooks/`, `src/`, or `.git/`.** `--purge` additionally deletes `data/`. Asks for confirmation. |
+
+### Server
+
+| Subcommand | Description |
+|---|---|
+| `start` | Start the server, auto-build if needed, open the browser |
+| `start --bg` | Start detached; logs to `arima.log`; spinner waits for the port, then opens the browser |
 | `stop` | Stop the running server |
-| `status` | Show running state, PID, Java / Node.js / .NET versions, JAR state |
-| `build` | Build JAR (skips if already built) |
-| `rebuild` | Force clean rebuild |
-| `open` | Open browser (server must be running) |
+| `restart` | Stop then start — use this after `update` to pick up the new JAR |
+| `status` | Server state + PID, JAR, every runtime, AI CLIs, and git checkout state |
+| `open` | Open the browser (server must already be running) |
 | `logs` | Tail `arima.log` (background mode only) |
-| `version` | Show project, Java, Node.js, .NET, and Maven versions |
-| `agents` *(alias `ai`)* | List detected AI co-pilots (Claude/Copilot/Antigravity), guardrail files, skills, and subagents wired into the repo — *available in the CMD launcher (`arima.cmd`) today; PowerShell/bash parity planned* |
-| `help` | Show help screen |
+
+### MCP — drive Arima from the terminal
+
+`POST /api/mcp/messages` is a stateless JSON-RPC 2.0 endpoint, so the CLI can call the **same tools any MCP client would** — no client, no SSE session, no config needed.
+
+| Subcommand | Description |
+|---|---|
+| `mcp` | Endpoints, live server info, and the command list |
+| `mcp info` / `mcp ping` | Server name, version, protocol / health check |
+| `mcp tools` | List every MCP tool with its parameters (`*` marks required) |
+| `mcp call <tool> k=v ...` | Call any tool by name; also accepts a single JSON object |
+| `mcp exec "<code>"` | Run Java/JShell code (`barista_execute_code`) |
+| `mcp notebooks` · `mcp read <id>` · `mcp search <q>` | Notebook shortcuts |
+| `mcp agents` · `mcp run-agent <id> <task>` | Agent & skill shortcuts |
+| `mcp raw '<json-rpc>'` | Send a raw JSON-RPC envelope |
+| `mcp config` | Print an MCP client config snippet for Claude Desktop / Claude Code |
+
+```console
+$ arima mcp exec "var answer = 6*7; System.out.println(answer);"
+Session: mcp-session
+Status: SUCCESS
+Output:
+42
+
+Execution time: 281ms
+
+$ arima mcp call barista_search_cells query=tablesaw
+$ arima mcp config
+```
+
+### Build & info
+
+| Subcommand | Description |
+|---|---|
+| `build` / `rebuild` | `mvn clean package -DskipTests` |
+| `version` | Arima version plus every detected runtime |
+| `welcome` | Pick how you want to work: UI, MCP, or extend |
+| `docs` | Open the brochure and list the documentation |
+| `agents` *(alias `ai`)* | Detected AI co-pilots, guardrail files, skills, and subagents |
+| `brew` *(alias `coffee`)* | Watch Barista serve a coffee bean |
+| `help` | Show the help screen |
+
+### Flags
+
+| CMD / bash | PowerShell | Effect |
+|---|---|---|
+| `--bg` | `-Bg` | Start detached, logging to `arima.log` |
+| `--yes` | `-Yes` | Skip confirmation prompts (install / uninstall) |
+| `--purge` | `-Purge` | `uninstall`: also delete `data/` |
+| `--no-build` | `-NoBuild` | `install` / `update`: skip the Maven build |
+| `--path` | `-AddToPath` | `install`: register this folder on your PATH so plain `arima` works anywhere |
+| `--skip-optional` | `-SkipOptional` | `install`: only the required tools (Java + Maven) |
+| `--no-anim` | `-NoAnim` | Disable the brew animation, banner reveal, and spinners |
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | General failure (missing tool, build failed, server not running) |
+| `2` | `update` refused: uncommitted changes in the working tree |
+| `3` | `update` rolled back: rebase conflict (branch restored, nothing lost) |
+| `42` | Restart requested by the UI — the foreground `start` loop relaunches automatically |
 
 > **PowerShell note**: if `./arima.ps1` is blocked, run once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+>
+> **No colour?** Set `ARIMA_NO_COLOR=1` (CMD) or `NO_COLOR=1` (bash) for terminals without ANSI support.
 
 ---
 
@@ -384,28 +548,37 @@ Three launchers sit in the project root — pick whichever matches your shell. T
 ```
 arima/
 ├── src/main/java/com/barista/
-│   ├── controller/          # REST + WebSocket endpoints
-│   ├── service/             # Business logic (JShell, Java, Node.js, TypeScript, C#, F#, C++, AI, Maven, npm)
+│   ├── controller/          # REST + WebSocket + MCP endpoints
+│   │                        #   Notebook, Shell, Package, NpmPackage, NuGet, PyPi,
+│   │                        #   LLM, Agent, Settings, System, User, Mcp
+│   ├── service/             # Business logic — one per concern
+│   │                        #   Execution: JavaCompiler, NodeJs, TypeScript, DotNet, Cpp, Python
+│   │                        #   Packages:  Package (Maven), NpmPackage, NuGet, PyPi
+│   │                        #   AI:        Claude, GitHubCopilot, CopilotCli, Gemini, Agent
+│   │                        #   Core:      Notebook, Orchestration, Settings, User, OAuthConfig
 │   ├── shell/               # JShell session management
 │   └── model/               # Data models (.vnb format, settings)
 ├── src/main/resources/
 │   ├── static/              # Frontend — index.html + CSS + JS (no build step)
 │   └── application.properties
 ├── notebooks/
-│   ├── tutorials/           # 25 built-in tutorial notebooks (JShell, Java, JS, TS, C#, F#)
+│   ├── tutorials/           # 39 built-in tutorials (JShell, Java, JS, TS, C#, F#, C++, Python, Agents, Skills)
 │   ├── examples/            # Example & demo notebooks (incl. C++ and cross-notebook demos)
 │   └── welcome.vnb          # Getting started notebook
 ├── scripts/
-│   ├── start.sh             # Minimal Unix/Mac launcher (watchdog loop)
-│   └── start.bat            # Minimal Windows launcher
-├── arima.cmd                # Full CLI — Windows CMD
+│   ├── start.sh / start.bat # Minimal launchers (watchdog loop)
+│   ├── setup-python.sh/.ps1 # Python environment bootstrap
+│   └── security-check.sh/.ps1  # Pre-flight security scan
+├── arima.cmd                # Full CLI — Windows CMD      (CRLF required, see .gitattributes)
 ├── arima.ps1                # Full CLI — Windows PowerShell
 ├── arima.sh                 # Full CLI — Linux / macOS bash
+├── .gitattributes           # Pins line endings per interpreter (*.cmd = CRLF, *.sh = LF)
 └── docs/
-    ├── API.md               # REST API reference
+    ├── API.md               # REST API + MCP reference
     ├── ARCHITECTURE.md      # System architecture
     ├── SETUP.md             # Detailed setup guide
-    └── USAGE.md             # Feature documentation
+    ├── USAGE.md             # Feature documentation
+    └── WELCOME.md           # The common welcome experience
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system design.
@@ -460,6 +633,33 @@ Edit `src/main/resources/application.properties` or set environment variables be
 - Windows: Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) with "Desktop development with C++"
 - macOS: Run `xcode-select --install`
 - Linux: Run `sudo apt install g++`
+- Or just run `arima install` and accept the C++ toolchain when prompted
+
+**Python cells fail**
+- Python 3.9+ must be installed and on your `PATH` — verify with `python --version`
+- Packages installed from the **PyPI** tab land in `data/pypi-packages/` and are added to `PYTHONPATH` automatically
+- `arima status` shows which Python interpreter Arima detected
+
+**`arima.cmd` prints `'x' is not recognized` or `was unexpected at this time`**
+- This means the batch file lost its **CRLF line endings**. `cmd.exe` cannot parse an LF-only `.cmd` file.
+- The repo ships a `.gitattributes` that pins `*.cmd`, `*.bat`, and `*.ps1` to CRLF (and `*.sh` to LF). If your checkout predates it, refresh the working tree:
+  ```bash
+  git rm --cached -r . && git reset --hard
+  ```
+- Editors that "helpfully" normalise to LF will break it again — make sure yours respects `.gitattributes`.
+
+**CLI output shows garbage like `←[92m`**
+- Your console doesn't support ANSI escape codes (legacy `conhost` without virtual-terminal processing).
+- Use Windows Terminal, or disable colour: `set ARIMA_NO_COLOR=1` (CMD) / `$env:NO_COLOR=1` (PowerShell) / `export NO_COLOR=1` (bash).
+- `--no-anim` / `-NoAnim` turns off just the brew animation and spinners while keeping colour.
+
+**`arima update` says "UNCOMMITTED CHANGES — UPDATE STOPPED"**
+- This is intentional: a rebase could overwrite your edits, so the update refuses to start and changes nothing.
+- Commit them (`git add -A && git commit -m "wip"`) or stash them (`git stash push -u`), then re-run `arima update`.
+
+**`arima update` says "MERGE CONFLICT — UPDATE ROLLED BACK"**
+- The rebase was aborted automatically and your branch is exactly where it was — nothing was lost.
+- Resolve by hand: `git rebase origin/master`, fix the listed files, `git add <file>`, `git rebase --continue`, then `arima build`.
 
 ---
 

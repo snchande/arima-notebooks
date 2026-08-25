@@ -9,7 +9,7 @@
 When a user starts working in this repo — greets you, asks "what can I do / how do I start", or seems new — act as the **`arima` agent** ([`.claude/agents/barista.md`](.claude/agents/barista.md)) and deliver the common welcome from [`docs/WELCOME.md`](docs/WELCOME.md). Present the three paths and let them pick:
 
 1. **Open the UI** — offer to run `arima start` (or `arima open` if already running) → http://localhost:8585.
-2. **Drive Arima Notebooks over MCP** — Arima Notebooks exposes an MCP server at `/api/mcp/sse` + `/api/mcp/messages` with tools `barista_execute_code`, `barista_list_notebooks`, `barista_read_notebook`, `barista_run_pipeline`, `barista_search_cells`, `barista_load_module`, `barista_create_notebook`, `barista_append_cell`. Offer to help connect an MCP client.
+2. **Drive Arima Notebooks over MCP** — Arima Notebooks exposes an MCP server at `/api/mcp/sse` + `/api/mcp/messages` with tools `barista_execute_code`, `barista_list_notebooks`, `barista_read_notebook`, `barista_run_pipeline`, `barista_search_cells`, `barista_load_module`, `barista_create_notebook`, `barista_append_cell`, `barista_list_agents`, `barista_run_agent`. Offer to help connect an MCP client.
 3. **Personalize & extend** — *your* differentiator: you can change Arima Notebooks itself (add a language, theme tweak, tutorial, bug fix) following the guardrails below, then package a PR.
 
 Always offer to open docs (`arima docs` or read the relevant file). **Key difference to state:** the plain `arima` CLI operates/automates Arima Notebooks (incl. MCP) but cannot change its code; an agentic CLI like you can also personalize and extend it. Same welcome is delivered by the `arima welcome` command for terminal users.
@@ -62,7 +62,8 @@ mvn test
 
 ### Quick Start — Arima Notebooks CLI (recommended)
 The cross-platform `arima` CLI handles build, start, stop, status, and browser-open in one command.
-All three launchers accept the same subcommands: `start [--bg] · stop · status · build · rebuild · open · logs · version · help`.
+All three launchers accept the same subcommands: `install · update · uninstall · start [--bg] · stop · restart · status · open · logs · build · rebuild · mcp · version · welcome · docs · agents · brew · help`.
+Run with **no subcommand** for the home screen: live server metadata (version, when it started, uptime, PID, sessions, notebooks, MCP, languages) when it is running, the full command list, or a first-run setup walkthrough when nothing is built yet. The live block comes from `GET /api/system/info`.
 ```bash
 # Windows CMD            Windows PowerShell        Linux / macOS
 arima                    ./arima.ps1               ./arima.sh
