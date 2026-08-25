@@ -1,5 +1,6 @@
 package com.barista.controller;
 
+import com.barista.service.ServerInfoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Server lifecycle — graceful shutdown and self-restart.
+ * Server lifecycle — live metadata, graceful shutdown, and self-restart.
  *
  * <h3>Restart strategy</h3>
  * <ol>
@@ -47,12 +48,20 @@ public class SystemController {
     static final int EXIT_RESTART = 42;
 
     private final ConfigurableApplicationContext context;
+    private final ServerInfoService serverInfoService;
 
-    public SystemController(ConfigurableApplicationContext context) {
+    public SystemController(ConfigurableApplicationContext context,
+                            ServerInfoService serverInfoService) {
         this.context = context;
+        this.serverInfoService = serverInfoService;
     }
 
     // ── Endpoints ────────────────────────────────────────────────────────────
+
+    @GetMapping("/info")
+    public ResponseEntity<Map<String, Object>> info() {
+        return ResponseEntity.ok(serverInfoService.getInfo());
+    }
 
     @PostMapping("/shutdown")
     public ResponseEntity<Map<String, String>> shutdown() {
