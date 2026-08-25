@@ -2,7 +2,9 @@ package com.barista.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -52,6 +54,14 @@ public class Cell {
      * Arima runs a topological sort over the transitive closure of these anchors.
      */
     private List<String> pipelineSteps = new ArrayList<>();
+
+    // -- Polyglot fields ------------------------------------------------------
+    /**
+     * This cell's source rendered into other languages, keyed by mode
+     * ("java", "cpp", "csharp", ...). Generated on demand and saved with the
+     * notebook so a reopen costs nothing.
+     */
+    private Map<String, CellTranslation> translations = new LinkedHashMap<>();
 
     public Cell() {
         this.id = UUID.randomUUID().toString();
@@ -104,6 +114,11 @@ public class Cell {
 
     public List<String> getDependsOn() { return dependsOn; }
     public void setDependsOn(List<String> dependsOn) { this.dependsOn = dependsOn == null ? new ArrayList<>() : dependsOn; }
+
+    public Map<String, CellTranslation> getTranslations() { return translations; }
+    public void setTranslations(Map<String, CellTranslation> translations) {
+        this.translations = translations == null ? new LinkedHashMap<>() : translations;
+    }
 
     public List<String> getPipelineSteps() { return pipelineSteps; }
     public void setPipelineSteps(List<String> pipelineSteps) { this.pipelineSteps = pipelineSteps == null ? new ArrayList<>() : pipelineSteps; }

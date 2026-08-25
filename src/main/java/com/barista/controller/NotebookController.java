@@ -104,6 +104,26 @@ public class NotebookController {
         }
     }
 
+    /**
+     * Open a notebook file from disk - a double-clicked .anb, or a path handed to
+     * "arima open". Returns the id the UI should navigate to.
+     */
+    @PostMapping("/open-file")
+    public ResponseEntity<?> openFile(@RequestBody Map<String, String> body) {
+        String path = body == null ? null : body.get("path");
+        if (path == null || path.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing 'path'"));
+        }
+        try {
+            String id = notebookService.openExternalFile(
+                    java.nio.file.Paths.get(path), currentUserId());
+            return ResponseEntity.ok(Map.of("id", id, "url", "/notebooks/" + id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Could not open notebook: " + e.getMessage()));
+        }
+    }
+
     // ── Personal notebook endpoints ───────────────────────────────
 
     @GetMapping

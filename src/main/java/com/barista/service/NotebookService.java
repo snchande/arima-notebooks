@@ -1,5 +1,6 @@
 package com.barista.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -26,7 +28,16 @@ import java.util.stream.Stream;
 public class NotebookService {
 
     private static final Logger log = LoggerFactory.getLogger(NotebookService.class);
-    private static final String EXTENSION = ".vnb";
+    private static final String EXTENSION = ".anb";
+    /** Pre-1.1 extension. Files found with it are migrated to {@link #EXTENSION} on startup. */
+    private static final String LEGACY_EXTENSION = ".vnb";
+
+    /**
+     * userId -> (notebook id -> file). Notebooks are stored under a readable filename
+     * derived from their name, so the id is no longer recoverable from the path and
+     * has to be indexed. Rebuilt on a miss, so an edit made outside Arima is picked up.
+     */
+    private final Map<String, Map<String, Path>> idIndex = new ConcurrentHashMap<>();
 
     @Value("${barista.notebooks.dir:notebooks}")
     private String notebooksDir;
@@ -54,8 +65,13 @@ public class NotebookService {
         Path userDir = userDir(localUserId);
         Files.createDirectories(userDir);
 
-        // Migrate any legacy .vnb files from the flat root to the local user folder
+        // Migrate any legacy files from the flat root to the local user folder
         migrateRootNotebooks(userDir);
+
+        // .vnb -> .anb, and UUID filenames -> readable ones
+        migrateToReadableFilenames(userDir);
+        migrateSharedDirExtension(tutorialsDir());
+        migrateSharedDirExtension(examplesDir());
 
         // Seed with welcome notebook if user folder is empty
         if (listNotebooks(localUserId).isEmpty()) {
@@ -70,7 +86,7 @@ public class NotebookService {
         if (!Files.exists(dir)) return List.of();
         try (Stream<Path> files = Files.list(dir)) {
             return files
-                    .filter(p -> p.toString().endsWith(EXTENSION) && Files.isRegularFile(p))
+                    .filter(p -> isNotebookFile(p))
                     .map(this::readNotebookMeta)
                     .filter(Objects::nonNull)
                     .sorted(Comparator.comparing(
@@ -133,10 +149,19 @@ public class NotebookService {
         if (notebook.getId() == null) notebook.setId(UUID.randomUUID().toString());
         if (notebook.getCreated() == null) notebook.setCreated(LocalDateTime.now());
 
-        Path path = notebookPath(notebook.getId(), userId);
+        Path existing = lookup(notebook.getId(), userId);
+        Path path = preferredPath(notebook, userId);
         try {
             Files.createDirectories(path.getParent());
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(path.toFile(), notebook);
+
+            // Renaming the notebook renames its file, so the folder keeps tracking the title.
+            if (existing != null && !existing.equals(path)) {
+                Files.deleteIfExists(existing);
+                log.info("Renamed notebook file {} -> {}",
+                        existing.getFileName(), path.getFileName());
+            }
+            idIndex.computeIfAbsent(userId, this::buildIndex).put(notebook.getId(), path);
             log.debug("Saved notebook: {} ({}) for user {}", notebook.getName(), notebook.getId(), userId);
         } catch (IOException e) {
             log.error("Failed to save notebook {}: {}", notebook.getId(), e.getMessage());
@@ -147,7 +172,9 @@ public class NotebookService {
 
     public boolean deleteNotebook(String id, String userId) {
         try {
-            return Files.deleteIfExists(notebookPath(id, userId));
+            Path path = notebookPath(id, userId);
+            idIndex.getOrDefault(userId, Map.of()).remove(id);
+            return Files.deleteIfExists(path);
         } catch (IOException e) {
             log.error("Failed to delete notebook {}: {}", id, e.getMessage());
             return false;
@@ -177,7 +204,7 @@ public class NotebookService {
         if (!Files.exists(dir)) return List.of();
         try (Stream<Path> files = Files.list(dir)) {
             return files
-                    .filter(p -> p.toString().endsWith(EXTENSION) && Files.isRegularFile(p))
+                    .filter(p -> isNotebookFile(p))
                     .map(p -> readNotebookMeta(p, defaultCategory))
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
@@ -282,6 +309,42 @@ public class NotebookService {
         return "";
     }
 
+    /**
+     * Resolve a notebook file the user opened from outside Arima - a double-clicked
+     * {@code .anb}, or a path passed to {@code arima open}.
+     *
+     * A file already inside the user's folder is simply opened. One from anywhere else
+     * is copied in, so opening a notebook someone sent you does not leave Arima
+     * pointing at a file it does not own. A copy whose id already exists is given a
+     * fresh one rather than overwriting the notebook already there.
+     *
+     * @return the id to open in the UI
+     */
+    public String openExternalFile(Path file, String userId) throws IOException {
+        if (!Files.isRegularFile(file)) {
+            throw new IOException("Not a file: " + file);
+        }
+        Notebook nb = objectMapper.readValue(file.toFile(), Notebook.class);
+        if (nb.getId() == null || nb.getId().isBlank()) {
+            nb.setId(UUID.randomUUID().toString());
+        }
+
+        Path canonical = file.toAbsolutePath().normalize();
+        Path owned = userDir(userId).toAbsolutePath().normalize();
+        if (canonical.startsWith(owned)) {
+            idIndex.computeIfAbsent(userId, this::buildIndex).put(nb.getId(), canonical);
+            return nb.getId();
+        }
+
+        if (lookup(nb.getId(), userId) != null) {
+            nb.setId(UUID.randomUUID().toString());
+            nb.setName(nb.getName() + " (imported)");
+        }
+        saveNotebook(nb, userId);
+        log.info("Imported external notebook {} as {}", file.getFileName(), nb.getId());
+        return nb.getId();
+    }
+
     // ── Path helpers ─────────────────────────────────────────────
 
     /** On-disk location of a notebook, for "open file location" in the UI. */
@@ -292,8 +355,101 @@ public class NotebookService {
         return Files.exists(t) ? Optional.of(t.toAbsolutePath()) : Optional.empty();
     }
 
+    /**
+     * Where a notebook with this id currently lives, or where a new one would go.
+     * Resolution goes through the id index because the filename is derived from the
+     * notebook's name, not its id.
+     */
     private Path notebookPath(String id, String userId) {
-        return userDir(userId).resolve(id + EXTENSION);
+        Path known = lookup(id, userId);
+        return known != null ? known : userDir(userId).resolve(id + EXTENSION);
+    }
+
+    /** True for any file Arima stores a notebook in, current or legacy extension. */
+    private boolean isNotebookFile(Path p) {
+        String n = p.toString();
+        return (n.endsWith(EXTENSION) || n.endsWith(LEGACY_EXTENSION)) && Files.isRegularFile(p);
+    }
+
+    /** Find the file holding this id, rebuilding the index once if the cache misses. */
+    private Path lookup(String id, String userId) {
+        Map<String, Path> index = idIndex.computeIfAbsent(userId, this::buildIndex);
+        Path hit = index.get(id);
+        if (hit != null && Files.exists(hit)) return hit;
+        index = buildIndex(userId);
+        idIndex.put(userId, index);
+        return index.get(id);
+    }
+
+    private Map<String, Path> buildIndex(String userId) {
+        Map<String, Path> index = new HashMap<>();
+        Path dir = userDir(userId);
+        if (!Files.exists(dir)) return index;
+        try (Stream<Path> files = Files.list(dir)) {
+            files.filter(this::isNotebookFile).forEach(p -> {
+                try {
+                    JsonNode node = objectMapper.readTree(p.toFile());
+                    JsonNode idNode = node.get("id");
+                    if (idNode != null && !idNode.asText().isBlank()) {
+                        index.put(idNode.asText(), p);
+                    }
+                } catch (IOException e) {
+                    log.warn("Skipping unreadable notebook {}: {}", p.getFileName(), e.getMessage());
+                }
+            });
+        } catch (IOException e) {
+            log.error("Failed to index notebooks for {}: {}", userId, e.getMessage());
+        }
+        return index;
+    }
+
+    /**
+     * A readable, filesystem-safe filename for a notebook: the name, lowercased and
+     * hyphenated. A short id suffix is appended only when another notebook already
+     * holds that filename, so the common case stays clean.
+     */
+    private Path preferredPath(Notebook nb, String userId) {
+        String slug = slugify(nb.getName());
+        if (slug.isBlank()) slug = "untitled";
+
+        Path dir = userDir(userId);
+        Path candidate = dir.resolve(slug + EXTENSION);
+
+        if (Files.exists(candidate) && !ownsFile(candidate, nb.getId())) {
+            String suffix = nb.getId().replace("-", "");
+            suffix = suffix.substring(0, Math.min(6, suffix.length()));
+            candidate = dir.resolve(slug + "-" + suffix + EXTENSION);
+        }
+        return candidate;
+    }
+
+    private boolean ownsFile(Path path, String id) {
+        try {
+            JsonNode node = objectMapper.readTree(path.toFile());
+            JsonNode idNode = node.get("id");
+            return idNode != null && idNode.asText().equals(id);
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    static String slugify(String name) {
+        if (name == null) return "";
+        String s = java.text.Normalizer.normalize(name, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase();
+
+        // Language names carry meaning in punctuation that would otherwise be stripped,
+        // collapsing "C++" and "C#" onto the same slug.
+        s = s.replace("c++", "cpp")
+             .replace("f#", "fsharp")
+             .replace("c#", "csharp")
+             .replace("++", "pp")
+             .replace("#", "sharp");
+
+        s = s.replaceAll("[^a-z0-9]+", "-")
+             .replaceAll("^-+|-+$", "");
+        return s.length() > 60 ? s.substring(0, 60).replaceAll("-+$", "") : s;
     }
 
     private Path userDir(String userId) {
@@ -337,7 +493,7 @@ public class NotebookService {
         Path rootDir = Paths.get(notebooksDir);
         try (Stream<Path> entries = Files.list(rootDir)) {
             entries
-                .filter(p -> p.toString().endsWith(EXTENSION) && Files.isRegularFile(p))
+                .filter(p -> isNotebookFile(p))
                 .forEach(p -> {
                     Path dest = userDir.resolve(p.getFileName());
                     if (!Files.exists(dest)) {
@@ -351,6 +507,77 @@ public class NotebookService {
                 });
         } catch (IOException e) {
             log.warn("Migration scan failed: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Bring a user folder up to the current storage convention: the {@code .anb}
+     * extension, and a filename derived from the notebook's name rather than its id.
+     * Runs once per file - anything already conforming is left alone.
+     */
+    private void migrateToReadableFilenames(Path userDir) {
+        if (!Files.exists(userDir)) return;
+        List<Path> stale;
+        try (Stream<Path> files = Files.list(userDir)) {
+            stale = files.filter(this::isNotebookFile).collect(Collectors.toList());
+        } catch (IOException e) {
+            log.warn("Filename migration scan failed: {}", e.getMessage());
+            return;
+        }
+
+        int renamed = 0;
+        for (Path p : stale) {
+            try {
+                Notebook nb = objectMapper.readValue(p.toFile(), Notebook.class);
+                if (nb.getId() == null || nb.getId().isBlank()) continue;
+
+                String slug = slugify(nb.getName());
+                if (slug.isBlank()) slug = "untitled";
+                Path target = userDir.resolve(slug + EXTENSION);
+
+                if (target.equals(p)) continue;
+                if (Files.exists(target)) {
+                    String suffix = nb.getId().replace("-", "");
+                    suffix = suffix.substring(0, Math.min(6, suffix.length()));
+                    target = userDir.resolve(slug + "-" + suffix + EXTENSION);
+                    if (Files.exists(target)) continue;
+                }
+
+                Files.move(p, target, StandardCopyOption.ATOMIC_MOVE);
+                log.info("Notebook file {} -> {}", p.getFileName(), target.getFileName());
+                renamed++;
+            } catch (IOException e) {
+                log.warn("Could not rename {}: {}", p.getFileName(), e.getMessage());
+            }
+        }
+        if (renamed > 0) {
+            log.info("Renamed {} notebook file(s) to the readable .anb convention", renamed);
+            idIndex.clear();
+        }
+    }
+
+    /**
+     * Tutorials and examples are already named by their readable id, so they only need
+     * the extension moved from {@code .vnb} to {@code .anb}.
+     */
+    private void migrateSharedDirExtension(Path dir) {
+        if (!Files.exists(dir)) return;
+        try (Stream<Path> files = Files.list(dir)) {
+            files.filter(p -> p.toString().endsWith(LEGACY_EXTENSION) && Files.isRegularFile(p))
+                 .forEach(p -> {
+                     String base = p.getFileName().toString();
+                     Path target = p.resolveSibling(
+                             base.substring(0, base.length() - LEGACY_EXTENSION.length()) + EXTENSION);
+                     if (Files.exists(target)) return;
+                     try {
+                         Files.move(p, target, StandardCopyOption.ATOMIC_MOVE);
+                         log.info("Notebook file {} -> {}", base, target.getFileName());
+                     } catch (IOException e) {
+                         log.warn("Could not rename {}: {}", base, e.getMessage());
+                     }
+                 });
+        } catch (IOException e) {
+            log.warn("Extension migration scan failed for {}: {}", dir, e.getMessage());
         }
     }
 

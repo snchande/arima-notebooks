@@ -870,10 +870,107 @@ cmd_status() {
     return 0
 }
 
+open_url() {
+    local target="$1"
+    if   have xdg-open;       then xdg-open "$target" >/dev/null 2>&1 &
+    elif have open;           then open "$target"     >/dev/null 2>&1 &
+    elif have powershell.exe; then powershell.exe -NoProfile -Command "Start-Process '$target'" >/dev/null 2>&1 &
+    else dim "  Open $target manually."
+    fi
+}
+
 cmd_open() {
-    if server_up; then ok '  Opening Arima Notebooks...'; open_browser; return 0; fi
-    err '  Arima Notebooks is not running. Start it first: ./arima.sh start'
-    return 1
+    local file="${1:-}"
+
+    if [ -z "$file" ]; then
+        if server_up; then ok '  Opening Arima Notebooks...'; open_browser; return 0; fi
+        err '  Arima Notebooks is not running. Start it first: ./arima.sh start'
+        return 1
+    fi
+
+    if [ ! -f "$file" ]; then
+        err "  No such file: $file"
+        return 1
+    fi
+
+    # A notebook opened from the file manager has to work from a cold machine.
+    if ! server_up; then
+        info '  Arima Notebooks is not running - starting it...'
+        ARIMA_SUPPRESS_OPEN=1 BG=1 cmd_start || return 1
+    fi
+
+    local full id
+    full=$(cd "$(dirname "$file")" && printf '%s/%s' "$(pwd)" "$(basename "$file")")
+    id=$(curl -s -m 20 -X POST "$URL/api/notebooks/open-file" -H 'Content-Type: application/json' -d "{\"path\": \"$full\"}" | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+
+    if [ -z "$id" ]; then
+        err '  That file is not a readable Arima notebook.'
+        return 1
+    fi
+    ok "  Opening $(basename "$full")"
+    open_url "$URL/notebooks/$id"
+    return 0
+}
+
+# Register .anb with the desktop environment (freedesktop: Linux, BSD).
+cmd_register() {
+    if ! have xdg-mime; then
+        err '  xdg-mime not found - desktop registration needs freedesktop tools.'
+        dim '  On Windows use: arima.cmd register'
+        return 1
+    fi
+    local mimedir="$HOME/.local/share/mime/packages"
+    local appdir="$HOME/.local/share/applications"
+    local icondir="$HOME/.local/share/icons/hicolor/256x256/mimetypes"
+    mkdir -p "$mimedir" "$appdir" "$icondir"
+
+    info '  Registering .anb with Arima Notebooks...'
+
+    cat > "$mimedir/arima-notebook.xml" <<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/vnd.arima.notebook+json">
+    <comment>Arima Notebook</comment>
+    <sub-class-of type="application/json"/>
+    <glob pattern="*.anb"/>
+    <icon name="application-vnd.arima.notebook+json"/>
+  </mime-type>
+</mime-info>
+XML
+
+    cat > "$appdir/arima-notebook.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=Arima Notebooks
+Comment=Open an Arima notebook
+Exec=$SCRIPT_DIR/arima.sh open %f
+Icon=application-vnd.arima.notebook+json
+Terminal=false
+NoDisplay=false
+MimeType=application/vnd.arima.notebook+json;
+DESKTOP
+
+    if [ -f "$SCRIPT_DIR/docs/screenshots/anb-file-icon.png" ]; then
+        cp "$SCRIPT_DIR/docs/screenshots/anb-file-icon.png"            "$icondir/application-vnd.arima.notebook+json.png"
+    fi
+
+    update-mime-database "$HOME/.local/share/mime" >/dev/null 2>&1 || true
+    update-desktop-database "$appdir"              >/dev/null 2>&1 || true
+    gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+    xdg-mime default arima-notebook.desktop application/vnd.arima.notebook+json 2>/dev/null || true
+
+    ok  '  .anb files now open in Arima Notebooks'
+    dim '  MIME: application/vnd.arima.notebook+json'
+    return 0
+}
+
+cmd_unregister() {
+    info '  Removing the .anb association...'
+    rm -f "$HOME/.local/share/mime/packages/arima-notebook.xml"           "$HOME/.local/share/applications/arima-notebook.desktop"           "$HOME/.local/share/icons/hicolor/256x256/mimetypes/application-vnd.arima.notebook+json.png"
+    update-mime-database "$HOME/.local/share/mime" >/dev/null 2>&1 || true
+    update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
+    ok '  .anb association removed'
+    return 0
 }
 
 cmd_logs() {
@@ -1420,7 +1517,9 @@ cmd_help() {
     echo '    stop             Stop the running server'
     echo '    restart          Stop then start (use after `update`)'
     echo '    status           Server state, PID, runtimes, AI CLIs, checkout state'
-    echo '    open             Open the browser (server must already be running)'
+    echo '    open [file]      Open the browser, or open a .anb notebook file'
+    echo '    register         Associate .anb files with Arima Notebooks'
+    echo '    unregister       Remove the .anb file association'
     echo '    logs             Tail arima.log (background mode only)'
 
     section 'MCP (drive Arima from this terminal)'
@@ -1493,7 +1592,9 @@ case "$(printf '%s' "$CMD" | tr 'A-Z' 'a-z')" in
     stop)               banner 'A R I M A   -   S T O P'; cmd_stop ;;
     restart)            cmd_restart ;;
     status)             cmd_status ;;
-    open)               cmd_open ;;
+    open)               cmd_open ${ARGS+"${ARGS[0]}"} ;;
+    register)           cmd_register ;;
+    unregister)         cmd_unregister ;;
     logs)               cmd_logs ;;
     build|rebuild)      cmd_build ;;
     brew|coffee)        show_brew; banner ;;

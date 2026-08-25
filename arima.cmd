@@ -58,6 +58,8 @@ if /i "%CMD%"=="stop"      goto :cmd_stop
 if /i "%CMD%"=="restart"   goto :cmd_restart
 if /i "%CMD%"=="status"    goto :cmd_status
 if /i "%CMD%"=="open"      goto :cmd_open
+if /i "%CMD%"=="register"  goto :cmd_register
+if /i "%CMD%"=="unregister" goto :cmd_unregister
 if /i "%CMD%"=="logs"      goto :cmd_logs
 if /i "%CMD%"=="build"     goto :cmd_build
 if /i "%CMD%"=="rebuild"   goto :cmd_build
@@ -1142,6 +1144,14 @@ echo.
 exit /b 0
 
 :cmd_open
+set "OPEN_FILE=%~2"
+if "!OPEN_FILE!"=="" goto :open_ui
+rem Opening a notebook file has to work from a cold machine, so the heavy lifting
+rem (start if needed, import, resolve the id) lives in arima.ps1 - one implementation.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%BARISTA_HOME%\arima.ps1" open "!OPEN_FILE!"
+exit /b !ERRORLEVEL!
+
+:open_ui
 call :server_up
 if not "!ERRORLEVEL!"=="0" goto :open_down
 call :ok "  Opening Arima Notebooks..."
@@ -1150,6 +1160,14 @@ exit /b 0
 :open_down
 call :err "  Arima Notebooks is not running. Start it first: arima start"
 exit /b 1
+
+:cmd_register
+powershell -NoProfile -ExecutionPolicy Bypass -File "%BARISTA_HOME%\arima.ps1" register
+exit /b !ERRORLEVEL!
+
+:cmd_unregister
+powershell -NoProfile -ExecutionPolicy Bypass -File "%BARISTA_HOME%\arima.ps1" unregister
+exit /b !ERRORLEVEL!
 
 :cmd_logs
 if not exist "arima.log" goto :logs_none
@@ -1492,7 +1510,9 @@ echo     start --bg       Start detached; logs to arima.log
 echo     stop             Stop the running server
 echo     restart          Stop then start ^(use after 'update'^)
 echo     status           Server state, PID, runtimes, AI CLIs, checkout state
-echo     open             Open the browser ^(server must already be running^)
+echo     open [file]      Open the browser, or open a .anb notebook file
+echo     register         Associate .anb files with Arima Notebooks ^(coffee-bean icon^)
+echo     unregister       Remove the .anb file association
 echo     logs             Tail arima.log ^(background mode only^)
 
 call :section "MCP (drive Arima from this terminal)"

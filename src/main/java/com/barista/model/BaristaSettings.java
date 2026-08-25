@@ -43,6 +43,12 @@ public class BaristaSettings {
     private boolean enableAutoComplete   = true;
 
     // ── Storage & Server ───────────────────────────────────────────────
+    // Polyglot (side-by-side language comparison)
+    private boolean polyglotEnabled = true;
+    private String  polyglotDominantLanguage = "";
+    private String  polyglotCompareLanguages = "";
+    private boolean polyglotSideBySide = false;
+
     private String notebooksDir = "notebooks";
     private int    serverPort   = 8585;
 
@@ -82,6 +88,18 @@ public class BaristaSettings {
 
     public boolean isFocusExecutingCell() { return focusExecutingCell; }
     public void setFocusExecutingCell(boolean v) { this.focusExecutingCell = v; }
+
+    public boolean isPolyglotEnabled() { return polyglotEnabled; }
+    public void setPolyglotEnabled(boolean v) { this.polyglotEnabled = v; }
+
+    public String getPolyglotDominantLanguage() { return polyglotDominantLanguage; }
+    public void setPolyglotDominantLanguage(String v) { this.polyglotDominantLanguage = v == null ? "" : v; }
+
+    public String getPolyglotCompareLanguages() { return polyglotCompareLanguages; }
+    public void setPolyglotCompareLanguages(String v) { this.polyglotCompareLanguages = v == null ? "" : v; }
+
+    public boolean isPolyglotSideBySide() { return polyglotSideBySide; }
+    public void setPolyglotSideBySide(boolean v) { this.polyglotSideBySide = v; }
 
     public String getDefaultCellMode() { return defaultCellMode; }
     public void setDefaultCellMode(String v) { this.defaultCellMode = v; }
