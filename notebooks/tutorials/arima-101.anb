@@ -37,7 +37,7 @@
       "id": "a101-run",
       "type": "CODE",
       "mode": "jshell",
-      "source": "// Your first cell — this runs on the Barista (Java/JShell) engine.\nSystem.out.println(\"Hello from Arima!\");\nint a = 6, b = 7;\nSystem.out.println(a + \" x \" + b + \" = \" + (a * b));",
+      "source": "// Your first cell - it runs on Barista, Arima's Java/JShell engine.\n// JShell takes bare statements. There is no class to declare and no main method\n// to sit inside: what you write is the whole program.\nSystem.out.println(\"Hello from Arima!\");\n\n// Two int variables in one declaration. Names bound in a cell stay alive for the\n// rest of the session, so a cell you add below can still read a and b - that\n// shared state is what makes a notebook feel different from a script.\nint a = 6, b = 7;\n\n// Java has no string interpolation, so + does two jobs here. Because the leftmost\n// operand is already a String, each following + appends rather than adds. The\n// parentheses around a * b are load-bearing: without them the multiplication\n// would happen after the appends and you would get \"67\" instead of 42.\nSystem.out.println(a + \" x \" + b + \" = \" + (a * b));",
       "output": "",
       "executionCount": 0
     },
@@ -53,7 +53,7 @@
       "id": "a101-barista-helpers",
       "type": "CODE",
       "mode": "jshell",
-      "source": "// Barista gives every cell display helpers. Here's a quick table + stats.\nvar rows = java.util.List.of(\n  java.util.Map.of(\"lang\", \"Python\", \"since\", 4.0),\n  java.util.Map.of(\"lang\", \"C++\", \"since\", 3.0),\n  java.util.Map.of(\"lang\", \"JShell\", \"since\", 1.0)\n);\nbarista.table(rows);",
+      "source": "// Barista gives every cell display helpers. Here is a quick table plus stats.\n// In a JShell cell the helper is the BaristaDisplay class, imported for you when\n// the session starts - the lowercase `barista` object you will see in the\n// JavaScript, TypeScript and Python tutorials is those runtimes' equivalent.\n//\n// table() takes the rows as a String[][] and the column headers as the trailing\n// arguments. It emits HTML, so the output pane renders it as a real table\n// instead of printing the text.\nString[][] rows = {\n    { \"Python\", \"4.0\" },\n    { \"C++\",    \"3.0\" },\n    { \"JShell\", \"1.0\" },\n};\nBaristaDisplay.table(rows, \"lang\", \"since\");\n\n// stats() takes a label and a double[], then reports count, min, max, mean,\n// median and standard deviation in one call - the summary you usually want\n// first when a column of numbers lands in front of you.\nBaristaDisplay.stats(\"since\", new double[] { 4.0, 3.0, 1.0 });",
       "output": "",
       "executionCount": 0
     },
