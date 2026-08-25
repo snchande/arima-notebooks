@@ -4920,8 +4920,21 @@ body.fre-on #fre-tip { display: block; }
 .pg-output.err { color: var(--err, #f87171); }
 .pg-output.running { color: var(--muted, #8b8b96); }
 
-.pg-compare-wrap { display: flex; gap: 1px; background: var(--border, #2a2a33); }
-.pg-side { flex: 1 1 50%; min-width: 0; background: var(--panel, #101017); }
+.pg-compare-wrap {
+  display: block;
+  background: var(--border, #2a2a33);
+  border-top: 1px solid var(--border, #2a2a33);
+}
+/* Two equal columns. min-width:0 is what lets a flex child actually shrink -
+   without it a long code line forces the column wider than its half. */
+.pg-side {
+  flex: 1 1 50%;
+  width: 50%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel, #101017);
+}
 .pg-side-head {
   display: flex; align-items: center; gap: 7px;
   padding: 6px 11px; font-size: 11px; color: var(--muted, #8b8b96);
@@ -4936,8 +4949,17 @@ body.fre-on #fre-tip { display: block; }
   border: 1px solid var(--border, #2a2a33); border-radius: 5px;
   padding: 2px 6px; font: inherit; font-size: 11px;
 }
+/* The editor fills its column edge to edge. */
+.pg-side-body { width: 100%; min-width: 0; flex: 1 1 auto; }
+.pg-side-body .CodeMirror,
+.pg-side-body .CodeMirror-sizer,
+.pg-side .pg-panel,
+.pg-side .pg-editor { width: 100%; min-width: 0; max-width: 100%; }
 .pg-side-body .CodeMirror { height: auto; }
-@media (max-width: 900px) { .pg-compare-wrap { flex-direction: column; } }
+@media (max-width: 900px) {
+  .pg-compare-cols { flex-direction: column; }
+  .pg-side { width: 100%; }
+}
 
 .settings-subhead {
   margin: 22px 0 4px; font-size: 13px; font-weight: 600;
@@ -4957,12 +4979,20 @@ body.fre-on #fre-tip { display: block; }
 }
 
 /* Compare view: nothing here may clip - the whole cell must be readable. */
-.pg-compare-cols { display: flex; gap: 1px; background: var(--border, #2a2a33); }
+.pg-compare-cols {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  width: 100%;
+  background: var(--border, #2a2a33);
+}
 .pg-compare-wrap .CodeMirror { height: auto !important; min-height: 44px; }
+/* Never clip vertically - the whole cell must be readable. Horizontal stays
+   inside the column: the compare editors wrap instead of scrolling sideways. */
 .pg-compare-wrap .CodeMirror-scroll,
 .pg-panel .CodeMirror-scroll {
   max-height: none !important;
-  overflow: visible !important;
+  overflow-x: auto;
 }
 .pg-compare-bar {
   display: flex; align-items: center; gap: 10px;

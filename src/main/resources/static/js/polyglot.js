@@ -189,11 +189,13 @@ const Polyglot = (() => {
     ta.value = translation.source || '';
     host.appendChild(ta);
 
+    const inCompare = !!panel.closest('.pg-compare-wrap');
     const cm = CodeMirror.fromTextArea(ta, {
       mode: CM_MODE[mode] || 'text/plain',
       theme: 'barista-dark',
       lineNumbers: settings().showLineNumbers !== false,
       matchBrackets: true,
+      lineWrapping: inCompare,
       viewportMargin: Infinity,
       extraKeys: { 'Shift-Enter': () => runInto(mode, cm.getValue(), outOf(cell, mode), translation) }
     });
@@ -350,6 +352,7 @@ const Polyglot = (() => {
       theme: 'barista-dark',
       lineNumbers: settings().showLineNumbers !== false,
       matchBrackets: true,
+      lineWrapping: true,
       viewportMargin: Infinity,
       extraKeys: { 'Shift-Enter': () => runInto(cell.mode, lcm.getValue(), outOf(cell, cell.mode), cell) }
     });

@@ -33,6 +33,7 @@ The notebook changed how we explore ideas, prototype, and teach: write a little 
 Arima Notebooks was rethought from first principles for both. It isn't a single-language tool with others bolted on — it's a **shared, cross-platform execution plane for code**, where many languages run side by side and where people and agents collaborate on the very same living document.
 
 - **Every language is first-class** — JavaScript, TypeScript, C#, F#, C++, Java, JShell, and Python today, with more to come. Real compilation, real dependencies, real tooling for each — none of them a plugin, none an afterthought.
+- **Learn a second language in terms of your first** — every code cell can be read side by side in another of the eight languages, idiomatic rather than transliterated, commented where that language forces a different approach, and executable on both sides so you can check the two really do agree.
 - **Agents are a new kind of cell** — a body written in natural language rather than code, executed by a local agent CLI (Claude, Copilot, Antigravity). Agents compose into pipelines and are callable over MCP like anything else.
 - **Humans and agents, together** — a built-in AI co-pilot, plus full MCP access, so any external agent can drive the same notebook you're editing. You learn faster, adapt faster, and reach a working result together.
 - **Local-first** — your notebooks and code never leave your machine. No cloud account, no sign-up.
@@ -99,6 +100,7 @@ The bar to **customize for yourself** and the bar to **contribute back** become 
 | **Pipeline Orchestration** | Chain cells with `//@ depends:` annotations — works across all 8 languages |
 | **Multi-provider AI** | Claude · GitHub Copilot · Antigravity — local (CLI + Copilot SDK), no API key needed |
 | **AI Language Conversion** | Switch a cell's language and AI converts the code automatically |
+| **Polyglot** | Read any cell in a language you are learning, beside the one you already know — generated once, saved with the notebook, and **runnable on both sides** with their timings compared |
 | **MCP Server** | Expose Arima Notebooks as an MCP tool server for Claude Code, Claude Desktop, and custom agents — ten tools over JSON-RPC 2.0 |
 | **MCP from the CLI** | `arima mcp tools` / `arima mcp exec "..."` — call the same MCP tools straight from CMD, PowerShell, or bash, no client needed |
 | **Agents & Skills** | Build, list, and run agents from the **Agents** tab or over MCP (`barista_list_agents`, `barista_run_agent`) |

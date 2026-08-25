@@ -604,6 +604,62 @@ POST /api/llm/fix
 
 ---
 
+### Translate a Cell (Polyglot)
+
+Renders one cell's source in another language, for the side-by-side comparison view.
+The result is returned to the caller to store on the cell — the server does not persist it.
+
+```
+POST /api/llm/translate
+```
+**Body:**
+```json
+{
+  "source": "squares = [n * n for n in nums]",
+  "from": "python",
+  "to": "java"
+}
+```
+
+**Response 200** — a `CellTranslation`:
+```json
+{
+  "source": "List<Integer> squares = nums.stream().map(n -> n * n).toList();",
+  "generatedAt": "2026-08-25T18:04:00Z",
+  "provider": "claude_cli",
+  "sourceHash": "100c34b0d96789ef",
+  "edited": false,
+  "output": "",
+  "error": "",
+  "executed": false,
+  "success": false,
+  "executionTimeMs": null,
+  "lastExecutedAt": ""
+}
+```
+
+`sourceHash` is a prefix of the SHA-256 of the source it was generated from; when it no
+longer matches the cell's current source the UI marks the translation stale. The run
+fields are filled in by the client after executing the translation, and are saved with
+the notebook so both languages' results and timings survive a reload.
+
+**400** if `source`, `from` or `to` is missing, if either language is not comparable, or
+if both are the same. **500** if the AI provider fails or returns no code block.
+
+---
+
+### List Comparable Languages
+```
+GET /api/llm/languages
+```
+
+**Response 200:**
+```json
+{ "languages": [ { "mode": "cpp", "label": "C++17" }, { "mode": "python", "label": "Python 3" } ] }
+```
+
+---
+
 ## Settings
 
 ### Get Settings

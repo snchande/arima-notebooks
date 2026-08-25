@@ -948,6 +948,42 @@ Click **▶▶** (run-with-deps) and Arima:
 
 ---
 
+## Polyglot — Read a Cell in a Language You Are Learning
+
+Arima runs eight languages, so a side-by-side comparison here can actually be **run**,
+not just read. Use it to learn a new language in terms of the one you already think in.
+
+**Switch it on:** Settings → Polyglot. Choose the language you mainly think in, then
+tick the ones you want tabs for.
+
+Every code cell then grows a tab strip — its own language first (green underline), then
+your comparison languages.
+
+| Action | What happens |
+|---|---|
+| Click another language tab | Arima renders the cell in that language **once**, then saves it with the notebook |
+| A dot on a tab | A translation already exists for that language |
+| **Compare** | Splits the cell into two equal columns, your language on the left |
+| **Run** on either side | Executes that side against its own runtime |
+| **Run both** | Runs both and reports whether the output actually matches |
+
+Every result shows **how long that language took**, and *Run both* compares the two
+timings. Runs are saved with the notebook, so reopening it shows both languages'
+results again without re-running.
+
+Translations are **idiomatic, not transliterated** — where a construct has no
+equivalent, the target language's accepted practice is used and named in a comment.
+Only the seams get commented; lines that translate directly are left alone.
+
+Editing the original marks a translation **stale** rather than hiding it. Regenerate
+when you are ready.
+
+> Translation runs through your selected AI provider, so one must be authenticated.
+> Timings include compile and interpreter startup — honest about what Arima does, but
+> not a language benchmark.
+
+---
+
 ## 3. Pipeline Cells — Named Workflows
 
 A **PIPELINE cell** defines a named, self-contained workflow that can be run with a single click.
