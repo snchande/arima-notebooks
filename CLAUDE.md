@@ -120,7 +120,8 @@ arima/
 │   │   ├── NpmPackageService          #   npm install → data/npm-modules/
 │   │   ├── NuGetService               #   NuGet package management for C#/F#
 │   │   ├── JavaCompilerService        #   Full javac compile-and-run (Java mode)
-│   │   ├── NodeJsExecutionService     #   JavaScript subprocess
+│   │   ├── NodeKernelService          #   Long-lived node session (JS + TS)
+│   │   ├── NodeJsExecutionService     #   One-shot JS subprocess + helper preamble
 │   │   ├── TypeScriptExecutionService #   TS via Node type-stripping + optional tsc
 │   │   ├── DotNetExecutionService     #   C# (dotnet run) + F# (dotnet fsi)
 │   │   ├── CppExecutionService        #   C++ via MSVC/GCC/Clang

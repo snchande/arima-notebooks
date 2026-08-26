@@ -21,6 +21,51 @@ No cloud account. No data sent anywhere. Runs entirely on your machine.
 
 ---
 
+## Get started
+
+One file, one command. It explains itself before it changes anything, asks once, then checks your toolchain, installs what's missing with your platform's own package manager, clones the repo, and builds the JAR.
+
+**Windows (PowerShell)**
+```powershell
+irm https://raw.githubusercontent.com/snchande/arima-notebooks/master/install.ps1 | iex
+```
+
+**macOS / Linux**
+```bash
+curl -fsSL https://raw.githubusercontent.com/snchande/arima-notebooks/master/install.sh | bash
+```
+
+Then:
+
+```bash
+arima start          # starts the server and opens http://localhost:8585
+```
+
+**Look before you leap.** Both installers take a check-only flag that prints the plan and the dependency table and then stops without touching the machine:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/snchande/arima-notebooks/master/install.ps1))) -CheckOnly
+```
+```bash
+curl -fsSL https://raw.githubusercontent.com/snchande/arima-notebooks/master/install.sh | bash -s -- --check-only
+```
+
+| Flag | PowerShell | sh | What it does |
+|------|-----------|-----|--------------|
+| Check only | `-CheckOnly` | `--check-only` | Explain and probe, change nothing |
+| Unattended | `-Yes` | `--yes` | Skip every confirmation (CI) |
+| Minimum | `-SkipOptional` | `--skip-optional` | Only Java, Maven and Git |
+| Leave PATH alone | `-NoPath` | `--no-path` | Do not register the launcher |
+| Elsewhere | `-Dir <path>` | `--dir <path>` | Default: `%LOCALAPPDATA%\Arima` / `~/.arima` |
+| Start over | `-Reset` | `--reset` | Discard recorded progress |
+| No animation | `-NoAnim` | `--no-anim` | Plain output |
+
+If a step fails, the installer stops, says which step and why, and records its progress in `~/.arima-install-state` — re-running picks up from the failed step instead of starting over. It also prints the exact URL and the diagnostics block to [file an issue](https://github.com/snchande/arima-notebooks/issues/new).
+
+Already have the repo cloned? Use `arima install` instead — it is the same setup without the download step, and the one-file installers hand over to it.
+
+---
+
 ## Why Arima Notebooks?
 
 The notebook changed how we explore ideas, prototype, and teach: write a little code, run it, see the result instantly. That tight feedback loop is one of the best ideas in software. But the notebook itself has barely evolved — while the world around it changed completely.
@@ -136,6 +181,8 @@ The bar to **customize for yourself** and the bar to **contribute back** become 
 ---
 
 ## Quick Start
+
+> Starting from nothing? The one-file installer in [Get started](#get-started) does Steps 1 and 2 for you. The steps below are the manual path, and what to do once the repo is already on disk.
 
 ### Step 1 — Clone the repository
 

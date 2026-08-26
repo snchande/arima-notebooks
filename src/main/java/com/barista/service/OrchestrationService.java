@@ -55,6 +55,7 @@ public class OrchestrationService {
     private final CppExecutionService cppExecutionService;
     private final PythonExecutionService pythonExecutionService;
     private final PythonKernelService pythonKernelService;
+    private final NodeKernelService nodeKernelService;
     private final NotebookService notebookService;
     private final UserService userService;
     private final AgentService agentService;
@@ -81,6 +82,7 @@ public class OrchestrationService {
                                  CppExecutionService cppExecutionService,
                                  PythonExecutionService pythonExecutionService,
                                  PythonKernelService pythonKernelService,
+                                 NodeKernelService nodeKernelService,
                                  NotebookService notebookService,
                                  UserService userService,
                                  AgentService agentService) {
@@ -93,6 +95,7 @@ public class OrchestrationService {
         this.cppExecutionService = cppExecutionService;
         this.pythonExecutionService = pythonExecutionService;
         this.pythonKernelService = pythonKernelService;
+        this.nodeKernelService = nodeKernelService;
         this.notebookService = notebookService;
         this.userService = userService;
         this.agentService = agentService;
@@ -628,7 +631,7 @@ public class OrchestrationService {
                     .map(p -> p.getJarPath()).collect(Collectors.toList());
             return javaCompilerService.execute(sessionId, cell.getId(), cell.getSource(), cp);
         } else if ("nodejs".equals(mode)) {
-            return nodeJsExecutionService.execute(sessionId, cell.getId(), cell.getSource());
+            return nodeKernelService.execute(sessionId, cell.getId(), cell.getSource(), false);
         } else if ("typescript".equals(mode)) {
             return typeScriptExecutionService.execute(sessionId, cell.getId(), cell.getSource());
         } else if ("csharp".equals(mode)) {

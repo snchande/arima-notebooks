@@ -36,7 +36,7 @@ public class NodeJsExecutionService {
     private static final int TIMEOUT_SECONDS = 30;
 
     // Preamble injected at the top of every JS cell
-    private static final String BARISTA_PREAMBLE =
+    static final String BARISTA_PREAMBLE =
         "const barista = {\n" +
         "  table(data) {\n" +
         "    if (!Array.isArray(data) || data.length === 0) { console.log('(empty)'); return; }\n" +

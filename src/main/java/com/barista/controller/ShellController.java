@@ -14,6 +14,7 @@ import com.barista.service.NotebookService;
 import com.barista.service.OrchestrationService;
 import com.barista.service.PackageService;
 import com.barista.service.PythonExecutionService;
+import com.barista.service.NodeKernelService;
 import com.barista.service.PythonKernelService;
 import com.barista.service.TypeScriptExecutionService;
 import com.barista.service.UserService;
@@ -65,6 +66,7 @@ public class ShellController {
     private final CppExecutionService cppExecutionService;
     private final PythonExecutionService pythonExecutionService;
     private final PythonKernelService pythonKernelService;
+    private final NodeKernelService nodeKernelService;
     private final OrchestrationService orchestrationService;
     private final NotebookService notebookService;
     private final UserService userService;
@@ -83,6 +85,7 @@ public class ShellController {
                            CppExecutionService cppExecutionService,
                            PythonExecutionService pythonExecutionService,
                            PythonKernelService pythonKernelService,
+                           NodeKernelService nodeKernelService,
                            OrchestrationService orchestrationService,
                            NotebookService notebookService,
                            UserService userService,
@@ -97,6 +100,7 @@ public class ShellController {
         this.cppExecutionService = cppExecutionService;
         this.pythonExecutionService = pythonExecutionService;
         this.pythonKernelService = pythonKernelService;
+        this.nodeKernelService = nodeKernelService;
         this.orchestrationService = orchestrationService;
         this.notebookService = notebookService;
         this.userService = userService;
@@ -130,11 +134,9 @@ public class ShellController {
                 result = runInteractiveSubprocess(sessionId, cellId, stdin,
                         () -> javaCompilerService.execute(sessionId, cellId, code, classpath));
             } else if ("nodejs".equals(mode)) {
-                result = runInteractiveSubprocess(sessionId, cellId, stdin,
-                        () -> nodeJsExecutionService.execute(sessionId, cellId, code));
+                result = nodeKernelService.execute(sessionId, cellId, code, false);
             } else if ("typescript".equals(mode)) {
-                result = runInteractiveSubprocess(sessionId, cellId, stdin,
-                        () -> typeScriptExecutionService.execute(sessionId, cellId, code));
+                result = typeScriptExecutionService.execute(sessionId, cellId, code);
             } else if ("csharp".equals(mode)) {
                 result = runInteractiveSubprocess(sessionId, cellId, stdin,
                         () -> dotNetExecutionService.executeCSharp(sessionId, cellId, code));
@@ -226,6 +228,7 @@ public class ShellController {
         cppExecutionService.clearSessionAnchors(sessionId);   // C++ anchor cache must reload
         pythonExecutionService.clearSessionAnchors(sessionId); // legacy replay cache
         pythonKernelService.restart(sessionId);                 // Python kernel state must reset
+        nodeKernelService.restart(sessionId);                   // JS/TS kernel state must reset
         // Re-apply packages after restart so imports still work
         packageService.applyPackagesToSession(sessionId);
         return ResponseEntity.ok(Map.of(
@@ -429,7 +432,7 @@ public class ShellController {
                     .collect(Collectors.toList());
             javaCompilerService.execute(sessionId, cellId, code, classpath);
         } else if ("nodejs".equals(mode)) {
-            nodeJsExecutionService.execute(sessionId, cellId, code);
+            nodeKernelService.execute(sessionId, cellId, code, false);
         } else if ("typescript".equals(mode)) {
             typeScriptExecutionService.execute(sessionId, cellId, code);
         } else if ("csharp".equals(mode)) {
