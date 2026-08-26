@@ -170,7 +170,7 @@ public class ServerInfoService {
     }
 
     /**
-     * Counts every .vnb on disk rather than calling listNotebooks(userId):
+     * Counts every notebook file on disk rather than calling listNotebooks(userId):
      * this endpoint is server-wide, so it must not be scoped to one user.
      */
     private long countNotebookFiles() {
@@ -178,7 +178,8 @@ public class ServerInfoService {
         if (!Files.isDirectory(root)) return 0;
         try (Stream<Path> paths = Files.walk(root)) {
             return paths.filter(Files::isRegularFile)
-                        .filter(p -> p.getFileName().toString().endsWith(".vnb"))
+                        .filter(p -> { String n = p.getFileName().toString();
+                                       return n.endsWith(".anb") || n.endsWith(".vnb"); })
                         .count();
         } catch (IOException e) {
             log.debug("Could not count notebooks under {}: {}", root, e.getMessage());

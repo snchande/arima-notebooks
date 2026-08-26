@@ -1,0 +1,277 @@
+{
+  "id": "python-701",
+  "name": "Python 701 · Pipelines, Modules & Orchestration",
+  "description": "Turn a pile of Python cells into a reproducible system: anchors, //@ depends, transitive dependency resolution, PIPELINE cells, idempotent steps, and running the whole graph from an agent over MCP.",
+  "cells": [
+    {
+      "id": "py701-1",
+      "type": "MARKDOWN",
+      "mode": null,
+      "source": "# Python 701 · Pipelines, Modules & Orchestration\n\n*Python 601* taught you to turn data into a rendered report. This tutorial is about making that\nreport **reproducible** — one command, correct order, every time.\n\nPython cells in a notebook share one long-lived interpreter, exactly as JShell cells do: a name\nyou bind in one cell is still there in the next. That makes a notebook convenient, and it is also\nwhere notebooks get their worst reputation — state you can no longer account for, cells that only\nwork because of something you ran an hour ago and have since deleted.\n\nArima's answer is three annotations that let you *declare* how cells relate, so the notebook can\nrebuild itself from nothing whenever you ask:\n\n| Annotation | What it does |\n|---|---|\n| `//@ anchor: name` | Names this cell so other cells can build on it |\n| `//@ depends: a, b` | Requires those anchors to have run before this cell does |\n| `//@ steps: a, b, c` | (PIPELINE cell) runs a whole chain in dependency order |\n\nThe syntax is identical in all eight languages.\n\nBy the end you will have a five-step order-processing pipeline that rebuilds itself from raw rows\nto executive summary with one click — and that an external agent can run over MCP.\n\n**Prerequisites:** *Python 601*.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-2",
+      "type": "MARKDOWN",
+      "mode": null,
+      "source": "## 1. First, see what the session shares\n\nRun the next two cells in order. The first binds a name; the second finds it still there.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-3",
+      "type": "CODE",
+      "mode": "python",
+      "source": "# A perfectly ordinary variable, defined in this cell.\nbudget = 1000\nprint(\"budget is\", budget)",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-4",
+      "type": "CODE",
+      "mode": "python",
+      "source": "# The very next cell, in the same notebook session.\nprint(\"budget is\", budget)\n\n# The name survived because every Python cell in a session runs in ONE interpreter -\n# the same model JShell cells have always used.\n#\n# That convenience is exactly what makes a notebook hard to trust: this cell works\n# right now, but it would fail on a fresh kernel unless the cell above is run first,\n# and nothing in the code says so. The rest of this tutorial is about writing that\n# dependency down instead of leaving it to memory.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-5",
+      "type": "MARKDOWN",
+      "mode": null,
+      "source": "## 2. Anchors — name a cell so others can build on it\n\nAn **anchor** gives a cell a stable name. Arima caches the cell's *source* under that name the\nmoment the cell runs successfully.\n\n```\n//@ anchor: raw-orders\n```\n\nThe cell below is the one place in this notebook where the order data is written down. Every other\nstep derives from it. That single rule — **define your data once, in an anchored cell** — is what\nthe rest of this tutorial is built on.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-6",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ anchor: raw-orders\n//@ description: The single source of truth - raw order rows, exactly as they arrive\n\n# Deliberately messy input: the region is written four different ways, one row has no\n# units recorded, and one has no region at all. The cleaning step below has real work.\nraw_orders = [\n    {\"id\": 1, \"region\": \"north\",  \"product\": \"Widget\", \"units\": 120,  \"unit_price\": 30.0},\n    {\"id\": 2, \"region\": \"North \", \"product\": \"Gadget\", \"units\": 80,   \"unit_price\": 50.0},\n    {\"id\": 3, \"region\": \"SOUTH\",  \"product\": \"Widget\", \"units\": 200,  \"unit_price\": 30.0},\n    {\"id\": 4, \"region\": \"south\",  \"product\": \"Gadget\", \"units\": 60,   \"unit_price\": 50.0},\n    {\"id\": 5, \"region\": \"East\",   \"product\": \"Widget\", \"units\": 150,  \"unit_price\": 30.0},\n    {\"id\": 6, \"region\": \"east\",   \"product\": \"Gadget\", \"units\": None, \"unit_price\": 50.0},\n    {\"id\": 7, \"region\": \"West\",   \"product\": \"Widget\", \"units\": 90,   \"unit_price\": 30.0},\n    {\"id\": 8, \"region\": \"west\",   \"product\": \"Gadget\", \"units\": 130,  \"unit_price\": 50.0},\n    {\"id\": 9, \"region\": \"\",       \"product\": \"Widget\", \"units\": 40,   \"unit_price\": 30.0},\n]\n\nprint(f\"{len(raw_orders)} raw rows loaded\")\n\n# A set comprehension collapses the duplicates, and sorted() gives a stable order.\n# The quotes in the output are what reveal the trailing space in \"North \".\nprint(\"Regions as written:\", sorted({row[\"region\"] for row in raw_orders}))",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": "raw-orders",
+      "dependsOn": []
+    },
+    {
+      "id": "py701-7",
+      "type": "MARKDOWN",
+      "mode": null,
+      "source": "## 3. `depends` — replay an ancestor before your code\n\nDeclaring `//@ depends: raw-orders` tells Arima: before running this cell, re-execute the source of\nthe `raw-orders` cell in the same process.\n\nTwo details worth knowing, because they explain everything else in this notebook:\n\n- It replays the ancestor's **source**, not a snapshot of its variables. You get its data, its\n  functions, its imports — freshly computed.\n- The ancestor's **printed output is suppressed** during the replay. You see only your own cell's\n  output, not a repeat of theirs.\n\nThe anchor has to have run successfully at least once this session. If it has not, Arima stops with\n`Missing dependencies: raw-orders` and tells you to use **Run with deps** — it does not silently\ngive you a half-built environment.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-8",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ anchor: clean-orders\n//@ depends: raw-orders\n//@ description: Normalize regions, drop unusable rows, derive revenue per row\n\ndef clean(rows):\n    \"\"\"Return only rows we can trust, with revenue computed.\"\"\"\n    kept = []\n    for row in rows:\n        # `or \"\"` turns a None region into an empty string so .strip() cannot fail;\n        # .strip() removes the stray whitespace and .title() unifies the casing,\n        # so \"north\", \"North \" and \"SOUTH\" all become \"North\" / \"South\".\n        region = (row[\"region\"] or \"\").strip().title()\n\n        # An empty region or a missing unit count makes the row unusable - skip it.\n        # `continue` jumps straight to the next iteration.\n        if not region or row[\"units\"] is None:\n            continue\n\n        # Build a NEW dict rather than mutating the input: the upstream cell's data\n        # stays exactly as it was, which is what makes this step safe to re-run.\n        kept.append({\n            \"id\":      row[\"id\"],\n            \"region\":  region,\n            \"product\": row[\"product\"],\n            \"units\":   row[\"units\"],\n            \"revenue\": row[\"units\"] * row[\"unit_price\"],   # the derived column\n        })\n    return kept\n\n# raw_orders is already bound by the anchor cell above - this cell never re-declares it.\norders  = clean(raw_orders)\ndropped = len(raw_orders) - len(orders)\n\nprint(f\"{len(raw_orders)} raw -> {len(orders)} clean ({dropped} dropped)\")\nprint()\nbarista.table(orders[:4])       # [:4] slices off the first four rows as a preview",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": "clean-orders",
+      "dependsOn": [
+        "raw-orders"
+      ]
+    },
+    {
+      "id": "py701-9",
+      "type": "MARKDOWN",
+      "mode": null,
+      "source": "## 4. Dependencies are transitive\n\nThe next cell depends on `clean-orders` — and says nothing about `raw-orders`. It does not have to.\nArima walks the full chain, deduplicates it, and replays each ancestor **once**, in order:\n\n```\nraw-orders  ->  clean-orders  ->  region-summary\n```\n\nAdd a step in the middle later and every downstream cell picks it up automatically. That is the\npayoff for naming things instead of copying them.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-10",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ anchor: region-summary\n//@ depends: clean-orders\n//@ description: Revenue and units per region, ranked\n\nfrom collections import defaultdict\n\n# The lambda gives each new region a fresh zeroed dict, so the += below never has to\n# check whether the key exists yet.\ntotals = defaultdict(lambda: {\"units\": 0, \"revenue\": 0.0})\n\nfor row in orders:                      # `orders` came from clean-orders\n    bucket = totals[row[\"region\"]]      # look the bucket up once, then update it twice\n    bucket[\"units\"]   += row[\"units\"]\n    bucket[\"revenue\"] += row[\"revenue\"]\n\nsummary = sorted(\n    # {\"region\": region, **values} merges the key back in with the totals: ** unpacks\n    # the inner dict's pairs into the new one.\n    ({\"region\": region, **values} for region, values in totals.items()),\n    key=lambda row: row[\"revenue\"],     # rank by revenue\n    reverse=True,                       # highest first\n)\n\nbarista.table(summary)\nprint()\nprint(\"Revenue distribution across regions:\")\nbarista.stats([row[\"revenue\"] for row in summary])",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": "region-summary",
+      "dependsOn": [
+        "clean-orders"
+      ]
+    },
+    {
+      "id": "py701-11",
+      "type": "MARKDOWN",
+      "mode": null,
+      "source": "## 5. Make each step safe to re-run, and let it fail loudly\n\nA pipeline re-runs its steps. That puts two obligations on every anchored cell:\n\n- **Be idempotent.** Running it twice must give the same answer. Rebuild collections from scratch\n  rather than appending to something that already exists.\n- **Raise on bad data.** A step that quietly passes through nonsense is worse than one that stops.\n  A non-zero exit fails the cell, and a failing step halts the pipeline when `on-error: stop`.\n\nA validation step costs a few lines and protects everything downstream of it.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-12",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ anchor: validate-orders\n//@ depends: clean-orders\n//@ description: Refuse to let bad data reach the report\n\n# Each check is a (label, result) pair, so they can be reported and enforced separately.\n# all() returns True only when every item in the sequence is truthy.\nchecks = [\n    (\"at least one row survived cleaning\", len(orders) > 0),\n    (\"every row has a region\",             all(row[\"region\"] for row in orders)),\n    (\"no negative revenue\",                all(row[\"revenue\"] >= 0 for row in orders)),\n    (\"regions are normalized\",             all(row[\"region\"] == row[\"region\"].title()\n                                               for row in orders)),\n]\n\nfor label, ok in checks:\n    # A conditional expression inside the f-string picks the word to print.\n    print(f\"{'PASS' if ok else 'FAIL'}  {label}\")\n\n# Collect the failures first, so one run reports ALL of them rather than stopping\n# at whichever happened to be listed first.\nfailed = [label for label, ok in checks if not ok]\nif failed:\n    # Raising is what fails the cell, and a failed step halts a pipeline that is\n    # running with `on-error: stop`.\n    raise ValueError(\"validation failed: \" + \"; \".join(failed))\n\nprint()\nprint(f\"All {len(checks)} checks passed - downstream steps can trust `orders`.\")",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": "validate-orders",
+      "dependsOn": [
+        "clean-orders"
+      ]
+    },
+    {
+      "id": "py701-13",
+      "type": "MARKDOWN",
+      "mode": null,
+      "source": "## 6. The last step: the report\n\nThis is the only cell that renders anything for a human. Keeping presentation in its own step means\nyou can restyle the dashboard without touching — or re-validating — the data underneath it.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-14",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ anchor: kpi-cards\n//@ depends: region-summary\n//@ description: Executive summary as HTML metric cards\n\ntotal_revenue = sum(row[\"revenue\"] for row in summary)\ntotal_units   = sum(row[\"units\"] for row in summary)\nbest          = summary[0]      # summary is already sorted, so the leader is first\n\n# One function, four calls - the styling lives in exactly one place.\ndef card(label, value, accent):\n    # Adjacent string literals are joined by Python, which keeps this readable\n    # without a line-continuation backslash on every line.\n    return (f'<div style=\"display:inline-block;min-width:150px;margin:6px;padding:14px 18px;'\n            f'border:1px solid #333;border-left:4px solid {accent};border-radius:10px;'\n            f'background:#1b1b24;font-family:sans-serif\">'\n            f'<div style=\"font-size:11px;letter-spacing:.05em;text-transform:uppercase;'\n            f'color:#9aa\">{label}</div>'\n            f'<div style=\"font-size:24px;font-weight:700;color:#eee;margin-top:4px\">{value}</div>'\n            f'</div>')\n\n# :,.0f adds thousands separators and drops the decimals; :, alone does the same for ints.\nbarista.html(\n    card(\"Total Revenue\", f\"${total_revenue:,.0f}\", \"#22c55e\") +\n    card(\"Units Sold\",    f\"{total_units:,}\",       \"#3b82f6\") +\n    card(\"Regions\",       len(summary),             \"#f59e0b\") +\n    card(\"Top Region\",    best[\"region\"],           \"#a855f7\")\n)",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": "kpi-cards",
+      "dependsOn": [
+        "region-summary"
+      ]
+    },
+    {
+      "id": "py701-15",
+      "type": "MARKDOWN",
+      "mode": null,
+      "source": "## 7. The PIPELINE cell — one click, whole chain\n\nIndividually the cells above are five steps you have to remember to run in the right order. A\n**PIPELINE cell** turns them into one named workflow:\n\n```\n//@ pipeline: order-report\n//@ steps: raw-orders, clean-orders, validate-orders, region-summary, kpi-cards\n//@ on-error: stop\n```\n\nPress **Run Pipeline** on the cell below. Arima resolves each step's full transitive dependency\nclosure, merges the graph, topologically sorts it, and executes each step exactly once — stopping at\nthe first failure because of `on-error: stop` (use `continue` to push through).\n\nNote that the steps are listed in a readable order, but the list is not what determines execution\norder. The `//@ depends:` edges do. You could shuffle this line and the pipeline would still run\ncorrectly.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-16",
+      "type": "PIPELINE",
+      "mode": "python",
+      "source": "//@ pipeline: order-report\n//@ steps: raw-orders, clean-orders, validate-orders, region-summary, kpi-cards\n//@ on-error: stop\n//@ description: Rebuild the order report end to end, from raw rows to KPI cards\n\n# Click \"Run Pipeline\" above. Nothing in this cell body executes -\n# a PIPELINE cell is a declaration of a workflow, not a script.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": "order-report",
+      "dependsOn": [],
+      "pipelineSteps": [
+        "raw-orders",
+        "clean-orders",
+        "validate-orders",
+        "region-summary",
+        "kpi-cards"
+      ]
+    },
+    {
+      "id": "py701-17",
+      "type": "MARKDOWN",
+      "mode": null,
+      "source": "## 8. Where the anchor cache lives\n\nThe anchor cache is **per session**, and it is populated only by a **successful** run.\n\n- Restart the kernel and the cache is cleared — the next dependent cell will report its\n  dependencies as missing until you re-run them, or use **Run with deps**, or run the pipeline.\n- A cell that fails does not update its anchor. Dependents keep replaying the last version that\n  worked, which is usually what you want while you are debugging.\n- Two sessions do not share anchors. That is what keeps a pipeline an agent runs from colliding\n  with the one you are editing in the browser.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-18",
+      "type": "MARKDOWN",
+      "mode": null,
+      "source": "## 9. Running this pipeline from outside the notebook\n\nEverything you just built is reachable over Arima's **MCP** server, so an agent can rebuild this\nreport without a browser. The pipeline is addressed by notebook id and pipeline cell id:\n\n```\nbarista_run_pipeline   notebookId=python-701  cellId=<the PIPELINE cell id>\nbarista_search_cells   query=region-summary\nbarista_read_notebook  notebookId=python-701\n```\n\nFrom a terminal, with no MCP client at all:\n\n```bash\narima mcp call barista_run_pipeline notebookId=python-701 cellId=py701-16\n```\n\nOr, in a chat with an MCP-connected agent, simply:\n\n> *\"Run the order-report pipeline in the python-701 notebook and tell me which step failed.\"*\n\nThe agent, the UI, and this notebook are all first-class users of the same graph. That is the whole\nidea: the notebook is the shared artifact.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    },
+    {
+      "id": "py701-19",
+      "type": "MARKDOWN",
+      "mode": null,
+      "source": "## Summary\n\nYou turned a pile of cells into a system.\n\n| Concept | Syntax | Why it matters |\n|---|---|---|\n| **Anchor** | `//@ anchor: name` | Names a cell so others can require it |\n| **Depends** | `//@ depends: a, b` | Requires those anchors to have run first |\n| **Description** | `//@ description: ...` | Documents the step in pipeline output |\n| **Pipeline** | `//@ steps: a, b, c` | Ordered workflow over anchors (PIPELINE cell) |\n| **Error policy** | `//@ on-error: stop` | `stop` halts at the first failure; `continue` pushes on |\n\n### The rules worth carrying out of here\n\n1. A session shares one interpreter, so state is inherited — which is convenient, and is\n   precisely why the dependencies have to be written down rather than remembered.\n2. Write each piece of data down **once**, in an anchored cell. Copying a dataset into three\n   cells means three places to update and three chances to disagree.\n3. Depend on the nearest ancestor and let transitivity do the rest.\n4. Keep steps idempotent, and raise on data you do not trust.\n5. Presentation is its own step.\n\n### Restarting is the proof\n\n**Restart the kernel** and every name is gone. Run the pipeline and it rebuilds from nothing, in\ndependency order, in one click. That is the difference between a notebook you hope still works\nand one you can demonstrate still works.\n\n### Where to go next\n\n- **agent-401 · Reviewer in a Pipeline** — put an agent cell inside a pipeline like the one above.\n- **agent-601 · MCP-driven Agent** — drive these tools from an external agent.\n- **java-401 · Pipelines, Modules & MCP** — the same orchestration model in Java, plus namespaces\n  and cross-notebook module imports (`//@ depends: notebook:id/anchor`), which today are wired for\n  the JVM and .NET languages rather than Python.",
+      "output": "",
+      "returnValue": null,
+      "executed": false,
+      "executionCount": null,
+      "error": "",
+      "anchor": null,
+      "dependsOn": []
+    }
+  ],
+  "createdAt": "2026-08-25T09:30:00",
+  "updatedAt": "2026-08-25T09:30:00",
+  "metadata": {
+    "category": "tutorial",
+    "language": "python",
+    "level": 701,
+    "subcategory": "Orchestration & Pipelines"
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "id": "ts-501",
+  "name": "TypeScript Expert — Typed Data Analysis",
+  "description": "Real-world data analysis with typed records, statistics, charts via barista helpers, and npm packages",
+  "cells": [
+    {
+      "id": "ts-501-md-1",
+      "type": "MARKDOWN",
+      "source": "# TypeScript 501 — Typed Data Analysis\n\nThis notebook brings TypeScript's type system to a data-analysis workflow:\n\n1. Define a strict `Sale` record\n2. Load and aggregate with type-safe `reduce` and `groupBy`\n3. Compute statistics manually and with `simple-statistics`\n4. Render results as Arima tables and inline HTML\n5. Defensive parsing with `Result<T, E>`\n\n> **Optional:** install the `simple-statistics` npm package (Packages → npm tab) for richer stats. The cell that uses it will fall back to manual computation if it's not installed.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "ts-501-1",
+      "type": "CODE",
+      "mode": "typescript",
+      "source": "//@ anchor: dataset\n//@ description: Strict record types and a small dataset\n\n// `export` marks these for other modules. Cells run in isolation here, so it has\n// no practical effect - it is kept to show how the same file would look in a\n// real project.\nexport interface Sale {\n  id: number;\n  // A literal union rather than `string`: only these four codes are valid, so a\n  // typo like \"North\" is caught where it is written.\n  region: \"N\" | \"S\" | \"E\" | \"W\";\n  product: string;\n  qty: number;\n  unitPrice: number;\n  /** YYYY-MM */\n  // A /** ... */ doc comment on a property shows up in editor tooltips, which is\n  // the only practical place to record a format constraint the type cannot express.\n  month: string;\n}\n\n// ReadonlyArray blocks push/pop/sort on this binding, which states the intent:\n// this is source data, and derived views should be new arrays.\nexport const sales: ReadonlyArray<Sale> = [\n  { id: 1,  region: \"N\", product: \"Widget\",   qty: 12, unitPrice: 19.95, month: \"2026-01\" },\n  { id: 2,  region: \"S\", product: \"Widget\",   qty:  9, unitPrice: 19.95, month: \"2026-01\" },\n  { id: 3,  region: \"E\", product: \"Gadget\",   qty: 14, unitPrice: 29.50, month: \"2026-01\" },\n  { id: 4,  region: \"W\", product: \"Gadget\",   qty:  8, unitPrice: 29.50, month: \"2026-01\" },\n  { id: 5,  region: \"N\", product: \"Sprocket\", qty: 22, unitPrice:  4.95, month: \"2026-02\" },\n  { id: 6,  region: \"S\", product: \"Widget\",   qty: 11, unitPrice: 19.95, month: \"2026-02\" },\n  { id: 7,  region: \"E\", product: \"Sprocket\", qty: 31, unitPrice:  4.95, month: \"2026-02\" },\n  { id: 8,  region: \"W\", product: \"Gadget\",   qty:  6, unitPrice: 29.50, month: \"2026-02\" },\n  { id: 9,  region: \"N\", product: \"Widget\",   qty: 15, unitPrice: 19.95, month: \"2026-03\" },\n  { id: 10, region: \"S\", product: \"Sprocket\", qty: 27, unitPrice:  4.95, month: \"2026-03\" },\n  { id: 11, region: \"E\", product: \"Gadget\",   qty: 17, unitPrice: 29.50, month: \"2026-03\" },\n  { id: 12, region: \"W\", product: \"Widget\",   qty: 13, unitPrice: 19.95, month: \"2026-03\" },\n];\n\n// A Set discards duplicates, so its .size is the count of DISTINCT months - the\n// idiomatic one-liner for \"how many unique values are in this column\".\nconsole.log(`Loaded ${sales.length} sales records spanning ${new Set(sales.map(s => s.month)).size} months`);\n// The double assertion through `unknown` is required because an interface has no\n// index signature and so is not assignable to Record<string, unknown>.\nbarista.table(sales.slice(0, 5) as unknown as Record<string, unknown>[]);",
+      "output": "",
+      "executed": false,
+      "anchor": "dataset",
+      "description": "Strict record types and a small dataset"
+    },
+    {
+      "id": "ts-501-2",
+      "type": "CODE",
+      "mode": "typescript",
+      "source": "//@ anchor: aggregate-by-region\n//@ description: Group by region and rank by total revenue\n\n// The type and data are repeated because every cell runs as its own process -\n// nothing from the cell above is in scope here.\ninterface Sale {\n  id: number; region: \"N\" | \"S\" | \"E\" | \"W\";\n  product: string; qty: number; unitPrice: number; month: string;\n}\n\nconst sales: Sale[] = [\n  { id: 1,  region: \"N\", product: \"Widget\",   qty: 12, unitPrice: 19.95, month: \"2026-01\" },\n  { id: 2,  region: \"S\", product: \"Widget\",   qty:  9, unitPrice: 19.95, month: \"2026-01\" },\n  { id: 3,  region: \"E\", product: \"Gadget\",   qty: 14, unitPrice: 29.50, month: \"2026-01\" },\n  { id: 4,  region: \"W\", product: \"Gadget\",   qty:  8, unitPrice: 29.50, month: \"2026-01\" },\n  { id: 5,  region: \"N\", product: \"Sprocket\", qty: 22, unitPrice:  4.95, month: \"2026-02\" },\n  { id: 6,  region: \"S\", product: \"Widget\",   qty: 11, unitPrice: 19.95, month: \"2026-02\" },\n  { id: 7,  region: \"E\", product: \"Sprocket\", qty: 31, unitPrice:  4.95, month: \"2026-02\" },\n  { id: 8,  region: \"W\", product: \"Gadget\",   qty:  6, unitPrice: 29.50, month: \"2026-02\" },\n  { id: 9,  region: \"N\", product: \"Widget\",   qty: 15, unitPrice: 19.95, month: \"2026-03\" },\n  { id: 10, region: \"S\", product: \"Sprocket\", qty: 27, unitPrice:  4.95, month: \"2026-03\" },\n  { id: 11, region: \"E\", product: \"Gadget\",   qty: 17, unitPrice: 29.50, month: \"2026-03\" },\n  { id: 12, region: \"W\", product: \"Widget\",   qty: 13, unitPrice: 19.95, month: \"2026-03\" },\n];\n\n// Naming the aggregate shape is worth the three extra words: every field below\n// is then checked, and the summary is self-documenting.\ninterface RegionSummary { region: string; orders: number; units: number; revenue: number; }\n\n// reduce<...> supplies the accumulator type explicitly. Without it TypeScript\n// would infer the type from the `{}` seed - an empty object with no properties -\n// and every `acc[s.region]` access would be an error.\nconst byRegion = sales.reduce<Record<string, RegionSummary>>((acc, s) => {\n  // `??` supplies the fallback only when the lookup is null or undefined, which\n  // is the correct operator here: `||` would also fire on a legitimate 0.\n  const cur = acc[s.region] ?? { region: s.region, orders: 0, units: 0, revenue: 0 };\n  cur.orders  += 1;\n  cur.units   += s.qty;\n  cur.revenue += s.qty * s.unitPrice;\n  acc[s.region] = cur;\n  return acc;   // reduce needs the accumulator back on every pass\n}, {});\n\n// Object.values discards the keys, which is fine because each summary already\n// carries its own region field.\nconst ranked = Object.values(byRegion)\n  // b - a sorts descending; a - b would be ascending.\n  .sort((a, b) => b.revenue - a.revenue)\n  // Renaming the keys here sets the table's column headers, and toFixed(2)\n  // formats money as a fixed two-decimal string.\n  .map(r => ({ Region: r.region, Orders: r.orders, Units: r.units, Revenue: r.revenue.toFixed(2) }));\n\n// No assertion needed: these are anonymous object literals, not interface\n// instances, so they satisfy Record<string, unknown> directly.\nbarista.table(ranked);",
+      "output": "",
+      "executed": false,
+      "anchor": "aggregate-by-region",
+      "description": "Group by region and rank by total revenue"
+    },
+    {
+      "id": "ts-501-md-2",
+      "type": "MARKDOWN",
+      "source": "## Statistics — built-in and via simple-statistics\n\nArima's `barista.stats(...)` covers the basics. For richer statistics, install `simple-statistics` from the Packages → npm tab.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "ts-501-3",
+      "type": "CODE",
+      "mode": "typescript",
+      "source": "//@ anchor: typed-stats\n//@ description: barista.stats + optional simple-statistics fallback\n\nconst readings: number[] = [\n  23.4, 24.1, 22.8, 25.0, 26.2,\n  23.9, 24.5, 24.0, 27.3, 22.1,\n  23.8, 25.7, 24.4, 26.5, 23.0,\n];\n\nconsole.log(\"=== barista.stats ===\");\n// Arima's built-in summary: count, min, max, mean, standard deviation.\nbarista.stats(readings);\n\n// We use `any` here because simple-statistics ships without a bundled .d.ts.\n// Install @types/simple-statistics if you want full IntelliSense.\n// `any` switches type-checking off for that value entirely, which is why it is\n// confined to this one binding rather than allowed to spread.\nasync function richStats(): Promise<void> {\n  try {\n    // Dynamic `import()` returns a promise, so a missing package rejects and\n    // lands in the catch below. A static import would be a hard dependency and\n    // would break the whole cell.\n    const ss: any = await import(\"simple-statistics\");\n    console.log(\"\\n=== simple-statistics ===\");\n    // Number(...) re-establishes a real type after `any`, so .toFixed is a\n    // checked call rather than a leap of faith.\n    console.log(\"median:\",             Number(ss.median(readings)).toFixed(3));\n    console.log(\"variance:\",           Number(ss.variance(readings)).toFixed(3));\n    // The interquartile range is the width of the middle 50% - a spread measure\n    // that ignores the tails, unlike the standard deviation.\n    console.log(\"interquartileRange:\", Number(ss.interquartileRange(readings)).toFixed(3));\n    // Skewness measures asymmetry: 0 is symmetric, positive means a long right tail.\n    console.log(\"sampleSkewness:\",     Number(ss.sampleSkewness(readings)).toFixed(3));\n  } catch {\n    // An optional catch binding - legal since ES2019 when the error is unused.\n    console.log(\"\\n(simple-statistics not installed — install via Packages → npm to enable rich stats)\");\n  }\n}\n\n// Nothing awaits this, so the call schedules the work and the cell finishes.\nrichStats();",
+      "output": "",
+      "executed": false,
+      "anchor": "typed-stats",
+      "description": "barista.stats + optional simple-statistics fallback"
+    },
+    {
+      "id": "ts-501-md-3",
+      "type": "MARKDOWN",
+      "source": "## Inline HTML reports with `barista.html()`\n\nTypeScript lets you build template-literal HTML with strong types — perfect for inline reports.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "ts-501-4",
+      "type": "CODE",
+      "mode": "typescript",
+      "source": "//@ anchor: html-report\n//@ description: Inline typed HTML report with barista.html\n\n// Typing the row shape means a missing colour or a misspelled label is caught at\n// the point the data is written, not when the HTML renders as something odd.\ninterface Row { label: string; value: number; color: string; }\n\n// The function returns `string`, so it composes cleanly with join(\"\") below.\nfunction bar(row: Row, maxValue: number): string {\n  // Scaling every bar against the largest value is what makes them comparable;\n  // this is the same job a d3 linear scale does, done by hand.\n  const pct = Math.round((row.value / maxValue) * 100);\n  // A multi-line template literal keeps the markup readable. Note the nested\n  // quoting: backticks delimit the string, so double quotes are free for HTML\n  // attributes and need no escaping.\n  return `<div style=\"display:flex;align-items:center;gap:8px;margin:2px 0\">\n    <div style=\"width:70px;text-align:right;color:#aaa\">${row.label}</div>\n    <div style=\"flex:1;background:#222;border-radius:3px;overflow:hidden\">\n      <div style=\"width:${pct}%;background:${row.color};padding:2px 6px;color:#fff;font-weight:600\">\n        ${row.value}\n      </div>\n    </div>\n  </div>`;\n}\n\nconst rows: Row[] = [\n  { label: \"North\", value: 540, color: \"#3178c6\" },\n  { label: \"South\", value: 320, color: \"#06b6d4\" },\n  { label: \"East\",  value: 770, color: \"#22c55e\" },\n  { label: \"West\",  value: 250, color: \"#f59e0b\" },\n];\n\n// Math.max takes separate arguments, so the array is spread into it.\nconst maxVal: number = Math.max(...rows.map(r => r.value));\nconst html: string =\n  `<div style=\"font-family:sans-serif;padding:8px;background:#0f0f17;border-radius:6px\">\n    <h3 style=\"margin:0 0 8px 0;color:#3178c6\">◆ Regional Revenue</h3>\n    ${rows.map(r => bar(r, maxVal)).join(\"\")}\n  </div>`;\n// join(\"\") with no separator matters: the default join inserts commas, which\n// would appear as stray text between the bars.\n\n// Everything above only built a string; this is the line that renders it.\n// The markup is assembled from values we control here - interpolating untrusted\n// input into HTML like this would be an injection risk.\nbarista.html(html);",
+      "output": "",
+      "executed": false,
+      "anchor": "html-report",
+      "description": "Inline typed HTML report with barista.html"
+    },
+    {
+      "id": "ts-501-md-4",
+      "type": "MARKDOWN",
+      "source": "## Defensive parsing with `Result<T, E>`\n\nReal-world data is messy. Use a typed `Result` to surface parse errors without throwing.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "ts-501-5",
+      "type": "CODE",
+      "mode": "typescript",
+      "source": "//@ anchor: defensive-parse\n//@ description: Parse a CSV-ish string into Sale records safely\n\n// The failure branch carries a line number alongside the message, so an error\n// report can point the user at the offending row. Putting it in the type means\n// it can never be forgotten at a call site.\ntype Result<T, E = string> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E; line: number };\n\ninterface Sale { region: string; product: string; qty: number; unitPrice: number; }\n\nfunction parseRow(line: string, idx: number): Result<Sale> {\n  // Trim every field: the sample input is padded for readability, and \" 12\"\n  // would still convert but \" N\" would not compare equal to \"N\".\n  const parts = line.split(\",\").map(p => p.trim());\n  // Validate the shape before touching individual columns - otherwise a short\n  // row silently yields undefined further down.\n  if (parts.length !== 4) {\n    return { ok: false, error: `Expected 4 columns, got ${parts.length}`, line: idx };\n  }\n  const [region, product, qtyStr, priceStr] = parts;\n  // Everything out of split() is a string; Number() returns NaN rather than\n  // throwing, so the conversion has to be checked explicitly.\n  const qty = Number(qtyStr);\n  const unitPrice = Number(priceStr);\n  // Number.isFinite rejects NaN and both Infinities without coercing its\n  // argument, unlike the global isFinite().\n  if (!Number.isFinite(qty) || !Number.isFinite(unitPrice)) {\n    return { ok: false, error: `Non-numeric qty/price: \"${qtyStr}\" / \"${priceStr}\"`, line: idx };\n  }\n  return { ok: true, value: { region, product, qty, unitPrice } };\n}\n\n// Deliberately messy: row 3 has a non-numeric quantity and row 4 is missing a\n// column. Both survive as reported errors rather than crashing the cell.\nconst input: string =\n`N, Widget,   12, 19.95\nS, Widget,    9, 19.95\nE, Gadget,   xx, 29.50\nW, Gadget,    8\nN, Sprocket, 22, 4.95`;\n\n// i + 1 turns a 0-based index into the 1-based line number people expect.\nconst results: Array<Result<Sale>> = input.split(\"\\n\").map((l, i) => parseRow(l, i + 1));\n// `(r): r is { ok: true; value: Sale }` is a TYPE PREDICATE. A plain filter\n// returns the same element type it received, so the result would still be\n// Result<Sale>[] and .value would not be accessible. The predicate tells the\n// compiler that everything surviving the filter is the success variant, which\n// is what makes the following .map legal.\nconst ok:    Sale[] = results.filter((r): r is { ok: true; value: Sale } => r.ok).map(r => r.value);\n// The mirror image for failures - note the missing type annotation here lets\n// TypeScript infer the narrowed element type from the predicate.\nconst errs           = results.filter((r): r is { ok: false; error: string; line: number } => !r.ok);\n\n// The point of the pattern: report every bad row at once instead of aborting on\n// the first one.\nconsole.log(`Parsed ${ok.length} row(s) successfully, ${errs.length} error(s):`);\nerrs.forEach(e => console.log(`  line ${e.line}: ${e.error}`));\n\nbarista.table(ok as unknown as Record<string, unknown>[]);",
+      "output": "",
+      "executed": false,
+      "anchor": "defensive-parse",
+      "description": "Parse a CSV-ish string into Sale records safely"
+    }
+  ],
+  "metadata": {
+    "category": "tutorial",
+    "language": "typescript",
+    "level": 501,
+    "subcategory": "Data Science & Analytics"
+  }
+}

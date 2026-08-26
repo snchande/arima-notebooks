@@ -4845,3 +4845,203 @@ body.fre-on #fre-tip { display: block; }
 /* Share (copy deep link) button on each cell — same treatment as the other
    cell-toolbar icons. The notebook-level twin lives in the top toolbar. */
 .cell-btn.share-btn:hover { color: var(--accent); }
+
+/* ── Polyglot: per-cell language tabs and side-by-side compare ────────── */
+.pg-strip {
+  display: flex; align-items: center; gap: 2px;
+  padding: 4px 8px 0 8px;
+  border-bottom: 1px solid var(--border, #2a2a33);
+  background: var(--panel-2, #16161d);
+}
+.pg-tab {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border: 0; border-bottom: 2px solid transparent;
+  background: transparent; color: var(--muted, #8b8b96);
+  font: inherit; font-size: 12px; cursor: pointer; border-radius: 5px 5px 0 0;
+}
+.pg-tab:hover { color: var(--fg, #e6e6ee); background: rgba(255,255,255,.04); }
+.pg-tab.active { color: var(--fg, #e6e6ee); border-bottom-color: var(--accent, #7c8ef7); }
+.pg-tab.native.active { border-bottom-color: var(--ok, #22c55e); }
+.pg-tab .pg-ico { font-size: 11px; opacity: .85; }
+.pg-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--ok, #22c55e); display: inline-block; margin-left: 2px;
+}
+.pg-tab.stale .pg-dot { background: var(--warn, #f59e0b); }
+.pg-spacer { flex: 1; }
+.pg-compare {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; margin-bottom: 2px;
+  border: 1px solid var(--border, #2a2a33); border-radius: 6px;
+  background: transparent; color: var(--muted, #8b8b96);
+  font: inherit; font-size: 11px; cursor: pointer;
+}
+.pg-compare:hover { color: var(--fg, #e6e6ee); border-color: var(--accent, #7c8ef7); }
+
+.pg-panel { border-top: 1px solid var(--border, #2a2a33); }
+.pg-panel .CodeMirror { height: auto; }
+.pg-loading {
+  display: flex; align-items: center; gap: 9px;
+  padding: 18px 16px; color: var(--muted, #8b8b96); font-size: 13px;
+}
+.pg-hint { color: var(--muted-2, #5f5f6b); font-size: 11px; margin-left: 4px; }
+.pg-spin {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--border, #2a2a33); border-top-color: var(--accent, #7c8ef7);
+  animation: pg-rot .7s linear infinite;
+}
+@keyframes pg-rot { to { transform: rotate(360deg); } }
+.pg-error { padding: 14px 16px; color: var(--err, #f87171); font-size: 13px; }
+.pg-error-detail { color: var(--muted, #8b8b96); font-size: 11px; margin: 5px 0 9px; }
+.pg-retry, .pg-regen, .pg-regen-btn, .pg-run {
+  padding: 4px 11px; border: 1px solid var(--border, #2a2a33); border-radius: 6px;
+  background: transparent; color: var(--fg, #e6e6ee);
+  font: inherit; font-size: 11px; cursor: pointer;
+}
+.pg-run:hover, .pg-retry:hover, .pg-regen:hover, .pg-regen-btn:hover {
+  border-color: var(--accent, #7c8ef7);
+}
+.pg-actions {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-top: 1px solid var(--border, #2a2a33);
+}
+.pg-meta { color: var(--muted-2, #5f5f6b); font-size: 11px; margin-left: auto; }
+.pg-stale-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 12px; font-size: 12px;
+  background: rgba(245,158,11,.10); color: var(--warn, #f59e0b);
+  border-bottom: 1px solid rgba(245,158,11,.25);
+}
+.pg-output {
+  padding: 9px 12px; font-family: var(--mono, "JetBrains Mono", monospace);
+  font-size: 12px; white-space: pre-wrap; color: var(--fg, #e6e6ee);
+}
+.pg-output:empty { display: none; }
+.pg-output.err { color: var(--err, #f87171); }
+.pg-output.running { color: var(--muted, #8b8b96); }
+
+.pg-compare-wrap {
+  display: block;
+  background: var(--border, #2a2a33);
+  border-top: 1px solid var(--border, #2a2a33);
+}
+/* Two equal columns. min-width:0 is what lets a flex child actually shrink -
+   without it a long code line forces the column wider than its half. */
+.pg-side {
+  flex: 1 1 50%;
+  width: 50%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel, #101017);
+}
+.pg-side-head {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 11px; font-size: 11px; color: var(--muted, #8b8b96);
+  border-bottom: 1px solid var(--border, #2a2a33);
+}
+.pg-side-tag {
+  padding: 1px 7px; border-radius: 9px; font-size: 10px;
+  background: rgba(34,197,94,.14); color: var(--ok, #22c55e);
+}
+.pg-side-pick {
+  background: transparent; color: var(--fg, #e6e6ee);
+  border: 1px solid var(--border, #2a2a33); border-radius: 5px;
+  padding: 2px 6px; font: inherit; font-size: 11px;
+}
+/* The editor fills its column edge to edge. */
+.pg-side-body { width: 100%; min-width: 0; flex: 1 1 auto; }
+.pg-side-body .CodeMirror,
+.pg-side-body .CodeMirror-sizer,
+.pg-side .pg-panel,
+.pg-side .pg-editor { width: 100%; min-width: 0; max-width: 100%; }
+.pg-side-body .CodeMirror { height: auto; }
+@media (max-width: 900px) {
+  .pg-compare-cols { flex-direction: column; }
+  .pg-side { width: 100%; }
+}
+
+.settings-subhead {
+  margin: 22px 0 4px; font-size: 13px; font-weight: 600;
+  color: var(--fg, #e6e6ee);
+}
+.settings-note {
+  margin: 0 0 12px; font-size: 11.5px; line-height: 1.5;
+  color: var(--muted, #8b8b96); max-width: 62ch;
+}
+.pg-pick-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 6px 12px; margin-top: 6px;
+}
+.pg-pick {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: var(--fg, #e6e6ee); cursor: pointer;
+}
+
+/* Compare view: nothing here may clip - the whole cell must be readable. */
+.pg-compare-cols {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  width: 100%;
+  background: var(--border, #2a2a33);
+}
+.pg-compare-wrap .CodeMirror { height: auto !important; min-height: 44px; }
+/* Never clip vertically - the whole cell must be readable.
+   CodeMirror pairs padding-bottom:50px with margin-bottom:-50px on the scroller
+   to hide the native scrollbar. That negative margin shrinks the scroller's
+   MARGIN box, so the wrapper's height:auto collapses to a couple of lines and
+   clamps to min-height - the same bug that clipped ordinary cells. With vertical
+   overflow hidden the trick buys nothing, so zero both and let the wrapper size
+   to real content. */
+.pg-compare-wrap .CodeMirror-scroll,
+.pg-panel .CodeMirror-scroll {
+  max-height: none !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  overflow-y: hidden !important;
+  overflow-x: auto;
+}
+.pg-compare-wrap .CodeMirror,
+.pg-panel .CodeMirror {
+  height: auto !important;
+  max-height: none !important;
+}
+.pg-compare-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border, #2a2a33);
+  background: var(--panel-2, #16161d);
+}
+.pg-run-both, .pg-run-left, .pg-close-compare {
+  padding: 4px 11px; border: 1px solid var(--border, #2a2a33); border-radius: 6px;
+  background: transparent; color: var(--fg, #e6e6ee);
+  font: inherit; font-size: 11px; cursor: pointer;
+}
+.pg-run-both:hover, .pg-run-left:hover, .pg-close-compare:hover {
+  border-color: var(--accent, #7c8ef7);
+}
+.pg-verdict { font-size: 11.5px; color: var(--muted, #8b8b96); }
+.pg-verdict.same { color: var(--ok, #22c55e); }
+.pg-verdict.diff { color: var(--warn, #f59e0b); }
+
+.pg-out-head {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 10.5px; letter-spacing: .02em;
+  color: var(--muted, #8b8b96);
+  padding-bottom: 5px; margin-bottom: 5px;
+  border-bottom: 1px dashed var(--border, #2a2a33);
+}
+.pg-out-lang { font-weight: 600; color: var(--fg, #e6e6ee); }
+.pg-out-status.ok  { color: var(--ok, #22c55e); }
+.pg-out-status.err { color: var(--err, #f87171); }
+.pg-out-ms {
+  padding: 1px 7px; border-radius: 9px;
+  background: rgba(124,142,247,.14); color: var(--accent, #7c8ef7);
+  font-variant-numeric: tabular-nums;
+}
+.pg-out-when { margin-left: auto; color: var(--muted-2, #5f5f6b); }
+.pg-out-body {
+  margin: 0; white-space: pre-wrap; word-break: break-word;
+  font-family: var(--mono, "JetBrains Mono", monospace); font-size: 12px;
+}

@@ -143,7 +143,7 @@
         { do: 'Pick your AI provider — Claude, Copilot, or Antigravity (local, no API key).', where: 'Settings → AI Provider.' },
         { do: 'Choose auth: local (default) or OAuth2.', where: 'barista.auth.mode · data/oauth-config.json.' },
         { do: 'Install Maven, npm, and NuGet packages.', where: 'Packages and NuGet tabs.' },
-        { do: 'Notebooks live in notebooks/ (.vnb); app data in data/ — never commit data/.', where: 'Project root.' }
+        { do: 'Notebooks live in notebooks/ (.anb); app data in data/ — never commit data/.', where: 'Project root.' }
       ]
     },
     developer: {

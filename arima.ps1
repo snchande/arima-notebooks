@@ -48,6 +48,9 @@ param(
 )
 
 Set-StrictMode -Version Latest
+
+# Set by 'open <file>' so a server it starts does not also open the home page.
+$script:SuppressOpen = $false
 $ErrorActionPreference = 'Stop'
 
 # Resolve repo root (directory holding this script)
@@ -1026,7 +1029,9 @@ function Cmd-Start {
         Write-Row 'ok' 'Process' "PID $($proc.Id)   logs: arima.log"
         if (Wait-Server -TimeoutSec 45) {
             Write-Row 'ok' 'Server' "up at $Url"
-            Start-Process $Url
+            # "open <file>" starts the server itself and then navigates straight to the
+            # notebook, so it suppresses this to avoid leaving a stray home tab behind.
+            if (-not $script:SuppressOpen) { Start-Process $Url }
             Write-Host ''
             return 0
         }
@@ -1129,13 +1134,141 @@ function Cmd-Status {
 }
 
 function Cmd-Open {
-    if (Test-ServerUp) {
-        W-Ok '  Opening Arima Notebooks...'
-        Start-Process $Url
-        return 0
+    param([string] $File)
+
+    if (-not $File) {
+        if (Test-ServerUp) {
+            W-Ok '  Opening Arima Notebooks...'
+            Start-Process $Url
+            return 0
+        }
+        W-Err '  Arima Notebooks is not running. Start it first: arima start'
+        return 1
     }
-    W-Err '  Arima Notebooks is not running. Start it first: arima start'
-    return 1
+
+    if (-not (Test-Path -LiteralPath $File)) {
+        W-Err "  No such file: $File"
+        return 1
+    }
+
+    # A double-clicked .anb has to work from a cold machine, so start the server
+    # rather than telling the user to do it themselves.
+    if (-not (Test-ServerUp)) {
+        W-Info '  Arima Notebooks is not running - starting it...'
+        $script:Bg = $true
+        $script:SuppressOpen = $true
+        $rc = Cmd-Start
+        if ($rc -ne 0) { return $rc }
+    }
+
+    $full = (Resolve-Path -LiteralPath $File).Path
+    try {
+        $resp = Invoke-RestMethod -Uri "$Url/api/notebooks/open-file" -Method Post `
+                    -ContentType 'application/json' `
+                    -Body (@{ path = $full } | ConvertTo-Json)
+    } catch {
+        W-Err "  Could not open that notebook: $($_.Exception.Message)"
+        return 1
+    }
+    if (-not $resp.id) {
+        W-Err '  That file is not a readable Arima notebook.'
+        return 1
+    }
+    W-Ok "  Opening $(Split-Path -Leaf $full)"
+    Start-Process "$Url/notebooks/$($resp.id)"
+    return 0
+}
+
+$AnbProgId   = 'ArimaNotebooks.Notebook'
+$AnbMimeType = 'application/vnd.arima.notebook+json'
+
+function Get-AnbIconPath {
+    $candidates = @(
+        (Join-Path $RepoRoot 'src/main/resources/static/arima-notebook.ico'),
+        (Join-Path $RepoRoot 'arima-notebook.ico')
+    )
+    foreach ($c in $candidates) { if (Test-Path -LiteralPath $c) { return (Resolve-Path -LiteralPath $c).Path } }
+    return $null
+}
+
+function Update-ShellIconCache {
+    # SHCNE_ASSOCCHANGED - tells Explorer to re-read associations and icons now,
+    # instead of at the next sign-in.
+    try {
+        Add-Type -ErrorAction Stop -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class ArimaShell {
+    [DllImport("shell32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    public static extern void SHChangeNotify(int eventId, uint flags, IntPtr item1, IntPtr item2);
+}
+'@
+        [ArimaShell]::SHChangeNotify(0x08000000, 0x1000, [IntPtr]::Zero, [IntPtr]::Zero)
+    } catch { }
+}
+
+function Cmd-Register {
+    if (-not $IsWindowsHost) {
+        W-Err '  File registration is Windows-only. On Linux use ./arima.sh register.'
+        return 1
+    }
+    $icon = Get-AnbIconPath
+    if (-not $icon) {
+        W-Err '  Icon not found (src/main/resources/static/arima-notebook.ico).'
+        return 1
+    }
+    $launcher = Join-Path $RepoRoot 'arima.cmd'
+    if (-not (Test-Path -LiteralPath $launcher)) {
+        W-Err "  arima.cmd not found next to this script."
+        return 1
+    }
+
+    W-Info '  Registering .anb with Arima Notebooks...'
+
+    # Everything goes under HKCU so no administrator rights are needed.
+    $classes = 'HKCU:\Software\Classes'
+    New-Item -Path "$classes\.anb" -Force | Out-Null
+    Set-ItemProperty -Path "$classes\.anb" -Name '(Default)'     -Value $AnbProgId
+    Set-ItemProperty -Path "$classes\.anb" -Name 'Content Type'  -Value $AnbMimeType
+    Set-ItemProperty -Path "$classes\.anb" -Name 'PerceivedType' -Value 'document'
+    New-Item -Path "$classes\.anb\OpenWithProgids" -Force | Out-Null
+    Set-ItemProperty -Path "$classes\.anb\OpenWithProgids" -Name $AnbProgId -Value ([byte[]]@()) -Type None
+
+    New-Item -Path "$classes\$AnbProgId" -Force | Out-Null
+    Set-ItemProperty -Path "$classes\$AnbProgId" -Name '(Default)' -Value 'Arima Notebook'
+    New-Item -Path "$classes\$AnbProgId\DefaultIcon" -Force | Out-Null
+    Set-ItemProperty -Path "$classes\$AnbProgId\DefaultIcon" -Name '(Default)' -Value "$icon,0"
+    New-Item -Path "$classes\$AnbProgId\shell\open\command" -Force | Out-Null
+    Set-ItemProperty -Path "$classes\$AnbProgId\shell\open\command" -Name '(Default)' `
+        -Value ('"{0}" open "%1"' -f $launcher)
+
+    # Register the MIME type both ways, so content-type lookups resolve too.
+    $mimeKey = "$classes\MIME\Database\Content Type\$AnbMimeType"
+    New-Item -Path $mimeKey -Force | Out-Null
+    Set-ItemProperty -Path $mimeKey -Name 'Extension' -Value '.anb'
+
+    Update-ShellIconCache
+    W-Ok  '  .anb files now open in Arima Notebooks'
+    W-Dim "  Icon: $icon"
+    W-Dim "  MIME: $AnbMimeType"
+    W-Dim '  Explorer may need a refresh (F5) to redraw existing icons.'
+    return 0
+}
+
+function Cmd-Unregister {
+    if (-not $IsWindowsHost) {
+        W-Err '  File registration is Windows-only.'
+        return 1
+    }
+    W-Info '  Removing the .anb association...'
+    $classes = 'HKCU:\Software\Classes'
+    foreach ($k in @("$classes\.anb", "$classes\$AnbProgId",
+                     "$classes\MIME\Database\Content Type\$AnbMimeType")) {
+        if (Test-Path -LiteralPath $k) { Remove-Item -LiteralPath $k -Recurse -Force }
+    }
+    Update-ShellIconCache
+    W-Ok '  .anb association removed'
+    return 0
 }
 
 function Cmd-Logs {
@@ -1738,7 +1871,9 @@ function Cmd-Help {
     W-Plain '    stop             Stop the running server'
     W-Plain '    restart          Stop then start (use after `update`)'
     W-Plain '    status           Server state, PID, runtimes, AI CLIs, checkout state'
-    W-Plain '    open             Open the browser (server must already be running)'
+    W-Plain '    open [file]      Open the browser, or open a .anb notebook file'
+    W-Plain '    register         Associate .anb files with Arima Notebooks'
+    W-Plain '    unregister       Remove the .anb file association'
     W-Plain '    logs             Tail arima.log (background mode only)'
 
     Write-Section 'MCP (drive Arima from this terminal)'
@@ -1797,7 +1932,9 @@ switch ($Command.ToLower()) {
     'stop'      { Show-Banner -Heading 'A R I M A   -   S T O P'; exit (Cmd-Stop) }
     'restart'   { exit (Cmd-Restart) }
     'status'    { exit (Cmd-Status) }
-    'open'      { exit (Cmd-Open) }
+    'open'       { exit (Cmd-Open ($Rest | Select-Object -First 1)) }
+    'register'   { exit (Cmd-Register) }
+    'unregister' { exit (Cmd-Unregister) }
     'logs'      { exit (Cmd-Logs) }
     'build'     { exit (Cmd-Build) }
     'rebuild'   { exit (Cmd-Rebuild) }

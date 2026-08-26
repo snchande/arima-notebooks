@@ -136,7 +136,7 @@ Every code cell has a **mode button** on its header. Click it to **cycle through
 | **C#** | `◈ C#` | C# top-level program via `dotnet run`; isolated per cell (with dep injection for `//@ depends:`) |
 | **F#** | `◈ F#` | F# script via `dotnet fsi`; isolated per cell (with dep injection for `//@ depends:`) |
 | **C++** | `⚙ C++` | g++/clang++/MSVC compile+run, C++17; auto-wraps in `main()`; isolated per cell |
-| **Python** | `🐍 Python` | Python 3 subprocess; isolated per cell (with dep injection for `//@ depends:`); `import` PyPI packages from the PyPI tab |
+| **Python** | `🐍 Python` | One Python 3 session per notebook session - names persist across cells, like JShell; `import` PyPI packages from the PyPI tab |
 
 #### AI-powered language conversion
 
@@ -245,6 +245,79 @@ Every view has its own address, so a notebook — or one cell inside it — can 
 - Opening a link works on a cold page load: the server serves the app for these paths and the UI then opens the right notebook and cell.
 
 These are UI routes and are separate from the REST API, which keeps its own `/api/notebooks/**` namespace.
+
+---
+
+## Polyglot — Learn a Language in Terms of the One You Know
+
+Arima runs eight languages, which makes it the one notebook where a side-by-side
+language comparison can actually be **executed** rather than just read. That is the
+point of Polyglot: not translation for its own sake, but reading a language you are
+learning in terms of the one you already think in.
+
+### Turning it on
+
+**Settings → Polyglot**:
+
+| Setting | What it does |
+|---|---|
+| **Language tabs on cells** | Shows the comparison strip on every code cell |
+| **I mainly think in** | The language comparisons are explained in terms of |
+| **Show tabs for** | Which languages appear as tabs — pick the ones you are learning |
+| **Open comparisons side by side** | Split the cell by default instead of switching tabs |
+
+Pick at least one comparison language, or the strip stays hidden.
+
+### Using it
+
+Each code cell grows a tab strip: its own language first (marked with a green
+underline), then your comparison languages.
+
+- **Click another tab** and Arima asks your active AI provider to render that cell in
+  that language. This happens **once** — the result is stored on the cell and saved
+  with the notebook, so it is instant every time after, and it travels with the file
+  when you share it. A small dot on a tab means a translation already exists.
+- **Translated tabs are real cells.** Edit them, and press **Run** or Shift+Enter to
+  execute them against that language's runtime.
+- **Compare** splits the cell into two equal columns — your language on the left, the
+  one you are learning on the right, with a dropdown to switch which. Both sides are
+  editable, both can be run on their own, and **Run both** executes them together and
+  tells you whether the output actually matches.
+- Every result records **how long that language took**, and *Run both* reports the two
+  timings against each other.
+- Editing the original marks the translation **stale** rather than hiding it; regenerate
+  when you are ready.
+
+### What the generated code is trying to be
+
+The translation is asked to be *idiomatic first, not transliterated*. Where the target
+language has no equivalent of a construct, it uses that language's accepted practice and
+says so — a Python list comprehension becomes a Java Stream, a Python context manager
+becomes try-with-resources in Java, `using` in C#, or an RAII scope in C++.
+
+It comments **only the seams** — the places the target language forced a different
+approach — and leaves the lines that translate directly alone. A Python cell rendered
+as Java reads like this:
+
+```java
+// Java needs a class wrapper and a main method as the entry point; a bare
+// script-level sequence of statements has nowhere to live.
+public class Squares {
+    public static void main(String[] args) {
+        // Java has no comprehensions - a stream with map/collect is the
+        // standard way to build one list from another.
+        List<Integer> squares = nums.stream().map(n -> n * n).toList();
+```
+
+### Things worth knowing
+
+- **It needs an AI provider.** Translation runs through whichever provider is selected
+  in Settings. If none is authenticated, the tab reports the failure and offers a retry.
+- **Timings include startup.** A `java` cell compiles before it runs, and each Python
+  cell starts a fresh interpreter. The numbers are honest about what Arima actually
+  does, but they are not a language benchmark.
+- **Translations are a reading aid, not a port.** They are generated from one cell in
+  isolation and know nothing about the rest of the notebook.
 
 ---
 
@@ -748,7 +821,9 @@ See **[docs/SETUP.md — Setting up C++ support](SETUP.md#setting-up-c-support)*
 
 ## Python Cells
 
-Python cells run in a `python3` subprocess. Nothing is wrapped or rewritten — what you write is what runs, so `if __name__ == "__main__":`, decorators, and module-level code all behave normally.
+Python cells run in one long-lived `python3` session per shell session, so a name you bind in one cell is still there in the next — the same model JShell has always used. Nothing is wrapped or rewritten — what you write is what runs, so `if __name__ == "__main__":`, decorators, and module-level code all behave normally.
+
+**Restart the kernel** (the session restart button) to clear every name and start clean. Running a pipeline rebuilds its steps in dependency order, which is how you prove a notebook still works from nothing rather than hoping it does.
 
 **Requirement:** `python3` (3.9+) on `PATH`. Without it the other seven languages still work; `arima status` reports whether Python was detected.
 

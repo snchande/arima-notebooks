@@ -1,0 +1,91 @@
+{
+  "id": "ts-401",
+  "name": "TypeScript Expert — Async, Patterns, Modern Features",
+  "description": "Async/await patterns, error-as-values, branded types, ES2024 features in TypeScript",
+  "cells": [
+    {
+      "id": "ts-401-md-1",
+      "type": "MARKDOWN",
+      "source": "# TypeScript 401 — Expert Patterns\n\nThis notebook covers patterns experienced TypeScript developers reach for:\n\n1. **Typed async/await** with proper error handling\n2. **Result types** — errors as values instead of exceptions\n3. **Branded (nominal) types** — distinguish two `string`s by intent\n4. **Builder pattern** with chained fluent API\n5. **Modern ES2024** — `Array.prototype.findLast`, `Object.groupBy`, `Promise.withResolvers`",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "ts-401-1",
+      "type": "CODE",
+      "mode": "typescript",
+      "source": "//@ anchor: typed-async\n//@ description: Typed async/await with parallel fetch simulation\n\ninterface Sensor { id: number; name: string; reading: number; }\n\n// An async function ALWAYS returns a promise, so the annotation must be\n// Promise<Sensor>, not Sensor. Writing the bare type is a common early mistake.\nasync function readSensor(id: number): Promise<Sensor> {\n  // A promise wrapping setTimeout is the standard way to await a delay - there\n  // is no built-in sleep in JavaScript.\n  await new Promise(r => setTimeout(r, 5));\n  // Math.round(x * 100) / 10 rounds to one decimal place after scaling by 10.\n  return { id, name: `sensor-${id}`, reading: Math.round(Math.random() * 100) / 10 };\n}\n\n// Promise<void> means the function completes but produces no useful value.\nasync function main(): Promise<void> {\n  const ids: number[] = [1, 2, 3, 4, 5];\n  // Passing `readSensor` directly works because map calls it with (value, index,\n  // array) and the extra arguments are simply ignored. Be careful with this\n  // shorthand where the callback DOES accept a second parameter - the classic\n  // trap is [\"1\",\"2\"].map(parseInt), where the index becomes the radix.\n  // Promise.all preserves order and types: an array of Promise<Sensor> is\n  // awaited into a Sensor[], with all five requests in flight at once.\n  const sensors: Sensor[] = await Promise.all(ids.map(readSensor));\n  barista.table(sensors.map(s => ({ ID: s.id, Sensor: s.name, Reading: s.reading })));\n  barista.stats(sensors.map(s => s.reading));\n}\n\n// Top-level code is not async, so this schedules the work rather than waiting.\nmain();",
+      "output": "",
+      "executed": false,
+      "anchor": "typed-async",
+      "description": "Typed async/await with parallel fetch simulation"
+    },
+    {
+      "id": "ts-401-2",
+      "type": "CODE",
+      "mode": "typescript",
+      "source": "//@ anchor: result-type\n//@ description: Errors as values — the Result<T, E> pattern\n\n// A discriminated union standing in for \"success or failure\". Exceptions are\n// invisible in a signature - a function that throws looks identical to one that\n// cannot. Returning a Result puts the failure in the type, so the caller cannot\n// forget it. `E = string` is a DEFAULT type parameter, letting you write\n// Result<number> and get Result<number, string>.\ntype Result<T, E = string> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nfunction parseIntSafe(s: string): Result<number> {\n  // Number() returns NaN rather than throwing on bad input, which is precisely\n  // the kind of silent failure this wrapper is meant to make explicit.\n  const n = Number(s);\n  // Number.isFinite rejects NaN and both Infinities. The global isFinite() would\n  // coerce its argument first and is best avoided.\n  if (Number.isFinite(n)) return { ok: true, value: n };\n  return { ok: false, error: `Not a number: \"${s}\"` };\n}\n\nfunction divideSafe(a: number, b: number): Result<number> {\n  // In JavaScript 10/0 is Infinity, not an error - so the guard has to be explicit.\n  if (b === 0) return { ok: false, error: \"Division by zero\" };\n  return { ok: true, value: a / b };\n}\n\nconst tests = [\"42\", \"hello\", \"3.14\"];\ntests.forEach(t => {\n  const r = parseIntSafe(t);\n  // Testing r.ok narrows the union: on the true branch TypeScript knows .value\n  // exists, on the false branch .error does. Reading r.value without the check\n  // would not compile - the discriminant is what makes the pattern safe.\n  console.log(r.ok ? `parse(\"${t}\") = ${r.value}` : `parse(\"${t}\") ERROR: ${r.error}`);\n});\n\nconst d = divideSafe(10, 0);\nconsole.log(d.ok ? `result = ${d.value}` : `ERROR: ${d.error}`);",
+      "output": "",
+      "executed": false,
+      "anchor": "result-type",
+      "description": "Errors as values — the Result<T, E> pattern"
+    },
+    {
+      "id": "ts-401-md-2",
+      "type": "MARKDOWN",
+      "source": "## Branded types (nominal typing in a structural world)\n\nTypeScript is structural by default — any two `string`s are interchangeable. **Branded types** attach a phantom tag so the compiler treats `UserId` and `OrderId` as distinct, even though they're both `string` at runtime.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "ts-401-3",
+      "type": "CODE",
+      "mode": "typescript",
+      "source": "//@ anchor: branded-types\n//@ description: Distinguish two strings of different intent\n\n// TypeScript compares types by SHAPE, so every string is interchangeable with\n// every other string. Intersecting with an object carrying a unique literal\n// property manufactures a difference the compiler can see. `__brand` is a\n// phantom field: it never exists at runtime, it only exists to make UserId and\n// OrderId structurally distinct.\ntype Brand<T, B> = T & { readonly __brand: B };\n\ntype UserId  = Brand<string, \"UserId\">;\ntype OrderId = Brand<string, \"OrderId\">;\n\n// Constructor functions are the only place the assertion is allowed. Funnelling\n// every branded value through one function gives you a single spot to add real\n// validation later, and keeps `as` out of the rest of the codebase.\nfunction userId(s: string):  UserId  { return s as UserId; }\nfunction orderId(s: string): OrderId { return s as OrderId; }\n\nfunction loadUser(id: UserId): void { console.log(\"loadUser called with\", id); }\n\nconst u = userId(\"u-100\");\nconst o = orderId(\"o-500\");\n\nloadUser(u);          // OK\n// The two lines below are the payoff. Both are plain strings at runtime, so\n// nothing would fail if they ran - the branding moves the mistake forward to\n// compile time, where it costs nothing to fix.\n// loadUser(o);       // TS would refuse: Argument of type 'OrderId' is not assignable to parameter of type 'UserId'\n// loadUser(\"u-100\"); // TS would refuse: raw string is not a UserId\n\n// Printing shows the truth: the brand has vanished, these are just strings.\nconsole.log(\"u =\", u);\nconsole.log(\"o =\", o);",
+      "output": "",
+      "executed": false,
+      "anchor": "branded-types",
+      "description": "Distinguish two strings of different intent"
+    },
+    {
+      "id": "ts-401-md-3",
+      "type": "MARKDOWN",
+      "source": "## Fluent builder pattern\n\nGenerics + `this`-typing make chainable APIs that preserve type information across each step.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "ts-401-4",
+      "type": "CODE",
+      "mode": "typescript",
+      "source": "//@ anchor: builder-pattern\n//@ description: Fluent QueryBuilder with type-preserving chains\n\nclass QueryBuilder<T> {\n  // Predicates are stored, not applied, so the query is only executed when\n  // run() is called - the same lazy design real query builders use.\n  private filters: Array<(row: T) => boolean> = [];\n  // `keyof T` restricts the sort key to real property names of T, so a typo is a\n  // compile error rather than an undefined at runtime.\n  private orderKey: keyof T | null = null;\n  private orderDir: \"asc\" | \"desc\" = \"asc\";\n  // Infinity as the default means \"no limit\" without a special case in run().\n  private limitN: number = Infinity;\n\n  // Returning `this` - the POLYMORPHIC this type, not QueryBuilder<T> - is what\n  // makes the chain work. If a subclass extended this builder, `this` would\n  // resolve to the subclass, so chained calls would keep the subclass methods.\n  where(pred: (row: T) => boolean): this { this.filters.push(pred); return this; }\n  orderBy(key: keyof T, dir: \"asc\" | \"desc\" = \"asc\"): this {\n    this.orderKey = key; this.orderDir = dir; return this;\n  }\n  limit(n: number): this { this.limitN = n; return this; }\n\n  run(rows: T[]): T[] {\n    // every() on an empty filter list returns true, so no filters means keep all.\n    let out = rows.filter(r => this.filters.every(f => f(r)));\n    if (this.orderKey) {\n      // Copied into a local so TypeScript keeps the narrowing inside the closure\n      // below - it cannot prove `this.orderKey` is still non-null in there.\n      const k = this.orderKey;\n      // Spread first: sort() mutates, and reordering the caller's array would be\n      // an unwanted side effect.\n      out = [...out].sort((a, b) => {\n        // T[keyof T] could be anything, so these assertions state the assumption\n        // that the sort column is comparable. A stricter design would constrain T.\n        const av = a[k] as unknown as number | string;\n        const bv = b[k] as unknown as number | string;\n        // Comparison yields -1/0/1; multiplying by -1 flips it for descending.\n        return (av < bv ? -1 : av > bv ? 1 : 0) * (this.orderDir === \"asc\" ? 1 : -1);\n      });\n    }\n    // slice() clamps by itself, so a limit larger than the array is harmless.\n    return out.slice(0, this.limitN);\n  }\n}\n\ninterface Person { name: string; age: number; }\nconst people: Person[] = [\n  { name: \"Alice\", age: 30 },\n  { name: \"Bob\",   age: 25 },\n  { name: \"Carol\", age: 35 },\n  { name: \"Dave\",  age: 28 },\n];\n\n// Because T is Person, the predicate parameter is typed and orderBy only accepts\n// \"name\" or \"age\" - the type information survives every link in the chain.\nconst result = new QueryBuilder<Person>()\n  .where(p => p.age >= 28)\n  .orderBy(\"age\", \"desc\")\n  .limit(2)\n  .run(people);\n\n// The double assertion through `unknown` is needed because an interface has no\n// index signature and so is not assignable to Record<string, unknown>.\nbarista.table(result as unknown as Record<string, unknown>[]);",
+      "output": "",
+      "executed": false,
+      "anchor": "builder-pattern",
+      "description": "Fluent QueryBuilder with type-preserving chains"
+    },
+    {
+      "id": "ts-401-md-4",
+      "type": "MARKDOWN",
+      "source": "## Modern ES features in TypeScript\n\nModern Node ships ES2024+ features. TypeScript's standard lib knows about them.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "ts-401-5",
+      "type": "CODE",
+      "mode": "typescript",
+      "source": "//@ anchor: es2024-features\n//@ description: findLast, Object.groupBy, Promise.withResolvers\n\nconst nums: number[] = [1, 4, 2, 8, 5, 7, 3];\n// findLast scans from the END, which is the whole reason it exists - the old\n// way was to reverse a copy first, paying an O(n) allocation to answer an O(n)\n// question. It returns undefined when nothing matches, hence the union type.\n// Note the contrast with the two ES2024 features below: this one needs no cast,\n// because Arima type-checks at --target es2023 and findLast is an ES2023 method,\n// so the compiler's standard library already lists it.\nconst lastEven: number | undefined = nums.findLast((n) => n % 2 === 0);\nconsole.log(\"lastEven =\", lastEven); // 8\n\n// Object.groupBy - ES2024\ninterface Sale { region: string; amount: number; }\nconst sales: Sale[] = [\n  { region: \"N\", amount: 10 },\n  { region: \"S\", amount: 22 },\n  { region: \"N\", amount: 14 },\n  { region: \"S\", amount: 18 },\n];\n\n// Object.groupBy replaces the familiar hand-rolled reduce-into-an-object. Same\n// `as any` reason as above: newer than the configured lib target, so the cast\n// silences the compiler and the trailing assertion restores a usable type.\n// (The real Object.groupBy returns a null-prototype object with optional values.)\nconst grouped = (Object as any).groupBy(sales, (s: Sale) => s.region) as Record<string, Sale[]>;\nObject.entries(grouped).forEach(([region, rows]) => {\n  const total = rows.reduce((a, r) => a + r.amount, 0);\n  console.log(`region=${region}  total=${total}`);\n});\n\n// Promise.withResolvers - ES2024 - expose resolve/reject without nesting\n// Before this existed you had to declare `let resolve` outside a `new Promise`\n// and assign it from inside the executor, which defeated const and confused\n// TypeScript's definite-assignment analysis. withResolvers hands back all three\n// pieces at once, so a promise can be settled by code far from where it is made.\ntype Withr<T> = { promise: Promise<T>; resolve: (v: T) => void; reject: (e: unknown) => void };\nconst { promise, resolve } = (Promise as any).withResolvers() as Withr<string>;\n// The promise is resolved from a timer callback - a different call stack\n// entirely, which is exactly the situation this pattern is for.\nsetTimeout(() => resolve(\"done\"), 1);\npromise.then(v => console.log(\"withResolvers ->\", v));",
+      "output": "",
+      "executed": false,
+      "anchor": "es2024-features",
+      "description": "findLast, Object.groupBy, Promise.withResolvers"
+    }
+  ],
+  "metadata": {
+    "category": "tutorial",
+    "language": "typescript",
+    "level": 401,
+    "subcategory": "Advanced"
+  }
+}

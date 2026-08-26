@@ -1,0 +1,117 @@
+{
+  "id": "python-301",
+  "name": "Python 301 · Standard Library & Functional",
+  "description": "The batteries-included stdlib (datetime, collections, itertools, json, pathlib, re) plus functional Python — map/filter, generators, and decorators.",
+  "metadata": {
+    "category": "tutorial",
+    "language": "python",
+    "level": 301,
+    "subcategory": "Advanced"
+  },
+  "cells": [
+    {
+      "id": "py301-md0",
+      "type": "MARKDOWN",
+      "source": "# Python 301 · Standard Library & Functional\n\nPython ships with a huge standard library — no install needed. This lesson tours the most useful modules and functional-style tools.\n\n**Prerequisites:** *Python 201*.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-md1",
+      "type": "MARKDOWN",
+      "source": "## 1. datetime\n\nWork with dates, times, and durations.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-1",
+      "type": "CODE",
+      "mode": "python",
+      "source": "# `from X import Y` pulls specific names out of a module, so you can write datetime(...)\n# rather than datetime.datetime(...).\nfrom datetime import datetime, timedelta\n\n# A fixed date/time: year, month, day, hour, minute. Fixed rather than datetime.now()\n# so this cell prints the same thing every time you run it.\nnow = datetime(2026, 1, 15, 9, 30)\n\n# .strftime() renders a datetime as text using format codes:\n#   %A weekday name   %d day   %B month name   %Y 4-digit year   %H:%M 24-hour clock\nprint(\"formatted:\", now.strftime(\"%A, %d %B %Y %H:%M\"))\n\n# A timedelta is a DURATION, not a point in time. Adding one to a datetime gives\n# another datetime - Python handles the month and year rollovers for you.\ndeadline = now + timedelta(days=10, hours=6)\nprint(\"deadline: \", deadline)\n\n# Subtracting two datetimes gives the timedelta between them - the inverse of the above.\nprint(\"remaining:\", deadline - now)",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-md2",
+      "type": "MARKDOWN",
+      "source": "## 2. collections\n\n`Counter`, `defaultdict`, and `namedtuple` solve common problems elegantly.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-2",
+      "type": "CODE",
+      "mode": "python",
+      "source": "from collections import Counter, defaultdict\n\ntext = \"the quick brown fox the lazy dog the end\"\n\n# Counter is a dict subclass that tallies what it is given. Feed it the list of words\n# and it returns {word: count} - a job that would otherwise take a loop and an if.\ncounts = Counter(text.split())\n\n# .most_common(n) returns the n highest-scoring entries as (value, count) pairs,\n# already sorted from most to least frequent.\nprint(\"most common:\", counts.most_common(2))\n\n# defaultdict(list) is a dict that creates an empty list the first time you touch a\n# missing key. Without it, groups[5].append(...) would raise KeyError on the first word.\ngroups = defaultdict(list)\nfor word in text.split():\n    groups[len(word)].append(word)      # group the words by their length\n\n# .items() gives (key, value) pairs; sorted() puts the lengths in ascending order.\nfor length, words in sorted(groups.items()):\n    print(f\"{length}-letter: {words}\")",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-md3",
+      "type": "MARKDOWN",
+      "source": "## 3. itertools\n\nLazy, composable iterator building blocks.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-3",
+      "type": "CODE",
+      "mode": "python",
+      "source": "from itertools import combinations, accumulate, groupby\n\n# These functions are LAZY: they return an iterator that produces values on demand,\n# so list(...) is what forces the work to happen and gives something printable.\n\n# combinations(seq, 2) yields every unordered pair, without repeats: ab, ac, bc.\nprint(\"pairs:\", list(combinations([\"a\", \"b\", \"c\"], 2)))\n\n# accumulate() yields the running total: 1, 1+2, 1+2+3, ... - useful for cumulative charts.\nprint(\"running sum:\", list(accumulate([1, 2, 3, 4, 5])))\n\ndata = [1, 1, 2, 2, 2, 3]\n\n# groupby() collapses ADJACENT equal items into groups. It does not sort first, so on\n# unsorted input you would call sorted(data) before grouping.\nfor key, grp in groupby(data):\n    # grp is itself a lazy iterator, so list() is needed before len() can count it.\n    print(f\"{key}: {len(list(grp))}x\")",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-md4",
+      "type": "MARKDOWN",
+      "source": "## 4. json & regular expressions\n\nParse/produce JSON with `json`; match patterns with `re`.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-4",
+      "type": "CODE",
+      "mode": "python",
+      "source": "import json, re      # several modules can be imported on one line\n\nrecord = {\"user\": \"ada\", \"scores\": [90, 85, 92]}\n\n# json.dumps() serialises a Python object to a JSON string (\"dump to string\").\nblob = json.dumps(record)\nprint(\"json:\", blob)\n\n# json.loads() parses in the other direction (\"load from string\"), giving back a dict.\n# Indexing that dict with [\"scores\"] returns the list, which sum() then adds up.\nprint(\"parsed avg:\", sum(json.loads(blob)[\"scores\"]) / 3)\n\nlog = \"ERROR 2026-01-15 disk full; WARN 2026-01-16 low mem\"\n\n# An r\"...\" raw string stops Python from treating backslashes as escapes, which is why\n# regex patterns are almost always written that way. In the pattern:\n#   (ERROR|WARN)     group 1 - either literal word\n#   (\\d{4}-\\d{2}-\\d{2}) group 2 - four digits, dash, two digits, dash, two digits\n# re.findall() returns one tuple per match, holding that match's groups.\nfor level, date in re.findall(r\"(ERROR|WARN) (\\d{4}-\\d{2}-\\d{2})\", log):\n    print(f\"{level:<5} on {date}\")",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-md5",
+      "type": "MARKDOWN",
+      "source": "## 5. Functional tools\n\n`map`, `filter`, and generator expressions process data lazily and declaratively.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-5",
+      "type": "CODE",
+      "mode": "python",
+      "source": "from functools import reduce\n\nnums = range(1, 11)      # 1..10, produced lazily rather than stored as a list\n\n# `lambda n: n * n` is an anonymous function - the same as def f(n): return n * n.\n# map() applies it to every item, and returns a lazy iterator, not a list.\nsquares = map(lambda n: n * n, nums)\n\n# filter() keeps only the items for which the function returns True. Still lazy:\n# nothing has actually been computed yet at this point.\nbig = filter(lambda n: n > 25, squares)\n\n# list() finally drives the whole chain - map and filter run one item at a time here.\nprint(\"squares > 25:\", list(big))\n\n# reduce() collapses a sequence to a single value by combining items pairwise:\n# ((((1*2)*3)*4)*5) = 120. Unlike map/filter it must be imported.\nproduct = reduce(lambda a, b: a * b, range(1, 6))\nprint(\"5! =\", product)\n\n# A function containing `yield` is a GENERATOR: calling it does not run the body,\n# it returns an object that runs a little further each time you ask for a value.\ndef fib():\n    a, b = 0, 1\n    while True:              # an infinite loop is fine - nothing runs until asked\n        yield a              # hand out the current value, then pause right here\n        a, b = b, a + b      # resumes here on the next request\n\ngen = fib()                  # create the generator; still nothing has executed\n\n# next() pulls one value. Ten pulls give the first ten Fibonacci numbers, and the\n# generator stays suspended in between - it never builds an infinite list.\nprint(\"first 10 fib:\", [next(gen) for _ in range(10)])",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-md6",
+      "type": "MARKDOWN",
+      "source": "## 6. Decorators\n\nA decorator wraps a function to add behavior — here, simple timing.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-6",
+      "type": "CODE",
+      "mode": "python",
+      "source": "import time\nfrom functools import wraps\n\n# A decorator is just a function that takes a function and returns a replacement.\ndef timed(fn):\n    # @wraps copies the original function's name and docstring onto the wrapper.\n    # Without it, sum_squares.__name__ below would report \"wrapper\".\n    @wraps(fn)\n    # *args / **kwargs let the wrapper accept ANY arguments and pass them straight\n    # through, so one decorator works on any function.\n    def wrapper(*args, **kwargs):\n        start = time.perf_counter()          # perf_counter is the high-resolution clock\n        result = fn(*args, **kwargs)         # call the real function, keeping its result\n        ms = (time.perf_counter() - start) * 1000   # seconds -> milliseconds\n        print(f\"[{fn.__name__}] took {ms:.2f} ms\")\n        return result                        # a wrapper MUST return the real result\n    return wrapper                           # hand the replacement back to Python\n\n# @timed is shorthand for: sum_squares = timed(sum_squares).\n@timed\ndef sum_squares(n):\n    # A generator expression inside sum() - no intermediate list of 100,000 numbers.\n    return sum(i * i for i in range(n))\n\n# The call goes through wrapper, which times it, prints, and returns the real answer.\n# 100_000 uses underscores as digit separators; Python ignores them.\nprint(\"result:\", sum_squares(100_000))",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py301-md7",
+      "type": "MARKDOWN",
+      "source": "## Next\n\n**Python 401 · Networking** — HTTP with the stdlib and `requests`, JSON APIs, and a local socket server.",
+      "output": "",
+      "executionCount": 0
+    }
+  ]
+}

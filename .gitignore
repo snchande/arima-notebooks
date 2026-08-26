@@ -74,7 +74,9 @@ data/users/
 
 # Notebook files are user data - include tutorials but not personal dirs
 notebooks/local-*/
+notebooks/*.anb
 notebooks/*.vnb
+!notebooks/welcome.anb
 !notebooks/welcome.vnb
 
 # Log files

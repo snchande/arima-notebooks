@@ -393,7 +393,7 @@ The **Server Status** panel shows which runtimes are detected: Java, Node.js (JS
 
 - **Auto-save** every 30 seconds when changes are present (yellow dot on Save button)
 - **Manual save** with Ctrl+S
-- Notebooks are \`.vnb\` JSON files in \`notebooks/\` — cell output is persisted with the notebook
+- Notebooks are \`.anb\` JSON files in \`notebooks/\` — cell output is persisted with the notebook
 `,
 
 // ═══════════════════════════════════════════════════════
@@ -948,6 +948,42 @@ Click **▶▶** (run-with-deps) and Arima:
 
 ---
 
+## Polyglot — Read a Cell in a Language You Are Learning
+
+Arima runs eight languages, so a side-by-side comparison here can actually be **run**,
+not just read. Use it to learn a new language in terms of the one you already think in.
+
+**Switch it on:** Settings → Polyglot. Choose the language you mainly think in, then
+tick the ones you want tabs for.
+
+Every code cell then grows a tab strip — its own language first (green underline), then
+your comparison languages.
+
+| Action | What happens |
+|---|---|
+| Click another language tab | Arima renders the cell in that language **once**, then saves it with the notebook |
+| A dot on a tab | A translation already exists for that language |
+| **Compare** | Splits the cell into two equal columns, your language on the left |
+| **Run** on either side | Executes that side against its own runtime |
+| **Run both** | Runs both and reports whether the output actually matches |
+
+Every result shows **how long that language took**, and *Run both* compares the two
+timings. Runs are saved with the notebook, so reopening it shows both languages'
+results again without re-running.
+
+Translations are **idiomatic, not transliterated** — where a construct has no
+equivalent, the target language's accepted practice is used and named in a comment.
+Only the seams get commented; lines that translate directly are left alone.
+
+Editing the original marks a translation **stale** rather than hiding it. Regenerate
+when you are ready.
+
+> Translation runs through your selected AI provider, so one must be authenticated.
+> Timings include compile and interpreter startup — honest about what Arima does, but
+> not a language benchmark.
+
+---
+
 ## 3. Pipeline Cells — Named Workflows
 
 A **PIPELINE cell** defines a named, self-contained workflow that can be run with a single click.
@@ -1496,7 +1532,7 @@ graph LR
     subgraph Server["Arima Server — Spring Boot 3.2 / Java 21"]
         Controllers["REST Controllers\n+ WebSocket"]
         Services["Execution Services"]
-        Storage["File Storage (.vnb)"]
+        Storage["File Storage (.anb)"]
     end
 
     subgraph Engines["Execution Engines (8 languages)"]
@@ -1544,7 +1580,7 @@ graph TD
     Controller --> TsSvc["TypeScriptExecutionService\nnode --experimental-strip-types\n+ optional tsc --noEmit"]
     Controller --> DotNetSvc["DotNetExecutionService\ndotnet run (C#) · dotnet fsi (F#)\nSession anchor cache"]
     Controller --> CppSvc["CppExecutionService\ncl.exe / g++ / clang++\nAuto-detects MSVC · GCC · Clang"]
-    Controller --> NbSvc["NotebookService\n.vnb CRUD · tutorial registry"]
+    Controller --> NbSvc["NotebookService\n.anb CRUD · tutorial registry"]
     Controller --> PkgSvc["PackageService\nMaven Central download\nJShell classpath injection"]
     Controller --> NuGetSvc["NuGetService\nNuGet package list management"]
     Controller --> AIDelegate["AIDelegate interface\nRoutes to active provider"]
@@ -1673,7 +1709,7 @@ erDiagram
 
 **Cell modes:** \`jshell\` · \`java\` · \`nodejs\` · \`typescript\` · \`csharp\` · \`fsharp\` · \`cpp\`
 
-**Storage format:** Pretty-printed JSON in \`notebooks/{userId}/{id}.vnb\`
+**Storage format:** Pretty-printed JSON in \`notebooks/{userId}/{name}.anb\`
 
 ---
 
@@ -1749,7 +1785,7 @@ barista/
 │   ├── tutorials/          Built-in tutorials (read-only, checked in)
 │   ├── examples/           Example notebooks (read-only, checked in)
 │   └── {userId}/           User notebooks (gitignored)
-│       └── *.vnb
+│       └── *.anb
 └── data/
     ├── settings.json       App settings (gitignored — may contain keys)
     ├── packages.json       Installed Maven packages
@@ -1817,7 +1853,7 @@ The frontend has no build step — change a JS/CSS file and refresh the browser.
 | \`DotNetExecutionService\` | dotnet run (C#) + dotnet fsi (F#); session anchor cache; dep injection |
 | \`CppExecutionService\` | Auto-detects MSVC/GCC/Clang; writes temp .cpp; compiles + runs; exposes isAvailable() / getCompilerDetail() |
 | \`OrchestrationService\` | Anchor parsing; dep graph; toposort (Kahn's); cycle detection (DFS); cross-notebook resolution |
-| \`NotebookService\` | .vnb CRUD; tutorial + example registry (scans notebooks/tutorials/ and notebooks/examples/) |
+| \`NotebookService\` | .anb CRUD; tutorial + example registry (scans notebooks/tutorials/ and notebooks/examples/) |
 | \`PackageService\` | Maven Central HTTP download; JShell classpath injection |
 | \`NuGetService\` | NuGet package list persistence; per-cell injection for C#/F# |
 | \`ClaudeService\` | claude CLI subprocess; streams stdout back to caller |
@@ -2025,7 +2061,7 @@ Arima is open source. To contribute:
 | \`service/TypeScriptExecutionService.java\` | TypeScript execution via Node type-stripping + optional tsc |
 | \`service/DotNetExecutionService.java\` | C# and F# execution + anchor cache |
 | \`service/OrchestrationService.java\` | Dep graph, toposort, pipeline execution, cross-notebook |
-| \`service/NotebookService.java\` | .vnb CRUD, tutorial + example registry |
+| \`service/NotebookService.java\` | .anb CRUD, tutorial + example registry |
 | \`service/PackageService.java\` | Maven Central integration |
 | \`service/NuGetService.java\` | NuGet package management |
 | \`service/CppExecutionService.java\` | C++ compilation + execution; compiler auto-detection |

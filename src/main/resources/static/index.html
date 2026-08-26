@@ -990,6 +990,43 @@ dotnet fsi --version  # verify F# Interactive</pre>
               <label>Focus executing cell <span class="hint">Auto-scroll to the cell being run</span></label>
               <label class="toggle"><input type="checkbox" id="s-focus-cell" checked><span class="slider"></span></label>
             </div>
+            <h3 class="settings-subhead">Polyglot</h3>
+            <p class="settings-note">Read a cell in a language you are learning, beside the one you already think in. Each translation is generated once, then saved with the notebook.</p>
+            <div class="field-group inline-field">
+              <label>Language tabs on cells <span class="hint">Show the comparison strip on every code cell</span></label>
+              <label class="toggle"><input type="checkbox" id="s-pg-enabled" checked><span class="slider"></span></label>
+            </div>
+            <div class="field-group">
+              <label>I mainly think in <span class="hint">Comparisons are explained in this language&#39;s terms</span></label>
+              <select id="s-pg-dominant">
+                <option value="">(not set)</option>
+                <option value="jshell">JShell</option>
+                <option value="java">Java</option>
+                <option value="python">Python</option>
+                <option value="nodejs">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+                <option value="csharp">C#</option>
+                <option value="fsharp">F#</option>
+                <option value="cpp">C++</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Show tabs for <span class="hint">The languages you want to compare against</span></label>
+              <div class="pg-pick-grid">
+                <label class="pg-pick"><input type="checkbox" class="s-pg-lang" value="jshell"> JShell</label>
+                <label class="pg-pick"><input type="checkbox" class="s-pg-lang" value="java"> Java</label>
+                <label class="pg-pick"><input type="checkbox" class="s-pg-lang" value="python"> Python</label>
+                <label class="pg-pick"><input type="checkbox" class="s-pg-lang" value="nodejs"> JavaScript</label>
+                <label class="pg-pick"><input type="checkbox" class="s-pg-lang" value="typescript"> TypeScript</label>
+                <label class="pg-pick"><input type="checkbox" class="s-pg-lang" value="csharp"> C#</label>
+                <label class="pg-pick"><input type="checkbox" class="s-pg-lang" value="fsharp"> F#</label>
+                <label class="pg-pick"><input type="checkbox" class="s-pg-lang" value="cpp"> C++</label>
+              </div>
+            </div>
+            <div class="field-group inline-field">
+              <label>Open comparisons side by side <span class="hint">Split the cell instead of switching tabs</span></label>
+              <label class="toggle"><input type="checkbox" id="s-pg-sbs"><span class="slider"></span></label>
+            </div>
           </div>
         </div>
 
@@ -1681,6 +1718,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
 <script src="/js/prefs.js"></script>
 <script src="/js/notifications.js"></script>
 <script src="/js/orchestration.js"></script>
+<script src="/js/polyglot.js"></script>
 <script src="/js/notebook.js"></script>
 <script src="/js/agent.js"></script>
 <script src="/js/agents-tab.js"></script>

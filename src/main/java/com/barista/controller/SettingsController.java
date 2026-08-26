@@ -251,6 +251,11 @@ public class SettingsController {
         c.setConsoleFontSize(s.getConsoleFontSize());
         c.setConsoleHistorySize(s.getConsoleHistorySize());
         c.setEnableAutoComplete(s.isEnableAutoComplete());
+        // Polyglot
+        c.setPolyglotEnabled(s.isPolyglotEnabled());
+        c.setPolyglotDominantLanguage(s.getPolyglotDominantLanguage());
+        c.setPolyglotCompareLanguages(s.getPolyglotCompareLanguages());
+        c.setPolyglotSideBySide(s.isPolyglotSideBySide());
         // Storage
         c.setNotebooksDir(s.getNotebooksDir());
         c.setServerPort(s.getServerPort());

@@ -53,6 +53,8 @@ public class OrchestrationService {
     private final TypeScriptExecutionService typeScriptExecutionService;
     private final DotNetExecutionService dotNetExecutionService;
     private final CppExecutionService cppExecutionService;
+    private final PythonExecutionService pythonExecutionService;
+    private final PythonKernelService pythonKernelService;
     private final NotebookService notebookService;
     private final UserService userService;
     private final AgentService agentService;
@@ -77,6 +79,8 @@ public class OrchestrationService {
                                  TypeScriptExecutionService typeScriptExecutionService,
                                  DotNetExecutionService dotNetExecutionService,
                                  CppExecutionService cppExecutionService,
+                                 PythonExecutionService pythonExecutionService,
+                                 PythonKernelService pythonKernelService,
                                  NotebookService notebookService,
                                  UserService userService,
                                  AgentService agentService) {
@@ -87,6 +91,8 @@ public class OrchestrationService {
         this.typeScriptExecutionService = typeScriptExecutionService;
         this.dotNetExecutionService = dotNetExecutionService;
         this.cppExecutionService = cppExecutionService;
+        this.pythonExecutionService = pythonExecutionService;
+        this.pythonKernelService = pythonKernelService;
         this.notebookService = notebookService;
         this.userService = userService;
         this.agentService = agentService;
@@ -631,6 +637,8 @@ public class OrchestrationService {
             return dotNetExecutionService.executeFSharp(sessionId, cell.getId(), cell.getSource());
         } else if ("cpp".equals(mode)) {
             return cppExecutionService.execute(sessionId, cell.getId(), cell.getSource());
+        } else if ("python".equals(mode)) {
+            return pythonKernelService.execute(sessionId, cell.getId(), cell.getSource(), "");
         } else {
             return jShellManager.execute(sessionId, cell.getSource(), cell.getId());
         }

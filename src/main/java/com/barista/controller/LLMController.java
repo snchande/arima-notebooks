@@ -4,6 +4,7 @@ import com.barista.service.ClaudeService;
 import com.barista.service.CopilotCliService;
 import com.barista.service.GeminiService;
 import com.barista.service.GitHubCopilotService;
+import com.barista.service.PolyglotService;
 import com.barista.service.SettingsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,8 @@ import java.util.Map;
  * POST /api/llm/generate       - Generate a notebook from a prompt
  * POST /api/llm/explain        - Explain code
  * POST /api/llm/fix            - Suggest fix for an error
+ * POST /api/llm/translate      - Render a cell's source in another language
+ * GET  /api/llm/languages      - List the languages a cell can be compared against
  * GET  /api/llm/provider       - Report which AI provider is active + availability
  */
 @RestController
@@ -33,15 +36,18 @@ public class LLMController {
     private final CopilotCliService      copilotCliService;
     private final GeminiService          geminiService;
     private final SettingsService        settingsService;
+    private final PolyglotService        polyglotService;
 
     public LLMController(ClaudeService claudeService,
                          CopilotCliService copilotCliService,
                          GeminiService geminiService,
-                         SettingsService settingsService) {
+                         SettingsService settingsService,
+                         PolyglotService polyglotService) {
         this.claudeService     = claudeService;
         this.copilotCliService = copilotCliService;
         this.geminiService     = geminiService;
         this.settingsService   = settingsService;
+        this.polyglotService   = polyglotService;
     }
 
     /** Report which AI provider is currently active and whether it is available. */
@@ -140,6 +146,31 @@ public class LLMController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    /** Render a cell's source in another language for the polyglot comparison view. */
+    @PostMapping("/translate")
+    public ResponseEntity<?> translate(@RequestBody Map<String, String> body) {
+        String source = body.get("source");
+        String from   = body.get("from");
+        String to     = body.get("to");
+        if (source == null || from == null || to == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Fields 'source', 'from' and 'to' are required"));
+        }
+        try {
+            return ResponseEntity.ok(polyglotService.translate(source, from, to));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /** The languages a cell can be compared against. */
+    @GetMapping("/languages")
+    public ResponseEntity<?> languages() {
+        return ResponseEntity.ok(Map.of("languages", polyglotService.supportedLanguages()));
     }
 
     // ── Private helpers ─────────────────────────────────────────────────

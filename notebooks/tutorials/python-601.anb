@@ -1,0 +1,149 @@
+{
+  "id": "python-601",
+  "name": "Python 601 · Data Science, Metrics & Reporting",
+  "description": "Analyze data and build reports using Arima's built-in rendering — barista.table, barista.stats, HTML metric cards, and inline SVG charts (no install) — then scale up with NumPy, pandas, and matplotlib from PyPI.",
+  "metadata": {
+    "category": "tutorial",
+    "language": "python",
+    "level": 601,
+    "subcategory": "Data Science & Analytics"
+  },
+  "cells": [
+    {
+      "id": "py601-md0",
+      "type": "MARKDOWN",
+      "source": "# Python 601 · Data Science, Metrics & Reporting\n\nTurn raw data into insight and **rendered reports** — right inside a notebook cell.\n\nArima gives every Python cell built-in rendering helpers, so you can build metrics and dashboards **with zero dependencies**:\n- `barista.table(rows)` — tabular reports\n- `barista.stats(values)` — instant summary statistics\n- `barista.html(markup)` — render KPI cards, badges, **inline SVG charts**\n- `barista.image(fig)` — render a matplotlib figure as an image\n\nWe start with pure-Python analysis + rendering (always runs), then scale up with **NumPy / pandas / matplotlib** from the **PyPI** tab.\n\n**Prerequisites:** *Python 301*.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py601-md1",
+      "type": "MARKDOWN",
+      "source": "## 1. A dataset + summary statistics\n\nHere's a month of sales rows. `barista.stats()` gives count / min / max / mean / std for any list of numbers.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py601-1",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ anchor: sales-data\n# Anchoring this cell names it, so every cell below can rebuild the same dataset with\n# //@ depends: sales-data instead of copying these rows.\nsales = [\n    {\"region\": \"North\", \"product\": \"Widget\", \"units\": 120, \"revenue\": 3600},\n    {\"region\": \"North\", \"product\": \"Gadget\", \"units\": 80,  \"revenue\": 4000},\n    {\"region\": \"South\", \"product\": \"Widget\", \"units\": 200, \"revenue\": 6000},\n    {\"region\": \"South\", \"product\": \"Gadget\", \"units\": 60,  \"revenue\": 3000},\n    {\"region\": \"East\",  \"product\": \"Widget\", \"units\": 150, \"revenue\": 4500},\n    {\"region\": \"East\",  \"product\": \"Gadget\", \"units\": 110, \"revenue\": 5500},\n    {\"region\": \"West\",  \"product\": \"Widget\", \"units\": 90,  \"revenue\": 2700},\n    {\"region\": \"West\",  \"product\": \"Gadget\", \"units\": 130, \"revenue\": 6500},\n]\n\nprint(f\"{len(sales)} rows loaded\")\nprint(\"Revenue summary:\")\n\n# The comprehension lifts one column out of the rows - [3600, 4000, ...] - and\n# barista.stats() reports count / min / max / mean / std over it in a single line.\nbarista.stats([r[\"revenue\"] for r in sales])",
+      "output": "",
+      "executionCount": 0,
+      "anchor": "sales-data"
+    },
+    {
+      "id": "py601-md2",
+      "type": "MARKDOWN",
+      "source": "## 2. Aggregate + tabular report\n\nGroup by region in pure Python and render a clean report with `barista.table()`. This cell **depends on** the data cell above — run the pipeline, or *Run with deps*.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py601-2",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ anchor: region-report\n//@ depends: sales-data\nfrom collections import defaultdict\n\n# defaultdict(lambda: {...}) supplies a fresh zeroed dict the first time a region is\n# seen, so the += lines below never hit a missing key.\nby_region = defaultdict(lambda: {\"units\": 0, \"revenue\": 0})\nfor r in sales:                                     # `sales` comes from the anchor above\n    by_region[r[\"region\"]][\"units\"]   += r[\"units\"]\n    by_region[r[\"region\"]][\"revenue\"] += r[\"revenue\"]\n\n# One comprehension does three jobs: sort, reshape, and derive a new column.\n#   key=lambda kv: -kv[1][\"revenue\"]  sorts by revenue DESCENDING (the minus flips it)\n#   avg_price                         is computed per region, rounded to 2 decimals\nreport = [\n    {\"region\": reg, \"units\": v[\"units\"], \"revenue\": v[\"revenue\"],\n     \"avg_price\": round(v[\"revenue\"] / v[\"units\"], 2)}\n    for reg, v in sorted(by_region.items(), key=lambda kv: -kv[1][\"revenue\"])\n]\n\n# barista.table() expects exactly this shape: a list of dicts sharing the same keys.\nbarista.table(report)",
+      "output": "",
+      "executionCount": 0,
+      "anchor": "region-report",
+      "dependsOn": [
+        "sales-data"
+      ]
+    },
+    {
+      "id": "py601-md3",
+      "type": "MARKDOWN",
+      "source": "## 3. Metric cards (KPI report) via HTML rendering\n\n`barista.html()` renders arbitrary HTML — perfect for a **KPI dashboard**. No charting library required.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py601-3",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ depends: sales-data\n# Four one-line summaries over the same rows:\ntotal_rev   = sum(r[\"revenue\"] for r in sales)          # add up one column\ntotal_units = sum(r[\"units\"] for r in sales)\nbest        = max(sales, key=lambda r: r[\"revenue\"])    # key= picks WHAT to compare;\n                                                        # max returns the whole row, not the number\navg_order   = total_rev / len(sales)\n\n# Building the markup in a function keeps the four calls below readable and consistent.\ndef card(label, value, accent):\n    # Adjacent string literals are concatenated by Python, which is how this stays\n    # readable across several lines without a backslash at the end of each one.\n    return (f'<div style=\"display:inline-block;min-width:150px;margin:6px;padding:14px 18px;'\n            f'border:1px solid #333;border-left:4px solid {accent};border-radius:10px;'\n            f'background:#1b1b24;font-family:sans-serif\">'\n            f'<div style=\"font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#9aa\">{label}</div>'\n            f'<div style=\"font-size:24px;font-weight:700;color:#eee;margin-top:4px\">{value}</div></div>')\n\n# barista.html() renders whatever markup you hand it inside the cell's output.\n# The format specs do the presentation work: :, adds thousands separators,\n# and :,.0f rounds to a whole number while keeping them.\nbarista.html(\n    card(\"Total Revenue\", f\"${total_rev:,}\", \"#22c55e\") +\n    card(\"Units Sold\", f\"{total_units:,}\", \"#3b82f6\") +\n    card(\"Avg Order\", f\"${avg_order:,.0f}\", \"#f59e0b\") +\n    card(\"Top Line\", f'{best[\"region\"]} - {best[\"product\"]}', \"#a855f7\")\n)",
+      "output": "",
+      "executionCount": 0,
+      "dependsOn": [
+        "sales-data"
+      ]
+    },
+    {
+      "id": "py601-md4",
+      "type": "MARKDOWN",
+      "source": "## 4. An inline SVG bar chart (zero dependencies)\n\nYou can render a real chart with nothing but Python + `barista.html()`, by emitting **SVG**. Great for quick visuals without installing anything.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py601-4",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ depends: sales-data\nfrom collections import defaultdict\n\n# Total revenue per region - the numbers the chart will draw.\nrev = defaultdict(int)\nfor r in sales:\n    rev[r[\"region\"]] += r[\"revenue\"]\n\nlabels = list(rev.keys())              # dicts keep insertion order, so labels and\nvalues = [rev[k] for k in labels]      # values stay aligned with each other\nhi = max(values)                       # the largest bar defines the scale\n\n# Layout constants, in SVG user units (effectively pixels here).\nW, bar_h, gap, left = 360, 26, 12, 60\nH = len(labels) * (bar_h + gap) + gap  # tall enough for every bar plus the gaps\n\nbars = []\n# zip() walks labels and values together; enumerate() adds the row index i.\nfor i, (lab, val) in enumerate(zip(labels, values)):\n    y = gap + i * (bar_h + gap)                    # each bar sits below the previous one\n    w = int((val / hi) * (W - left - 70))          # scale to the widest bar; 70 leaves\n                                                   # room for the value label at the end\n    bars.append(\n        # <text> draws a string at (x, y); y is the text BASELINE, so +17 centres it\n        # vertically against a 26-unit bar.\n        f'<text x=\"0\" y=\"{y+17}\" fill=\"#ccc\" font-size=\"12\" font-family=\"sans-serif\">{lab}</text>'\n        # <rect> is the bar itself; rx=\"4\" rounds its corners.\n        f'<rect x=\"{left}\" y=\"{y}\" width=\"{w}\" height=\"{bar_h}\" rx=\"4\" fill=\"#3b82f6\"/>'\n        # The value, printed just past the end of the bar.\n        f'<text x=\"{left+w+6}\" y=\"{y+17}\" fill=\"#9aa\" font-size=\"11\" font-family=\"sans-serif\">${val:,}</text>')\n\n# \"\".join(bars) concatenates the fragments into the body of one <svg> element.\nsvg = f'<svg width=\"{W}\" height=\"{H}\" xmlns=\"http://www.w3.org/2000/svg\">{\"\".join(bars)}</svg>'\nbarista.html('<div style=\"padding:8px 4px\"><b style=\"color:#eee;font-family:sans-serif\">Revenue by region</b></div>' + svg)",
+      "output": "",
+      "executionCount": 0,
+      "dependsOn": [
+        "sales-data"
+      ]
+    },
+    {
+      "id": "py601-md5",
+      "type": "MARKDOWN",
+      "source": "## 5. NumPy — vectorized analytics 🧮\n\nFor real numeric work, **NumPy** is the foundation. Install `numpy` from **Packages → PyPI**, then run this. NumPy computes stats over whole arrays at C speed.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py601-5",
+      "type": "CODE",
+      "mode": "python",
+      "source": "try:\n    import numpy as np          # `as np` is the universal convention for NumPy\nexcept ModuleNotFoundError:\n    print(\"numpy not installed - add it from Packages -> PyPI, then re-run.\")\nelse:\n    # Multiplying two arrays multiplies them ELEMENT BY ELEMENT - units * price for\n    # all eight rows at once, with no loop. That is what \"vectorised\" means, and the\n    # work happens in C rather than in the Python interpreter.\n    revenue = np.array([120, 80, 200, 60, 150, 110, 90, 130]) * np.array([30, 50, 30, 50, 30, 50, 30, 50])\n\n    print(\"mean:  \", revenue.mean())              # methods on the array itself\n    print(\"median:\", np.median(revenue))          # or functions in the numpy namespace\n    print(\"std:   \", round(float(revenue.std()), 2))   # float() converts NumPy's own scalar type\n    print(\"90th pct:\", np.percentile(revenue, 90))     # the value 90% of the data falls below\n\n    # A z-score says how many standard deviations a value sits from the mean, so\n    # anything beyond roughly +/-2 is an outlier. Note that the whole array is\n    # transformed in one expression.\n    z = (revenue - revenue.mean()) / revenue.std()\n    print(\"z-scores:\", np.round(z, 2))",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py601-md6",
+      "type": "MARKDOWN",
+      "source": "## 6. pandas — DataFrames + reporting 🐼\n\n**pandas** is the standard for tabular analysis. Install `pandas` from PyPI. We group, aggregate, and hand the result straight to `barista.table()` for rendering.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py601-6",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ depends: sales-data\ntry:\n    import pandas as pd         # `as pd` is the universal convention for pandas\nexcept ModuleNotFoundError:\n    print(\"pandas not installed - add it from Packages -> PyPI, then re-run.\")\nelse:\n    # A DataFrame is a table. A list of dicts converts straight into one, with the\n    # dict keys becoming the columns.\n    df = pd.DataFrame(sales)\n\n    # This chain reads top to bottom as the steps of the analysis:\n    pivot = (df.groupby(\"product\")                              # one group per product\n               .agg(units=(\"units\", \"sum\"),                     # name=(column, function)\n                    revenue=(\"revenue\", \"sum\"))\n               .reset_index()                                   # turn the group key back\n                                                                # into a normal column\n               .sort_values(\"revenue\", ascending=False))\n\n    # Assigning to a new name adds a column. The arithmetic applies to the whole\n    # column at once, exactly like NumPy above.\n    pivot[\"share_%\"] = (pivot[\"revenue\"] / pivot[\"revenue\"].sum() * 100).round(1)\n\n    # .to_dict(\"records\") converts the DataFrame back to a list of dicts - the shape\n    # barista.table() renders.\n    barista.table(pivot.to_dict(\"records\"))",
+      "output": "",
+      "executionCount": 0,
+      "dependsOn": [
+        "sales-data"
+      ]
+    },
+    {
+      "id": "py601-md7",
+      "type": "MARKDOWN",
+      "source": "## 7. matplotlib — publication charts 📊\n\nRender a **matplotlib** figure directly in the cell with `barista.image(fig)`. Install `matplotlib` from PyPI first.",
+      "output": "",
+      "executionCount": 0
+    },
+    {
+      "id": "py601-7",
+      "type": "CODE",
+      "mode": "python",
+      "source": "//@ depends: sales-data\ntry:\n    import matplotlib\n    # The backend must be chosen BEFORE pyplot is imported. \"Agg\" draws into an image\n    # buffer instead of opening a window - the only thing that works on a server.\n    matplotlib.use(\"Agg\")\n    import matplotlib.pyplot as plt\nexcept ModuleNotFoundError:\n    print(\"matplotlib not installed - add it from Packages -> PyPI, then re-run.\")\nelse:\n    from collections import defaultdict\n    rev = defaultdict(int)\n    for r in sales:\n        rev[r[\"region\"]] += r[\"revenue\"]\n\n    # subplots() returns the figure (the whole canvas) and the axes (the plot area).\n    fig, ax = plt.subplots(figsize=(6, 3.2))        # size in inches\n\n    ax.bar(list(rev.keys()), list(rev.values()), color=\"#3b82f6\")\n    ax.set_title(\"Revenue by region\"); ax.set_ylabel(\"USD\")\n\n    # Draw each value above its bar. The +80 lifts the label clear of the bar top,\n    # and ha=\"center\" centres it horizontally on the bar.\n    for i, v in enumerate(rev.values()):\n        ax.text(i, v + 80, f\"${v:,}\", ha=\"center\", fontsize=8)\n\n    barista.image(fig)      # renders the figure as a PNG in the cell output\n    plt.close(fig)          # release the figure - pyplot keeps them alive otherwise,\n                            # and they accumulate every time the cell is re-run",
+      "output": "",
+      "executionCount": 0,
+      "dependsOn": [
+        "sales-data"
+      ]
+    },
+    {
+      "id": "py601-md8",
+      "type": "MARKDOWN",
+      "source": "## Next\n\n**Python 701 · Pipelines, Modules & Orchestration** — turn the anchored cells you have been\nusing here into a pipeline that rebuilds the whole report in one click, and can be run from an\nagent over MCP.\n\nYou can now analyze data and build **rendered reports** — metric cards, tables, SVG and\nmatplotlib charts — using Arima's built-in rendering, and scale up with the full PyPI ecosystem.\n\n**Recap of the built-in renderers:** `barista.table` · `barista.stats` · `barista.html`\n(cards, badges, SVG) · `barista.image` (matplotlib).",
+      "output": "",
+      "executionCount": 0
+    }
+  ]
+}

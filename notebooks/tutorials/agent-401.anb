@@ -1,0 +1,68 @@
+{
+  "id": "agent-401",
+  "name": "Agent 401 · Reviewer in a Pipeline",
+  "description": "Interwork — a Java cell feeds an agent cell, which binds its answer back for a final Java cell. Run the pipeline.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Agents & Skills",
+    "language": "agent",
+    "level": 401
+  },
+  "cells": [
+    {
+      "id": "a401-md",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Agent 401 · Reviewer in a Pipeline\n\nCode and agents are steps in the **same** workflow. Below:\n\n1. a **Java** cell (`sample-code`) prints a snippet,\n2. an **Agent** cell (`review`) runs the `agent-201` Code Reviewer on it — pulling the snippet in with `{{sample-code}}` and binding the answer to a `reviewText` variable,\n3. a **Java** cell (`report`) reads `reviewText`.\n\nRun the **pipeline** cell at the bottom to execute all three in order.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "a401-code",
+      "type": "CODE",
+      "mode": "jshell",
+      "anchor": "sample-code",
+      "source": "//@ anchor: sample-code\n// //@ anchor: gives this cell a name other cells can point at. The agent cell\n// below reaches back for it with {{sample-code}} - and what that placeholder\n// picks up is this cell's *output*, not its source. Printing is therefore the\n// handoff, not a debugging afterthought.\n//\n// \"\"\" opens a Java text block: a multi-line string literal that keeps its own\n// line breaks and strips the common leading indentation, so a code sample can be\n// embedded without escaping a single quote or newline.\nString snippet = \"\"\"\n    int sum(int[] xs) {\n        int s = 0;\n        for (int i = 0; i <= xs.length; i++) s += xs[i];  // off-by-one\n        return s;\n    }\n    \"\"\";\n\n// The bug is deliberate: `i <= xs.length` walks one element past the end. It is\n// here so the reviewer agent has something real to find.\nSystem.out.println(snippet);",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "a401-review",
+      "type": "CODE",
+      "mode": "agent",
+      "anchor": "review",
+      "dependsOn": [
+        "sample-code"
+      ],
+      "source": "//@ anchor: review\n//@ depends: sample-code\n//@ agent: agent-201\n//@ bind: reviewText\nReview this Java method for correctness bugs. Be concise.\n\n{{sample-code}}",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "a401-report",
+      "type": "CODE",
+      "mode": "jshell",
+      "anchor": "report",
+      "dependsOn": [
+        "review"
+      ],
+      "source": "//@ anchor: report\n//@ depends: review\n// //@ depends: review holds this cell back until the agent step has finished, so\n// the variable below is guaranteed to exist by the time this line runs.\nSystem.out.println(\"=== Reviewer findings ===\");\n\n// `reviewText` is never declared anywhere in this notebook's code. The agent\n// cell's //@ bind: reviewText line is what creates it: Arima takes the agent's\n// answer and assigns it into this JShell session as a String. That is the whole\n// interwork trick - an agent's prose comes back as an ordinary Java value, and\n// from here on it is just data you can print, parse, or feed to the next step.\nSystem.out.println(reviewText);",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "a401-pipe",
+      "type": "PIPELINE",
+      "mode": "jshell",
+      "anchor": "review-pipeline",
+      "pipelineSteps": [
+        "sample-code",
+        "review",
+        "report"
+      ],
+      "source": "//@ pipeline: Review Pipeline\n//@ steps: sample-code, review, report",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

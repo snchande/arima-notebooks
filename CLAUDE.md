@@ -124,7 +124,8 @@ arima/
 │   │   ├── TypeScriptExecutionService #   TS via Node type-stripping + optional tsc
 │   │   ├── DotNetExecutionService     #   C# (dotnet run) + F# (dotnet fsi)
 │   │   ├── CppExecutionService        #   C++ via MSVC/GCC/Clang
-│   │   ├── PythonExecutionService     #   Python via python3 subprocess (+ anchor injection)
+│   │   ├── PythonKernelService        #   Long-lived python session per shell session
+│   │   ├── PythonExecutionService     #   One-shot python subprocess + interpreter detection
 │   │   ├── PyPiService                #   PyPI package management for Python (pip --target)
 │   │   ├── OrchestrationService       #   Pipeline DAG: topo-sort, cycle detection, deps
 │   │   ├── ClaudeService / GitHubCopilotService / CopilotCliService / GeminiService  # AI providers (Copilot→SDK; Gemini slot→Antigravity agy)
@@ -156,7 +157,7 @@ arima/
 - `src/main/java/com/barista/service/TypeScriptExecutionService.java` - TypeScript executor (Node type-stripping + optional `tsc`)
 - `src/main/java/com/barista/service/DotNetExecutionService.java` - C# + F# executor
 - `src/main/java/com/barista/service/CppExecutionService.java` - C++ executor (auto-detects MSVC/GCC/Clang)
-- `src/main/java/com/barista/service/PythonExecutionService.java` - Python executor (python3 subprocess, PyPI on PYTHONPATH)
+- `src/main/java/com/barista/service/PythonKernelService.java` - Python executor (one long-lived interpreter per session, PyPI on PYTHONPATH)
 - `src/main/java/com/barista/service/PyPiService.java` - PyPI package management (pip `--target`)
 - `src/main/java/com/barista/service/ClaudeService.java` - Claude integration via the local `claude` CLI subprocess
 - `src/main/java/com/barista/service/OrchestrationService.java` - Pipeline/dependency-graph engine

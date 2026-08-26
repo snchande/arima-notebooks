@@ -444,7 +444,8 @@ public class McpController {
             throw new McpException(-32602, "Parameter 'notebookId' is required");
         }
 
-        Notebook notebook = notebookService.getNotebook(notebookId, userService.getLocalUserId()).orElse(null);
+        Notebook notebook = notebookService.getNotebook(notebookId, userService.getLocalUserId())
+                .or(() -> notebookService.getTutorial(notebookId)).orElse(null);
         if (notebook == null) {
             throw new McpException(-32602, "Notebook not found: " + notebookId);
         }
@@ -488,7 +489,8 @@ public class McpController {
         String sessionId = args.containsKey("session")
                 ? (String) args.get("session") : "mcp-session";
 
-        Notebook notebook = notebookService.getNotebook(notebookId, userService.getLocalUserId()).orElse(null);
+        Notebook notebook = notebookService.getNotebook(notebookId, userService.getLocalUserId())
+                .or(() -> notebookService.getTutorial(notebookId)).orElse(null);
         if (notebook == null) {
             throw new McpException(-32602, "Notebook not found: " + notebookId);
         }
@@ -517,7 +519,8 @@ public class McpController {
 
         for (Map<String, Object> nbMeta : allNotebooks) {
             String nbId = (String) nbMeta.get("id");
-            Notebook notebook = notebookService.getNotebook(nbId, userService.getLocalUserId()).orElse(null);
+            Notebook notebook = notebookService.getNotebook(nbId, userService.getLocalUserId())
+                    .or(() -> notebookService.getTutorial(nbId)).orElse(null);
             if (notebook == null) continue;
 
             for (Cell cell : notebook.getCells()) {
@@ -655,7 +658,8 @@ public class McpController {
         String source = (String) args.get("source");
         if (source == null) source = "";
 
-        com.barista.model.Notebook notebook = notebookService.getNotebook(notebookId, userService.getLocalUserId()).orElse(null);
+        com.barista.model.Notebook notebook = notebookService.getNotebook(notebookId, userService.getLocalUserId())
+                .or(() -> notebookService.getTutorial(notebookId)).orElse(null);
         if (notebook == null) {
             throw new McpException(-32602, "Notebook not found: " + notebookId);
         }

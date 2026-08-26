@@ -548,7 +548,7 @@ const NotebookEditor = (() => {
   }
 
   /* ── Open file location ───────────────────────────────────────────
-     Asks the server to reveal the .vnb in the OS file manager. The browser
+     Asks the server to reveal the .anb in the OS file manager. The browser
      cannot do this itself, and the server is already local. */
   async function revealNotebookFile(id) {
     if (!id) { Arima.toast?.('Open a notebook first.', 'warn'); return; }
@@ -1161,6 +1161,8 @@ const NotebookEditor = (() => {
     if (isCode)     buildCodeCell(cell, div, bodyWrap);
     else if (isMd)  buildMdCell(cell, div, bodyWrap);
     else if (isPipeline) buildPipelineCell(cell, div, bodyWrap);
+
+    if (isCode && typeof Polyglot !== 'undefined') Polyglot.attach(cell, div, bodyWrap);
 
     // Show "last run at …" footer if the cell was previously executed (loaded from notebook)
     if (isCode && cell.executed && cell.lastExecutedAt && bodyWrap) {
@@ -3526,7 +3528,7 @@ const NotebookEditor = (() => {
     document.getElementById('btn-delete-nb')?.addEventListener('click', async () => {
       if (!notebook?.id) { Arima.toast?.('Open a notebook first.', 'warn'); return; }
       if (notebook.readOnly) { Arima.toast?.('Tutorials are read-only.', 'warn'); return; }
-      // Deleting removes the .vnb from disk — always confirm, never silently.
+      // Deleting removes the .anb from disk — always confirm, never silently.
       if (!confirm(`Delete "${notebook.name}" from disk?\n\nThis cannot be undone.`)) return;
       await deleteNotebook(notebook.id);
     });
