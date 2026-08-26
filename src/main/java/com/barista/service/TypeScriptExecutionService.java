@@ -265,7 +265,10 @@ public class TypeScriptExecutionService {
             if (isWindows) { cmd.add("cmd"); cmd.add("/c"); }
             cmd.add("tsc");
             cmd.add("--noEmit");
-            cmd.add("--target"); cmd.add("es2022");
+            // es2023 so the type-checker knows the same library as the Node that runs
+            // the cell. At es2022 tsc rejected Array.prototype.findLast - ES2023 - in code
+            // Node executes correctly, which is a type-check artefact, not a real error.
+            cmd.add("--target"); cmd.add("es2023");
             cmd.add("--module"); cmd.add("nodenext");
             cmd.add("--moduleResolution"); cmd.add("nodenext");
             cmd.add("--allowJs");
