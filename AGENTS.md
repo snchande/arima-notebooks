@@ -67,6 +67,11 @@ If a change requires modifying any of these, open an issue first and tag `@sncha
 - **Never commit secrets.** `data/settings.json` is `.gitignore`-d for a reason. So is `oauth-config.json`. Do not add new files under `data/` to git.
 - **Never construct shell commands from user-controlled strings.** Use `ProcessBuilder` with an explicit argv list. The `scripts/security-check` pipeline blocks PRs that introduce `Runtime.exec(String)`.
 - **Never add a new outbound HTTP host** beyond the allow-list (Maven Central, npm registry, NuGet.org, PyPI (pypi.org), the AI CLI subprocess). The security check enforces this.
+- **Never widen the network bind.** `server.address=127.0.0.1` and `LocalAccessFilter` are
+  security controls, not defaults to tune. Arima executes code as the user who started it and
+  does not authenticate callers in `local` mode, so reachability *is* the boundary. Binding
+  wider, adding a connector, or relaxing the CORS origins exposes arbitrary code execution to
+  the network. See [`docs/SECURITY.md`](docs/SECURITY.md).
 - **Never silently weaken `--add-opens` / `--add-exports`** JVM flags. JShell needs the existing set; do not remove any.
 
 ### 2.4 Frontend rules

@@ -42,6 +42,10 @@ arima start          # starts the server and opens http://localhost:8585
 arima register       # optional: open .anb notebook files by double-clicking
 ```
 
+**Runs on your machine only.** Arima executes code as your user account, so it listens on
+localhost and refuses any request that did not come from this computer - other devices on
+your network cannot connect. See [docs/SECURITY.md](docs/SECURITY.md).
+
 **Only a JDK is required.** The build uses the bundled Maven Wrapper, so you do not need
 Maven installed - which matters on Windows, where Maven is not distributed through winget
 at all. Everything else (Node, .NET, Python, a C++ compiler) is optional and only enables
