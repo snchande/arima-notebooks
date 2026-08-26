@@ -136,7 +136,7 @@ Every code cell has a **mode button** on its header. Click it to **cycle through
 | **C#** | `◈ C#` | C# top-level program via `dotnet run`; isolated per cell (with dep injection for `//@ depends:`) |
 | **F#** | `◈ F#` | F# script via `dotnet fsi`; isolated per cell (with dep injection for `//@ depends:`) |
 | **C++** | `⚙ C++` | g++/clang++/MSVC compile+run, C++17; auto-wraps in `main()`; isolated per cell |
-| **Python** | `🐍 Python` | Python 3 subprocess; isolated per cell (with dep injection for `//@ depends:`); `import` PyPI packages from the PyPI tab |
+| **Python** | `🐍 Python` | One Python 3 session per notebook session - names persist across cells, like JShell; `import` PyPI packages from the PyPI tab |
 
 #### AI-powered language conversion
 
@@ -821,7 +821,9 @@ See **[docs/SETUP.md — Setting up C++ support](SETUP.md#setting-up-c-support)*
 
 ## Python Cells
 
-Python cells run in a `python3` subprocess. Nothing is wrapped or rewritten — what you write is what runs, so `if __name__ == "__main__":`, decorators, and module-level code all behave normally.
+Python cells run in one long-lived `python3` session per shell session, so a name you bind in one cell is still there in the next — the same model JShell has always used. Nothing is wrapped or rewritten — what you write is what runs, so `if __name__ == "__main__":`, decorators, and module-level code all behave normally.
+
+**Restart the kernel** (the session restart button) to clear every name and start clean. Running a pipeline rebuilds its steps in dependency order, which is how you prove a notebook still works from nothing rather than hoping it does.
 
 **Requirement:** `python3` (3.9+) on `PATH`. Without it the other seven languages still work; `arima status` reports whether Python was detected.
 

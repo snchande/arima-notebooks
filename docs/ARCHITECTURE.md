@@ -92,7 +92,8 @@ com.barista/
 │   ├── TypeScriptExecutionService TS cells via `node --experimental-strip-types`; optional `tsc --noEmit` type-check
 │   ├── DotNetExecutionService C# (dotnet run) + F# (dotnet fsi) — see §DotNet below
 │   ├── CppExecutionService   C++ compile (g++/clang++) + run; anchor/depends injection
-│   ├── PythonExecutionService Python (python3) subprocess; PyPI on PYTHONPATH; anchor/depends injection
+│   ├── PythonKernelService    Long-lived python session per shell session; PyPI on PYTHONPATH
+│   ├── PythonExecutionService One-shot python subprocess; interpreter detection + PyPI helpers
 │   ├── PyPiService           PyPI package install/remove (pip --target) + PyPI JSON lookup
 │   ├── NuGetService          NuGet package list management (data/nuget-packages.json)
 │   ├── OrchestrationService  Dependency graph, topological sort, cross-notebook refs
@@ -197,12 +198,13 @@ js/
 
 ### Python (`python3`)
 
-- Each cell runs in a fresh `python -u -X utf8` subprocess (interpreter auto-detected: `python`, `python3`, or the Windows `py -3` launcher)
+- **One long-lived interpreter per session** (`PythonKernelService`), so cells share a namespace exactly as JShell cells do. The interpreter is auto-detected (`python`, `python3`, or the Windows `py -3` launcher) and driven over its stdin/stdout with base64-framed cells and a sentinel per result
 - **Preamble** injected into every cell: a `barista` helper object — `table()`, `stats()`, `html()`, `image()` (matplotlib figure/PNG → data-URI via the `BARISTA_HTML` sentinel), `display()`
 - **PyPI packages**: `PyPiService` installs to `data/pypi-packages/site` via `pip install --target`; that directory is put on `PYTHONPATH` for every Python cell, so `import <pkg>` resolves without touching system site-packages. Uninstall deletes exactly the files the install added (tracked via a before/after diff, since `pip uninstall` doesn't support `--target`).
-- **Pipeline dependency injection** (same `//@ anchor:` / `//@ depends:` DSL as C#/F#): ancestor cell sources (transitive closure) are written to a side file and `exec()`'d into the cell's `globals()` with stdout redirected to devnull, so their variables/functions are in scope before the current cell runs
-- **Error normalisation**: temp paths replaced with `script.py`; `File "script.py", line N` numbers shifted to subtract the injected preamble
-- **Timeout / runaway guard**: shared `InteractiveProcessRunner` (output-line + time limits), same as the other subprocess languages
+- **`//@ depends:`** means what it means everywhere else in Arima: the named anchor must have run in this session before the dependent cell may run. It is not a replay - the ancestor ran once and its state is simply still there. (Before this, Python re-executed each ancestor's source per dependent cell, which re-paid its cost every time, made anything non-deterministic differ between the cell that printed it and the cells depending on it, and repeated any side effect the ancestor had.)
+- **Reproducibility** comes from restarting rather than from isolation: restarting the session drops the interpreter, and a pipeline run rebuilds every step in dependency order from nothing
+- **Error normalisation**: the driver returns the traceback for the failing cell only, compiled as `<cell>` so line numbers match what you wrote
+- **Timeout / runaway guard**: a cell that does not report back within the limit causes the kernel to be killed and restarted; the error says so, because the session's state is lost with it
 - **Prerequisite**: Python 3.8+ on PATH
 
 ---

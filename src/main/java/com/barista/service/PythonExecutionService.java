@@ -53,7 +53,7 @@ public class PythonExecutionService {
             System.getProperty("os.name", "").toLowerCase().contains("win");
 
     /** Arima helper preamble injected at the top of every Python cell. */
-    private static final String BARISTA_PREAMBLE =
+    static final String BARISTA_PREAMBLE =
         "import sys as _sys, json as _json\n" +
         "class _Barista:\n" +
         "    def table(self, rows):\n" +

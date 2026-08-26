@@ -12,7 +12,7 @@
     {
       "id": "py101-md0",
       "type": "MARKDOWN",
-      "source": "# Python 101 · Fundamentals\n\nWelcome to **Python** in Arima Notebooks! Each cell runs in a fresh Python 3 process — just write top-level code and press **Shift+Enter**.\n\n**Pre-injected Arima helpers** (available in every Python cell):\n- `barista.table(rows)` — print a list of dicts as a table\n- `barista.display(obj)` — pretty JSON\n- `barista.html(content)` — render inline HTML\n- `barista.stats(values)` — count / min / max / mean / std\n\n**Prerequisites:** none. **Need a library?** Install it from the **Packages → PyPI** tab.",
+      "source": "# Python 101 · Fundamentals\n\nWelcome to **Python** in Arima Notebooks! Cells in a notebook share one Python 3 session, so a name you bind in one cell is still there in the next — just write top-level code and press **Shift+Enter**.\n\n**Pre-injected Arima helpers** (available in every Python cell):\n- `barista.table(rows)` — print a list of dicts as a table\n- `barista.display(obj)` — pretty JSON\n- `barista.html(content)` — render inline HTML\n- `barista.stats(values)` — count / min / max / mean / std\n\n**Prerequisites:** none. **Need a library?** Install it from the **Packages → PyPI** tab.",
       "output": "",
       "executionCount": 0
     },
