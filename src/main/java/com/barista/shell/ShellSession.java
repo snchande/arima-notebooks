@@ -137,7 +137,14 @@ public class ShellSession {
             "import com.barista.util.BaristaDisplay;",
             "import org.knowm.xchart.*;",
             "import org.knowm.xchart.style.*;",
-            "import org.knowm.xchart.style.markers.*;",
+            // NOT a star import. org.knowm.xchart.style.markers exports Circle,
+            // Rectangle, Square, Diamond, Cross, Plus, Oval, Trapezoid and None, and an
+            // on-demand import wins over a type the user declares later in the session -
+            // so "record Circle(double radius)" or "sealed interface Shape permits Circle"
+            // resolved to the chart marker and failed to compile. Only the entry points
+            // anyone actually uses are imported.
+            "import org.knowm.xchart.style.markers.SeriesMarkers;",
+            "import org.knowm.xchart.style.markers.Marker;",
             "import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;",
             "import org.apache.commons.math3.stat.regression.SimpleRegression;",
             "import org.apache.commons.math3.distribution.*;",
