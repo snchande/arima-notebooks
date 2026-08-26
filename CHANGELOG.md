@@ -7,6 +7,43 @@ Dates are in `YYYY-MM-DD` format.
 
 ## [Unreleased]
 
+### Security - Arima is reachable only from your own machine
+
+Arima executes code in eight languages as the operating-system user who started it,
+and in the default `local` auth mode nothing authenticates the caller. That is the
+right trade for a tool on your own laptop, and it means **anything that can reach the
+port can run code as you**.
+
+The server was binding `0.0.0.0`. Verified against a second address on the same
+network, every one of these succeeded, unauthenticated:
+
+- `POST /api/shell/execute` - arbitrary code execution as the logged-in user
+- `POST /api/mcp/messages` - the same, plus read and write access to every notebook
+- `GET /api/notebooks` - reading all notebook content
+- `POST /actuator/shutdown` - stopping the server remotely
+
+Anyone on the same Wi-Fi could have done it. Three controls now close it:
+
+- **`server.address=127.0.0.1`** - the port is not open on any other interface, so a
+  remote connection is refused at the socket rather than merely rejected.
+- **`LocalAccessFilter`** - rejects any request whose peer is not a loopback address,
+  catching a proxy, a port forward, or a future config change that widens the bind.
+- **A `Host` header check** - a page on an attacker's origin can point a hostname at
+  127.0.0.1, making the socket genuinely local (DNS rebinding). The header must name
+  loopback. It is matched *without* DNS resolution: resolving an attacker-controlled
+  header would have let a domain of theirs pointed at 127.0.0.1 pass, which is the
+  very attack being prevented.
+
+CORS was `allowedOriginPatterns("*")` with CSRF disabled, so any website you visited
+could POST to your own machine and have code executed - a drive-by needing no network
+access at all. Now restricted to Arima's own origins.
+
+`docs/SECURITY.md` records the model and the reasoning; AGENTS.md gains a guardrail,
+because every new endpoint inherits this power.
+
+---
+
+
 ### One-file install
 - **`install.ps1` and `install.sh`.** A newcomer downloads one file and runs it. It explains what Arima is and exactly what it will change *before* touching the machine, shows a dependency table, then installs missing pieces one at a time through the platform's own package manager (winget / Homebrew / apt / dnf / pacman). Progress is recorded in `~/.arima-install-state`, so a failed run resumes from the step that failed rather than starting over, and the failure message carries the diagnostics block and the issue URL. `-CheckOnly` / `--check-only` prints the whole plan and stops. File associations are deliberately not claimed — `arima register` does that separately, when asked.
 - Both installers hand over to the repository's own `arima install` once the clone is on disk, so the build and workspace setup live in one place.

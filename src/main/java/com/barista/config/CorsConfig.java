@@ -17,8 +17,14 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
+                // NOT "*". A wildcard origin let any website you happened to be
+                // visiting POST to /api/shell/execute on your own machine and run
+                // code, with CSRF disabled - a drive-by, without needing the LAN at
+                // all. Only pages served by Arima itself are allowed.
                 registry.addMapping("/api/**")
-                        .allowedOriginPatterns("*")
+                        .allowedOriginPatterns(
+                                "http://localhost:[*]", "http://127.0.0.1:[*]",
+                                "http://[::1]:[*]")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(false);
