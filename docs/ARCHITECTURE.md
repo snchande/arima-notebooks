@@ -93,6 +93,7 @@ com.barista/
 │   ├── DotNetExecutionService C# (dotnet run) + F# (dotnet fsi) — see §DotNet below
 │   ├── CppExecutionService   C++ compile (g++/clang++) + run; anchor/depends injection
 │   ├── PythonKernelService    Long-lived python session per shell session; PyPI on PYTHONPATH
+│   ├── NodeKernelService      Long-lived node session per shell session, for JS and TS
 │   ├── PythonExecutionService One-shot python subprocess; interpreter detection + PyPI helpers
 │   ├── PyPiService           PyPI package install/remove (pip --target) + PyPI JSON lookup
 │   ├── NuGetService          NuGet package list management (data/nuget-packages.json)
@@ -154,9 +155,13 @@ js/
 
 ### JavaScript (Node.js)
 
-- Each cell runs in a Node.js subprocess via `node -e <code>`
-- `require()` resolves packages from `data/npm-modules/node_modules/`
-- Built-in `arima` object provides `barista.table()`, `barista.display()`, `barista.html()`, `barista.stats()`
+- **One long-lived Node session per shell session** (`NodeKernelService`), serving both JavaScript and TypeScript, so values persist across cells exactly as they do in JShell and Python. Framed over stdin/stdout with a sentinel per result, same protocol as the Python kernel.
+- **`//@ depends:`** means what it means in every other language: the anchor must have run in this session. Before this, JS and TS ignored the annotation entirely - they were the last two languages where the orchestration DSL did nothing.
+- **Cells run in the host realm** (`vm.runInThisContext`), not a `vm.createContext` sandbox. A separate context has its own intrinsics, so an object literal written in a cell is not an instance of the host realm's `Object`, and an npm package loaded outside then rejects it - mathjs failed exactly that way on `math.format(x, { notation: 'engineering' })`. The driver's own bindings are module-scoped, so cell code cannot reach them.
+- **Top-level declarations are rewritten to globals** so they survive between cells and a cell can be re-run: at column 0, `const`/`let` become `var`, `class X` becomes `var X = class X`, and a leading `export` is dropped (a cell is not a module, and TypeScript cells often carry `export const`). Anything indented is inside a function or block and is left exactly as written. The cost is that a top-level `const` no longer refuses reassignment.
+- **TypeScript** is the same kernel with `module.stripTypeScriptTypes` in front. Type-*checking* is unchanged and still runs out-of-process via `tsc --noEmit` in `TypeScriptExecutionService`.
+- `require()` resolves packages from `data/npm-modules/node_modules/` via `NODE_PATH`
+- Built-in `barista` object provides `table()`, `display()`, `html()`, `stats()`
 
 ### C# (`dotnet run`)
 

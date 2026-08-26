@@ -92,8 +92,8 @@ Arima Notebooks has four cell types, each visually distinct:
 |------|--------|-------|---------|
 | **JShell** (default) | Indigo | `☕ JShell` | Java snippets with shared session state |
 | **Java** | Teal | `♨ Java` | Full class compile-and-run, isolated per cell |
-| **JavaScript** | Green | `⬡ JS` | Node.js execution, isolated per cell |
-| **TypeScript** | TS Blue | `◆ TS` | TypeScript via Node.js type-stripping + optional `tsc --noEmit` type-check, isolated per cell |
+| **JavaScript** | Green | `⬡ JS` | Node.js; one session per notebook session, so values persist across cells |
+| **TypeScript** | TS Blue | `◆ TS` | TypeScript via Node.js type-stripping + optional `tsc --noEmit` type-check; values persist across cells |
 | **C#** | Purple | `◈ C#` | C# script via dotnet run, isolated per cell |
 | **F#** | Orange | `◈ F#` | F# Interactive (dotnet fsi), isolated per cell |
 | **C++** | Cyan | `⚙ C++` | g++/clang++ compile+run, C++17, isolated per cell |
@@ -131,8 +131,8 @@ Every code cell has a **mode button** on its header. Click it to **cycle through
 |------|------|----------|
 | **JShell** | `☕ JShell` | Java snippets; variables shared across all cells in session |
 | **Java** | `♨ Java` | Full `public class Main { ... }` compile + subprocess; cell is independent |
-| **JavaScript** | `⬡ JS` | Node.js subprocess; cell is independent; `require()` loads npm packages |
-| **TypeScript** | `◆ TS` | Node.js `--experimental-strip-types` subprocess + optional `tsc --noEmit` type-check; shares NODE_PATH with JS; cell is independent |
+| **JavaScript** | `⬡ JS` | One Node.js session per notebook session - values persist across cells, like JShell; `require()` loads npm packages |
+| **TypeScript** | `◆ TS` | Same Node session model as JS, with types stripped before execution, plus an optional out-of-process `tsc --noEmit` type-check; shares NODE_PATH with JS |
 | **C#** | `◈ C#` | C# top-level program via `dotnet run`; isolated per cell (with dep injection for `//@ depends:`) |
 | **F#** | `◈ F#` | F# script via `dotnet fsi`; isolated per cell (with dep injection for `//@ depends:`) |
 | **C++** | `⚙ C++` | g++/clang++/MSVC compile+run, C++17; auto-wraps in `main()`; isolated per cell |

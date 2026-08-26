@@ -21,6 +21,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 JAR="target/arima-notebooks-1.0.0-SNAPSHOT.jar"
+
+# Prefer the bundled Maven Wrapper over a system Maven: it pins the build version
+# and means a fresh machine needs only a JDK.
+# The bundled wrapper counts: it downloads Maven itself, so a JDK is enough.
+have_maven() { [ -x "$SCRIPT_DIR/mvnw" ] || have mvn; }
+
+maven_cmd() {
+    if [ -x "$SCRIPT_DIR/mvnw" ]; then printf '%s' "$SCRIPT_DIR/mvnw"; else printf '%s' mvn; fi
+}
 PORT=8585
 URL="http://localhost:${PORT}"
 MCP_URL="${URL}/api/mcp/messages"
@@ -446,7 +455,7 @@ cmd_install() {
     else
         bar 50 'mvn clean package -DskipTests'
         echo
-        if ! mvn clean package -DskipTests; then
+        if ! "$(maven_cmd)" clean package -DskipTests; then
             echo; err '  Build failed -- see the Maven output above.'; return 1
         fi
         bar 100 'build complete'
@@ -646,10 +655,10 @@ cmd_update() {
         row ok 'JAR' 'unchanged -- no new commits to compile'
     else
         step 4 $total 'Rebuilding the JAR'
-        have mvn || { row err 'Maven' 'not found -- install from https://maven.apache.org/'; return 1; }
+        have_maven || { row err 'Maven' 'not found -- install from https://maven.apache.org/'; return 1; }
         bar 80 'mvn clean package -DskipTests'
         echo
-        if ! mvn clean package -DskipTests; then
+        if ! "$(maven_cmd)" clean package -DskipTests; then
             echo; err '  Build failed after the update -- see the Maven output above.'; return 1
         fi
         bar 100 'build complete'
@@ -741,8 +750,8 @@ cmd_uninstall() {
 ensure_jar() {
     [ -f "$JAR" ] && return 0
     warn '  JAR not found -- building first...'
-    have mvn || { err '  ERROR: Maven not found. Install from https://maven.apache.org/'; return 1; }
-    mvn clean package -DskipTests -q || { err '  Build failed.'; return 1; }
+    have_maven || { err '  ERROR: Maven not found. Install from https://maven.apache.org/'; return 1; }
+    "$(maven_cmd)" clean package -DskipTests -q || { err '  Build failed.'; return 1; }
     ok '  Build complete.'
 }
 
@@ -987,10 +996,10 @@ cmd_logs() {
 # ── Subcommands: build ──────────────────────────────────────────────────────
 cmd_build() {
     banner 'A R I M A   -   B U I L D'
-    have mvn || { err '  ERROR: Maven not found.'; dim '  Install from https://maven.apache.org/ or run: ./arima.sh install'; return 1; }
+    have_maven || { err '  ERROR: Maven not found.'; dim '  Install from https://maven.apache.org/ or run: ./arima.sh install'; return 1; }
     step 1 1 'mvn clean package -DskipTests'
     echo
-    if mvn clean package -DskipTests; then
+    if "$(maven_cmd)" clean package -DskipTests; then
         section 'BUILD SUCCESSFUL'
         row ok 'JAR' "$JAR"
         dim '  Run: ./arima.sh start'

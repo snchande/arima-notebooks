@@ -7,6 +7,43 @@ Dates are in `YYYY-MM-DD` format.
 
 ## [Unreleased]
 
+### One-file install
+- **`install.ps1` and `install.sh`.** A newcomer downloads one file and runs it. It explains what Arima is and exactly what it will change *before* touching the machine, shows a dependency table, then installs missing pieces one at a time through the platform's own package manager (winget / Homebrew / apt / dnf / pacman). Progress is recorded in `~/.arima-install-state`, so a failed run resumes from the step that failed rather than starting over, and the failure message carries the diagnostics block and the issue URL. `-CheckOnly` / `--check-only` prints the whole plan and stops. File associations are deliberately not claimed — `arima register` does that separately, when asked.
+- Both installers hand over to the repository's own `arima install` once the clone is on disk, so the build and workspace setup live in one place.
+- **Two audiences, two paths.** By default the installer gives a *user* a shallow clone and the essentials. `-Dev` / `--dev` gives a *developer* the full git history, so they can branch and open pull requests, and offers every optional language runtime.
+- **Maven is no longer a dependency.** The repository now ships a Maven Wrapper (`mvnw`), and all three launchers prefer it over a system Maven, so building needs only a JDK. This was not cosmetic: Maven is not published to winget at all, so the Windows installer's `Apache.Maven` package id could never have resolved and a fresh Windows machine would have failed at that step.
+
+### Polyglot — read a cell in a language you are learning
+- **Language tabs on every code cell.** Selecting another language asks the active AI provider to render that cell once; the result is stored on the cell and saved with the notebook, so it is instant afterwards and travels with the file. Translated tabs are real cells: editable, and runnable against that language's own runtime.
+- **Compare** splits the cell into two equal columns and **Run both** executes them together, reporting whether the outputs actually match and how long each language took. Runs and timings are persisted, so reopening a notebook shows both sides again.
+- Translations are asked to be idiomatic rather than transliterated, and to comment only where the target language forces a different approach.
+- New: `POST /api/llm/translate`, `GET /api/llm/languages`, `CellTranslation`, `Cell.translations`, and four `polyglot*` settings.
+
+### One long-lived interpreter per session, for Python, JavaScript and TypeScript
+- **`//@ depends` now means the same thing in all eight languages**: the anchor must have run in this session. Python previously re-executed each ancestor's *source* per dependent cell, and JavaScript and TypeScript ignored the annotation outright.
+- **`PythonKernelService`** replaces per-cell replay. Measured: an expensive ancestor is paid once instead of once per dependent (2s load with three dependents went from 8.9s to ~2.3s); a `str(uuid.uuid4())` bound in an anchor is now the *same* value in every dependent instead of a different one each time; and an ancestor's side effects fire once rather than once per dependent.
+- **`NodeKernelService`** gives JavaScript and TypeScript cross-cell state for the first time, sharing one kernel with a type-stripping pass in front for TS. Type-*checking* still runs out-of-process.
+- Reproducibility moves from isolation to restarting: restarting a session drops the interpreter, and running a pipeline rebuilds every step in dependency order from nothing.
+
+### Notebooks are `.anb`, named after themselves
+- **`.vnb` is now `.anb`**, migrated on startup, with `.vnb` still readable so an older install upgrades in place.
+- **Filenames come from the notebook's name**, not its id — `python-sales-intelligence.anb` rather than a UUID. The id lives in the file and is indexed, and renaming a notebook renames its file.
+- **`arima register`** associates `.anb` with Arima (coffee-bean icon, MIME type `application/vnd.arima.notebook+json`), and **`arima open <file>`** starts the server if it is cold, imports notebooks from outside the workspace, and opens straight to them.
+
+### Every tutorial explains itself
+- All **40 built-in tutorials** now carry line-by-line commentary in their code cells, covering the reasoning rather than restating the syntax. Adds **Python 701 - Pipelines, Modules & Orchestration**.
+
+### Fixed
+- **Python pipelines ran as Java.** `OrchestrationService` had no `python` branch, so Python steps fell through to the JShell fallback and failed to compile.
+- **The XChart marker package claimed common type names.** Every JShell session star-imported `org.knowm.xchart.style.markers.*`, which exports `Circle`, `Rectangle`, `Square`, `Diamond` and more, so ordinary teaching code such as `sealed interface Shape permits Circle, Rectangle` named the chart markers and would not compile. Narrowed to `SeriesMarkers` and `Marker`.
+- **MCP could not read tutorials.** The notebook lookups in `McpController` had no tutorial fallback, so `barista_read_notebook java-201` reported "not found" for a tutorial that ships with the product.
+- **TypeScript was type-checked a version behind** what it ran on: `--target es2022` rejected `Array.prototype.findLast` (ES2023) in code Node executes correctly. Now `es2023`.
+- **New settings never reached the browser.** `SettingsController.copyWithMaskedKey` rebuilds the response field by field and had not been extended, so newly added settings persisted to disk but were invisible to the UI.
+- Tutorial fixes: a record's compact constructor needs `public` in JShell (`jshell-401`); `%8,.2f` is an invalid format string and threw at runtime (`jshell-501`); `barista.*` is not available in JShell cells, only `BaristaDisplay` (`arima-101`); a stale `dependsOn` pointed at an anchor that no longer exists (`java-401`).
+
+---
+
+
 ### New notebooks start empty, with a language you choose
 - **No more surprise JShell cell.** `NotebookService.createNotebook` no longer seeds a starter cell containing a `System.out.println` snippet. A new notebook is created **empty** and shows the "Add a code or markdown cell to get started" state, so the first cell is whatever you add.
 - **Default language is asked for at creation.** The **+ New Notebook** flow replaces the old name-only `prompt()` with a dialog that also asks for the notebook's default language (JShell, Java, JavaScript, TypeScript, C#, F#, C++, or Python). It is stored as `metadata.defaultMode` and adopted by every new code cell instead of hardcoding `jshell`. Individual cells can still switch mode as before.

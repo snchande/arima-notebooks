@@ -97,13 +97,18 @@ public class TypeScriptExecutionService {
     private final AtomicInteger execCounter = new AtomicInteger(0);
     private final InteractiveProcessRunner runner;
 
-    public TypeScriptExecutionService(InteractiveProcessRunner runner) {
+    private final NodeKernelService nodeKernelService;
+
+    public TypeScriptExecutionService(InteractiveProcessRunner runner,
+                                      NodeKernelService nodeKernelService) {
         this.runner = runner;
+        this.nodeKernelService = nodeKernelService;
     }
 
     /** Cached availability — checked once per JVM run. */
     private volatile Boolean nodeAvailable = null;
     private volatile Boolean tscAvailable  = null;
+
     private volatile String  nodeVersion   = null;
     private volatile String  tscVersion    = null;
 
@@ -167,7 +172,10 @@ public class TypeScriptExecutionService {
                 }
             }
 
-            ExecutionResult runResult = runScript(sessionId, cellId, tempDir, scriptFile, start);
+            // Execution moved to the shared Node kernel so TypeScript cells keep their
+            // values between cells and //@ depends means what it means elsewhere. The
+            // type-check above is unchanged and still runs out-of-process against a file.
+            ExecutionResult runResult = nodeKernelService.execute(sessionId, cellId, code, true);
 
             // If type-check produced diagnostics, fold them into the error stream
             // (regardless of whether the runtime succeeded) — the user wants both.

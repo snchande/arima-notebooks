@@ -57,6 +57,15 @@ $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $RepoRoot
 
+# Prefer the bundled Maven Wrapper over a system Maven. It pins the version the
+# project builds with and, more importantly, means a fresh machine needs only a
+# JDK - Maven is not distributed through winget at all.
+function Get-MavenCommand {
+    $wrapper = Join-Path $RepoRoot 'mvnw.cmd'
+    if (Test-Path -LiteralPath $wrapper) { return $wrapper }
+    return 'mvn'
+}
+
 $JarPath = Join-Path 'target' 'arima-notebooks-1.0.0-SNAPSHOT.jar'
 $Port    = 8585
 $Url     = "http://localhost:$Port"
@@ -326,6 +335,8 @@ function Test-Java {
 }
 
 function Test-Maven {
+    # The bundled wrapper downloads Maven itself, so a JDK is enough.
+    if (Test-Path -LiteralPath (Join-Path $RepoRoot 'mvnw.cmd')) { return $true }
     if (-not (Have mvn)) {
         W-Err  '  ERROR: Maven not found.'
         W-Dim  '  Install from https://maven.apache.org/'
@@ -364,7 +375,7 @@ function Ensure-Jar {
     if (-not (Test-Path $JarPath)) {
         W-Warn '  JAR not found -- building first...'
         if (-not (Test-Maven)) { return $false }
-        mvn clean package -DskipTests -q
+        & (Get-MavenCommand) clean package -DskipTests -q
         if ($LASTEXITCODE -ne 0) {
             W-Err '  Build failed.'
             return $false
@@ -657,7 +668,7 @@ function Cmd-Install {
         Write-Step 5 $total 'Building the JAR'
         Write-Bar 50 'mvn clean package -DskipTests'
         Write-Host ''
-        mvn clean package -DskipTests
+        & (Get-MavenCommand) clean package -DskipTests
         if ($LASTEXITCODE -ne 0) {
             Write-Host ''
             W-Err '  Build failed -- see the Maven output above.'
@@ -875,7 +886,7 @@ function Cmd-Update {
         if (-not (Test-Maven)) { return 1 }
         Write-Bar 80 'mvn clean package -DskipTests'
         Write-Host ''
-        mvn clean package -DskipTests
+        & (Get-MavenCommand) clean package -DskipTests
         if ($LASTEXITCODE -ne 0) {
             Write-Host ''
             W-Err '  Build failed after the update -- see the Maven output above.'
@@ -1537,7 +1548,7 @@ function Cmd-Build {
     if (-not (Test-Maven)) { return 1 }
     Write-Step 1 1 'mvn clean package -DskipTests'
     Write-Host ''
-    mvn clean package -DskipTests
+    & (Get-MavenCommand) clean package -DskipTests
     if ($LASTEXITCODE -eq 0) {
         Write-Section 'BUILD SUCCESSFUL'
         Write-Row 'ok' 'JAR' $JarPath
