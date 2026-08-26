@@ -4987,12 +4987,25 @@ body.fre-on #fre-tip { display: block; }
   background: var(--border, #2a2a33);
 }
 .pg-compare-wrap .CodeMirror { height: auto !important; min-height: 44px; }
-/* Never clip vertically - the whole cell must be readable. Horizontal stays
-   inside the column: the compare editors wrap instead of scrolling sideways. */
+/* Never clip vertically - the whole cell must be readable.
+   CodeMirror pairs padding-bottom:50px with margin-bottom:-50px on the scroller
+   to hide the native scrollbar. That negative margin shrinks the scroller's
+   MARGIN box, so the wrapper's height:auto collapses to a couple of lines and
+   clamps to min-height - the same bug that clipped ordinary cells. With vertical
+   overflow hidden the trick buys nothing, so zero both and let the wrapper size
+   to real content. */
 .pg-compare-wrap .CodeMirror-scroll,
 .pg-panel .CodeMirror-scroll {
   max-height: none !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  overflow-y: hidden !important;
   overflow-x: auto;
+}
+.pg-compare-wrap .CodeMirror,
+.pg-panel .CodeMirror {
+  height: auto !important;
+  max-height: none !important;
 }
 .pg-compare-bar {
   display: flex; align-items: center; gap: 10px;

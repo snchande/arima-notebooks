@@ -52,9 +52,18 @@ const Polyglot = (() => {
    * has settled makes it draw its full height.
    */
   function unclip(cm) {
-    const go = () => { try { cm.refresh(); } catch (_) {} };
+    const go = () => {
+      try {
+        // CodeMirror's documented auto-height mode. Without it the wrapper keeps
+        // whatever height it measured while the container was still being laid out.
+        cm.setSize(null, 'auto');
+        cm.refresh();
+      } catch (_) {}
+    };
+    go();
     requestAnimationFrame(go);
-    setTimeout(go, 60);
+    setTimeout(go, 80);
+    setTimeout(go, 250);
   }
 
   /* ── Public entry point, called once per code cell from renderCell ── */
