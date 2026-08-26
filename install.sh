@@ -32,6 +32,10 @@ REPO_URL='https://github.com/snchande/arima-notebooks.git'
 RAW_BASE='https://raw.githubusercontent.com/snchande/arima-notebooks/master'
 ISSUES_URL='https://github.com/snchande/arima-notebooks/issues/new'
 BRANCH='master'
+# Two audiences. A user just runs Arima and gets a shallow clone; a developer
+# works ON it and needs full history to branch and open pull requests.
+F_DEV=0
+CLONE_DEPTH='--depth 1'
 PORT=8585
 URL="http://localhost:${PORT}"
 MIN_JAVA=17      # the JAR's real floor (see arima.sh)
@@ -57,6 +61,7 @@ Arima Notebooks installer
   --dir <path>     where Arima lands (default: \$HOME/.arima)
   --repo <url>     repository to clone (default: $REPO_URL)
   --branch <name>  branch to clone (default: master)
+      --dev        full history plus the optional language runtimes
   -h, --help       this text
 EOF
 }
@@ -66,6 +71,7 @@ while [ $# -gt 0 ]; do
         --yes|-y)         F_YES=1 ;;
         --check-only)     F_CHECK=1 ;;
         --skip-optional)  F_SKIPOPT=1 ;;
+        --dev)            F_DEV=1 ;;
         --no-path)        F_NOPATH=1 ;;
         --reset)          F_RESET=1 ;;
         --no-anim)        ANIM=0 ;;
@@ -267,7 +273,7 @@ os_label() {
 dep_rows() {
     cat <<EOF
 java|Java|1|temurin|openjdk-${WANT_JAVA}-jdk|java-${WANT_JAVA}-openjdk-devel|jdk-openjdk|https://adoptium.net/|JDK ${WANT_JAVA} - runs the server and JShell cells
-mvn|Maven|1|maven|maven|maven|maven|https://maven.apache.org/|builds the Arima JAR
+mvn|Maven|0|maven|maven|maven|maven|https://maven.apache.org/|optional - the bundled mvnw wrapper is used when absent
 git|Git|1|git|git|git|git|https://git-scm.com/|clones the repository and powers: arima update
 node|Node.js|0|node|nodejs|nodejs|nodejs|https://nodejs.org/|JavaScript + TypeScript cells, npm packages
 dotnet|.NET|0|dotnet-sdk|dotnet-sdk-8.0|dotnet-sdk|dotnet-sdk|https://dot.net/|C# + F# cells, NuGet packages
@@ -467,6 +473,12 @@ show_explanation() {
     plain '    Everything runs on your machine. No cloud account, no sign-up, no'
     plain '    telemetry, and nothing leaves this computer.'
 
+    if [ "$F_DEV" = "1" ]; then
+        plain ''
+        plain '    Running in DEVELOPER mode: full history and every language runtime, for'
+        plain '    working ON Arima. Drop --dev if you only want to use it.'
+    fi
+
     section 'WHAT THIS SCRIPT WILL DO'
     plain '    1. Check your toolchain and show you a table before touching anything.'
     if [ -n "$mgr" ]; then
@@ -477,9 +489,14 @@ show_explanation() {
         plain '       nothing can be installed automatically on this machine.'
     fi
     plain "    3. Clone $REPO_URL"
-    plain "       into $DIR (fast-forwards it if it is already there)."
-    plain "    4. Build the JAR with Maven by handing over to the repository's own"
-    plain "       'arima.sh install', which also prepares data/, notebooks/ and logs/."
+    if [ "$F_DEV" = "1" ]; then
+        plain "       into $DIR with full history, so you can branch and open pull requests."
+    else
+        plain "       into $DIR (a shallow clone; fast-forwards it if already there)."
+    fi
+    plain "    4. Build the JAR by handing over to the repository's own 'arima.sh install',"
+    plain "       which prepares data/, notebooks/ and logs/. The build uses the bundled"
+    plain "       Maven Wrapper, so a JDK is all you need - Maven itself is not required."
 
     section 'WHAT IT WILL CHANGE'
     row warn 'Disk'   "$DIR  (roughly 400 MB once built)"
@@ -635,7 +652,8 @@ run_fetch() {
 
     bar 20 "cloning $REPO_URL"
     mkdir -p "$(dirname "$DIR")" || return 1
-    ( git clone --branch "$BRANCH" --single-branch "$REPO_URL" "$DIR" ) > "$logbase.out" 2>&1 &
+    [ "$F_DEV" = "1" ] && CLONE_DEPTH=''
+    ( git clone $CLONE_DEPTH --branch "$BRANCH" --single-branch "$REPO_URL" "$DIR" ) > "$logbase.out" 2>&1 &
     if ! spin_wait $! "cloning into $DIR"; then
         row err 'Clone' 'git clone failed'
         tail -n 12 "$logbase.out" 2>/dev/null | while IFS= read -r l; do dim "           $l"; done

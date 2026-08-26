@@ -32,6 +32,8 @@ param(
 
     # Explain, probe the toolchain, print the table -- then stop. Changes nothing.
     [switch] $CheckOnly,
+    # Full clone plus the optional language runtimes, for working ON Arima
+    [switch] $Dev,
 
     # Only require/offer Java, Maven and Git; leave the optional runtimes alone.
     [switch] $SkipOptional,
@@ -263,8 +265,11 @@ function Get-Dependencies {
     @(
         [pscustomobject]@{ Key='java';   Label='Java';    Required=$true;  Winget="EclipseAdoptium.Temurin.$WantJava.JDK";
                            Url='https://adoptium.net/';                         Note="JDK $WantJava - runs the server and JShell cells" }
-        [pscustomobject]@{ Key='mvn';    Label='Maven';   Required=$true;  Winget='Apache.Maven';
-                           Url='https://maven.apache.org/';                     Note='builds the Arima JAR' }
+        # Maven is NOT required and NOT installable here: it is not published to
+        # winget at all. The repository ships a Maven Wrapper (mvnw), so the build
+        # needs only a JDK. A system Maven is used if present, purely as a shortcut.
+        [pscustomobject]@{ Key='mvn';    Label='Maven';   Required=$false; Winget='';
+                           Url='https://maven.apache.org/';                     Note='optional - the bundled mvnw wrapper is used when absent' }
         [pscustomobject]@{ Key='git';    Label='Git';     Required=$true;  Winget='Git.Git';
                            Url='https://git-scm.com/';                          Note='clones the repository and powers: arima update' }
         [pscustomobject]@{ Key='node';   Label='Node.js'; Required=$false; Winget='OpenJS.NodeJS.LTS';
@@ -455,14 +460,25 @@ function Show-Explanation {
     W-Plain '    Everything runs on your machine. No cloud account, no sign-up, no'
     W-Plain '    telemetry, and nothing leaves this computer.'
 
+    if ($Dev) {
+        W-Plain ''
+        W-Plain '    Running in DEVELOPER mode: full history and every language runtime, for'
+        W-Plain '    working ON Arima. Drop -Dev if you only want to use it.'
+    }
+
     Write-Section 'WHAT THIS SCRIPT WILL DO'
     W-Plain '    1. Check your toolchain and show you a table before touching anything.'
     W-Plain '    2. Offer to install the missing pieces, one at a time, with winget.'
     W-Plain '       Nothing is installed that you have not said yes to.'
     W-Plain "    3. Clone $Repo"
-    W-Plain "       into $Dir (fast-forwards it if it is already there)."
-    W-Plain '    4. Build the JAR with Maven by handing over to the repository''s own'
-    W-Plain '       `arima.ps1 install`, which also prepares data/, notebooks/ and logs/.'
+    if ($Dev) {
+        W-Plain "       into $Dir with full history, so you can branch and open pull requests."
+    } else {
+        W-Plain "       into $Dir (a shallow clone; fast-forwards it if already there)."
+    }
+    W-Plain '    4. Build the JAR by handing over to the repository''s own `arima.ps1 install`,'
+    W-Plain '       which prepares data/, notebooks/ and logs/. The build uses the bundled'
+    W-Plain '       Maven Wrapper, so a JDK is all you need - Maven itself is not required.'
 
     Write-Section 'WHAT IT WILL CHANGE'
     Write-Row 'warn' 'Disk'  "$Dir  (roughly 400 MB once built)"
@@ -497,7 +513,7 @@ function Invoke-DepCheck {
         }
     }
     Write-Bar 100 'toolchain probed'
-    if ($SkipOptional) { $missing = @($missing | Where-Object { $_.Required }) }
+    if ($SkipOptional -and -not $Dev) { $missing = @($missing | Where-Object { $_.Required }) }
     Write-Host ''
     $req = @($missing | Where-Object { $_.Required })
     if ($req.Count -eq 0) {
@@ -640,8 +656,12 @@ function Invoke-Fetch {
     if ($parent -and -not (Test-Path -LiteralPath $parent)) {
         New-Item -ItemType Directory -Path $parent -Force | Out-Null
     }
-    $code = Invoke-Spun 'git' @('clone', '--branch', $Branch, '--single-branch', $Repo, $Dir) `
-                        "cloning into $Dir" $logBase
+    # A user only ever runs Arima, so a shallow clone is smaller and faster. A
+    # developer needs real history to branch and open pull requests.
+    $cloneArgs = @('clone')
+    if (-not $Dev) { $cloneArgs += @('--depth', '1') }
+    $cloneArgs += @('--branch', $Branch, '--single-branch', $Repo, $Dir)
+    $code = Invoke-Spun 'git' $cloneArgs "cloning into $Dir" $logBase
     if ($code -ne 0) {
         Write-Row 'err' 'Clone' "git exited with code $code"
         foreach ($l in (Get-SpunLog $logBase)) { W-Dim "           $l" }

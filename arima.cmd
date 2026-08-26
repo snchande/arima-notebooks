@@ -19,6 +19,10 @@ cd /d "%~dp0"
 
 set "ARIMA_PORT=8585"
 set "ARIMA_URL=http://localhost:8585"
+rem Prefer the bundled Maven Wrapper: it pins the build version, and a fresh
+rem machine then needs only a JDK - Maven is not distributed through winget.
+set "MVNCMD=mvn"
+if exist "%~dp0mvnw.cmd" set "MVNCMD=%~dp0mvnw.cmd"
 set "ARIMA_JAR=target\arima-notebooks-1.0.0-SNAPSHOT.jar"
 set "ARIMA_MCP=%ARIMA_URL%/api/mcp/messages"
 set "MIN_JAVA=17"
@@ -444,7 +448,8 @@ if !JAVA_MAJOR! geq %MIN_JAVA% call :row ok  "Java" "!JAVA_LINE!"
 if !JAVA_MAJOR! lss %MIN_JAVA% if not "!JAVA_MAJOR!"=="0" call :row err "Java" "!JAVA_LINE! -- JDK %MIN_JAVA%+ required"
 if "!JAVA_MAJOR!"=="0" call :row err "Java" "NOT FOUND -- install JDK %MIN_JAVA%+ from https://adoptium.net/"
 
-call :have mvn
+rem The bundled wrapper downloads Maven itself, so a JDK is enough.
+if exist "%~dp0mvnw.cmd" (set "ERRORLEVEL=0") else (call :have mvn)
 if "!ERRORLEVEL!"=="0" goto :sr_mvn_ok
 call :row err "Maven" "NOT FOUND -- needed to build (https://maven.apache.org/)"
 goto :sr_node
@@ -493,9 +498,10 @@ exit /b 0
 :ensure_jar
 if exist "%ARIMA_JAR%" exit /b 0
 call :warn "  JAR not found -- building first..."
-call :have mvn
+rem The bundled wrapper downloads Maven itself, so a JDK is enough.
+if exist "%~dp0mvnw.cmd" (set "ERRORLEVEL=0") else (call :have mvn)
 if not "!ERRORLEVEL!"=="0" goto :ensure_jar_nomvn
-call mvn clean package -DskipTests -q
+call "%MVNCMD%" clean package -DskipTests -q
 if not "!ERRORLEVEL!"=="0" goto :ensure_jar_fail
 call :ok "  Build complete."
 exit /b 0
@@ -619,7 +625,7 @@ if "!M_MVN!"=="1"  goto :inst_blocked
 if "%F_NOBUILD%"=="1" goto :inst_nobuild
 call :bar 50 "mvn clean package -DskipTests"
 echo.
-call mvn clean package -DskipTests
+call "%MVNCMD%" clean package -DskipTests
 if not "!ERRORLEVEL!"=="0" goto :inst_buildfail
 call :bar 100 "build complete"
 call :row ok "JAR" "%ARIMA_JAR%"
@@ -706,7 +712,8 @@ set "M_CPP=0"
 set /a MISS_N=0
 call :java_probe
 if !JAVA_MAJOR! lss %MIN_JAVA% set "M_JAVA=1" & set /a MISS_N+=1
-call :have mvn
+rem The bundled wrapper downloads Maven itself, so a JDK is enough.
+if exist "%~dp0mvnw.cmd" (set "ERRORLEVEL=0") else (call :have mvn)
 if not "!ERRORLEVEL!"=="0" set "M_MVN=1" & set /a MISS_N+=1
 if "%F_SKIPOPT%"=="1" exit /b 0
 call :have git
@@ -834,11 +841,12 @@ call :row ok "Sync" "nothing to pull -- already current"
 if "%F_NOBUILD%"=="1" goto :upd_nobuild
 if "!REBASED!"=="0" if exist "%ARIMA_JAR%" goto :upd_nojar
 call :step 4 5 "Rebuilding the JAR"
-call :have mvn
+rem The bundled wrapper downloads Maven itself, so a JDK is enough.
+if exist "%~dp0mvnw.cmd" (set "ERRORLEVEL=0") else (call :have mvn)
 if not "!ERRORLEVEL!"=="0" goto :upd_nomvn
 call :bar 80 "mvn clean package -DskipTests"
 echo.
-call mvn clean package -DskipTests
+call "%MVNCMD%" clean package -DskipTests
 if not "!ERRORLEVEL!"=="0" goto :upd_buildfail
 call :bar 100 "build complete"
 call :row ok "JAR" "%ARIMA_JAR%"
@@ -1187,11 +1195,12 @@ REM ============================================================================
 :cmd_build
 set "BN_HEAD=A R I M A   -   B U I L D"
 call :banner
-call :have mvn
+rem The bundled wrapper downloads Maven itself, so a JDK is enough.
+if exist "%~dp0mvnw.cmd" (set "ERRORLEVEL=0") else (call :have mvn)
 if not "!ERRORLEVEL!"=="0" goto :build_nomvn
 call :step 1 1 "mvn clean package -DskipTests"
 echo.
-call mvn clean package -DskipTests
+call "%MVNCMD%" clean package -DskipTests
 if not "!ERRORLEVEL!"=="0" goto :build_fail
 call :section "BUILD SUCCESSFUL"
 call :row ok "JAR" "%ARIMA_JAR%"

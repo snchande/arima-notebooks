@@ -39,7 +39,17 @@ Then:
 
 ```bash
 arima start          # starts the server and opens http://localhost:8585
+arima register       # optional: open .anb notebook files by double-clicking
 ```
+
+**Only a JDK is required.** The build uses the bundled Maven Wrapper, so you do not need
+Maven installed - which matters on Windows, where Maven is not distributed through winget
+at all. Everything else (Node, .NET, Python, a C++ compiler) is optional and only enables
+the cell modes that need it.
+
+**Working on Arima rather than with it?** Add `-Dev` / `--dev`. That clones the full
+history so you can branch and open pull requests, and offers every language runtime so you
+can run the whole tutorial suite. Without it you get a shallow clone and the essentials.
 
 **Look before you leap.** Both installers take a check-only flag that prints the plan and the dependency table and then stops without touching the machine:
 
@@ -59,6 +69,7 @@ curl -fsSL https://raw.githubusercontent.com/snchande/arima-notebooks/master/ins
 | Elsewhere | `-Dir <path>` | `--dir <path>` | Default: `%LOCALAPPDATA%\Arima` / `~/.arima` |
 | Start over | `-Reset` | `--reset` | Discard recorded progress |
 | No animation | `-NoAnim` | `--no-anim` | Plain output |
+| Developer | `-Dev` | `--dev` | Full git history and every language runtime |
 
 If a step fails, the installer stops, says which step and why, and records its progress in `~/.arima-install-state` — re-running picks up from the failed step instead of starting over. It also prints the exact URL and the diagnostics block to [file an issue](https://github.com/snchande/arima-notebooks/issues/new).
 
