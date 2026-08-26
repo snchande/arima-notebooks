@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Arima Notebooks - Getting Started</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --arima:#f5a623; --arima-deep:#c87518; --arima-dark:#6e3000;
+    --accent:#5b6fd6; --accent-soft:#eef0fd;
+    --ink:#1a1a24; --ink-2:#4a4a5e; --ink-3:#7a7a90;
+    --rule:#e4e4ec; --rule-soft:#f0f0f5;
+    --paper:#ffffff; --wash:#faf9f7; --amber-wash:#fff8ec;
+    --green:#1f8a4c; --red:#c0392b;
+    --ui:'Inter',system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:'JetBrains Mono',"Cascadia Code",Consolas,monospace;
+  }
+
+  @page { size: A4; margin: 14mm 15mm 14mm 15mm; }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:var(--ui); color:var(--ink);
+    font-size:10pt; line-height:1.55;
+    background:var(--paper);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- cover ---------- */
+  .cover{
+    page-break-after:always;
+    height:247mm; position:relative;
+    display:flex; flex-direction:column; justify-content:center;
+    text-align:left;
+  }
+  .cover-mark{ display:flex; align-items:center; gap:14px; margin-bottom:34px; }
+  .cover-mark svg{ width:60px; height:60px; }
+  .cover-word{ font-size:15pt; font-weight:700; letter-spacing:.2em; }
+  .cover-sub{ font-size:8.5pt; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-3); margin-top:3px; }
+  .cover h1{
+    font-size:34pt; line-height:1.12; font-weight:700;
+    margin:0 0 16px; letter-spacing:-.02em; max-width:15em;
+  }
+  .cover h1 em{ font-style:normal; color:var(--arima-deep); }
+  .cover .lede{ font-size:12.5pt; line-height:1.6; color:var(--ink-2); max-width:30em; margin:0 0 34px; }
+  .cover-meta{
+    border-top:2px solid var(--arima); padding-top:14px;
+    font-size:9.5pt; color:var(--ink-3); max-width:34em;
+  }
+  .cover-meta strong{ color:var(--ink); font-weight:600; }
+  .cover-badges{ display:flex; gap:8px; margin-bottom:26px; flex-wrap:wrap; }
+  .cover-badge{
+    font-size:8.5pt; font-weight:600; letter-spacing:.04em;
+    padding:5px 11px; border-radius:20px;
+    background:var(--amber-wash); color:var(--arima-dark);
+    border:1px solid rgba(245,166,35,.4);
+  }
+
+  /* ---------- structure ---------- */
+  h2{
+    font-size:17pt; font-weight:700; letter-spacing:-.01em;
+    margin:0 0 4px; padding-top:2px;
+  }
+  .sec{
+    margin-top:30px; padding-top:22px;
+    border-top:2px solid var(--arima);
+    page-break-inside:auto;
+  }
+  /* A part heading must never be the last thing on a page. */
+  .sec-kicker, .sec h2, .sec-intro{ page-break-after:avoid; }
+  .sec-kicker{
+    font-family:var(--mono); font-size:8pt; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--arima-deep); margin-bottom:6px;
+  }
+  .sec-intro{ color:var(--ink-2); font-size:10.5pt; margin:0 0 16px; max-width:34em; }
+  h3{ font-size:11pt; font-weight:650; margin:17px 0 5px; }
+  p{ margin:0 0 9px; }
+  ul,ol{ margin:0 0 12px; padding-left:20px; }
+  li{ margin-bottom:5px; }
+  strong{ font-weight:600; }
+  a{ color:var(--accent); text-decoration:none; }
+
+  /* ---------- steps ---------- */
+  .step{
+    display:grid; grid-template-columns:34px 1fr; gap:14px;
+    margin-bottom:15px;
+  }
+  /* Keep the number with its heading, but let the body flow across a page. */
+  .step-b h3{ page-break-after:avoid; }
+  .step-n{
+    width:30px; height:30px; border-radius:50%;
+    background:var(--arima); color:#fff;
+    font-weight:700; font-size:12pt;
+    display:flex; align-items:center; justify-content:center;
+    margin-top:1px;
+  }
+  .step-b h3{ margin:2px 0 5px; font-size:12pt; }
+  .step-b p:last-child{ margin-bottom:0; }
+
+  /* ---------- code ---------- */
+  .cmd{
+    font-family:var(--mono); font-size:9pt; line-height:1.55;
+    white-space:pre-wrap;
+    background:#1b1b26; color:#e8e8f2;
+    border-radius:7px; padding:11px 13px;
+    margin:8px 0 9px; overflow-wrap:anywhere;
+    page-break-inside:avoid;
+  }
+  .cmd .prompt{ color:var(--arima); user-select:none; }
+  .cmd .c{ color:#8a8aa8; }
+  code{
+    font-family:var(--mono); font-size:9pt;
+    background:var(--wash); border:1px solid var(--rule);
+    padding:1px 5px; border-radius:4px;
+  }
+
+  /* ---------- callouts ---------- */
+  .note{
+    border-left:3px solid var(--arima);
+    background:var(--amber-wash);
+    padding:9px 13px; border-radius:0 6px 6px 0;
+    margin:11px 0; font-size:9.5pt;
+    page-break-inside:avoid;
+  }
+  .note.calm{ border-left-color:var(--accent); background:var(--accent-soft); }
+  .note-t{ font-weight:650; display:block; margin-bottom:3px; }
+
+  /* ---------- tables ---------- */
+  table{ width:100%; border-collapse:collapse; margin:10px 0 14px; font-size:9.5pt; page-break-inside:avoid; }
+  th{
+    text-align:left; font-weight:600; font-size:8.5pt;
+    text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3);
+    border-bottom:1.5px solid var(--rule); padding:0 10px 6px 0;
+  }
+  td{ padding:6px 10px 6px 0; border-bottom:1px solid var(--rule-soft); vertical-align:top; }
+  td:first-child{ white-space:nowrap; }
+
+  /* ---------- misc ---------- */
+  .screen{
+    border:1px solid var(--rule); border-radius:8px;
+    overflow:hidden; margin:12px 0 14px; page-break-inside:avoid;
+  }
+  .screen-bar{
+    background:var(--wash); border-bottom:1px solid var(--rule);
+    padding:6px 11px; font-size:8pt; color:var(--ink-3);
+    font-family:var(--mono); letter-spacing:.04em;
+  }
+  .screen-body{
+    font-family:var(--mono); font-size:8.5pt; line-height:1.6;
+    padding:11px 13px; background:#1b1b26; color:#d8d8e8;
+    white-space:pre-wrap;
+  }
+  .ok{ color:#7fdca4; } .dim{ color:#8a8aa8; } .amber{ color:var(--arima); }
+
+  .checklist{ list-style:none; padding-left:0; }
+  .checklist li{ padding-left:24px; position:relative; margin-bottom:7px; }
+  .checklist li:before{
+    content:""; position:absolute; left:0; top:4px;
+    width:13px; height:13px; border:1.5px solid var(--arima); border-radius:3px;
+  }
+
+  .cover-foot{
+    position:absolute; bottom:0; left:0; right:0;
+    font-size:7.5pt; color:var(--ink-3);
+    display:flex; justify-content:space-between;
+    border-top:1px solid var(--rule-soft); padding-top:6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="cover">
+  <div class="cover-mark">
+    <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="pg" cx="36%" cy="30%" r="68%">
+          <stop offset="0%" stop-color="#fff5b0"/><stop offset="38%" stop-color="#f5a623"/>
+          <stop offset="68%" stop-color="#c87518"/><stop offset="100%" stop-color="#6e3000"/>
+        </radialGradient>
+        <radialGradient id="sh" cx="65%" cy="70%" r="55%">
+          <stop offset="0%" stop-color="rgba(0,0,0,0.45)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+        </radialGradient>
+      </defs>
+      <circle cx="16" cy="16" r="14" fill="rgba(245,166,35,0.18)"/>
+      <g transform="rotate(-18,16,16)">
+        <ellipse cx="16" cy="16" rx="10.5" ry="12" fill="url(#pg)"/>
+        <ellipse cx="16" cy="16" rx="10.5" ry="12" fill="url(#sh)"/>
+        <path d="M16 5 C12 10 20 14 16 16 C12 18 20 22 16 27" fill="none"
+              stroke="#4a2410" stroke-opacity="0.55" stroke-width="1.6" stroke-linecap="round"/>
+      </g>
+    </svg>
+    <div>
+      <div class="cover-word">ARIMA NOTEBOOKS</div>
+      <div class="cover-sub">Getting Started</div>
+    </div>
+  </div>
+
+  <h1>Write code, press run,<br>see what happens<em>.</em></h1>
+
+  <p class="lede">
+    A friendly guide to installing Arima Notebooks and running your first few
+    lines of code. No prior experience needed - if you can copy and paste, you
+    can finish this.
+  </p>
+
+  <div class="cover-badges">
+    <span class="cover-badge">About 10 minutes</span>
+    <span class="cover-badge">Windows, Mac or Linux</span>
+    <span class="cover-badge">Nothing leaves your computer</span>
+  </div>
+
+  <div class="cover-meta">
+    <strong>What you will end up with:</strong> a private workspace on your own
+    machine where you can write code in eight languages, run it instantly, and
+    learn from 40 built-in lessons that explain every line.
+  </div>
+
+  <div class="cover-foot">
+    <span>Arima Notebooks - Getting Started</span>
+    <span>Everything runs on your machine</span>
+  </div>
+</section>
+
+<!-- ============ 1. WHAT IS IT ============ -->
+<section class="sec" style="margin-top:0; padding-top:0; border-top:0">
+  <div class="sec-kicker">Part one</div>
+  <h2>What Arima Notebooks is</h2>
+  <p class="sec-intro">
+    Before installing anything, here is the idea in a paragraph.
+  </p>
+
+  <p>
+    A <strong>notebook</strong> is a document where writing and working code sit
+    side by side. You type a few lines, press a button, and the answer appears
+    directly underneath. Change the lines, press again, and the answer updates.
+    That quick loop is why notebooks are used everywhere from classrooms to
+    research labs.
+  </p>
+
+  <p>
+    Arima Notebooks is a notebook that runs <strong>entirely on your own
+    computer</strong>. There is no account to create, no subscription, and
+    nothing is uploaded anywhere. When you close it, it stops. When you open it,
+    your work is still there.
+  </p>
+
+  <h3>What makes it different</h3>
+  <table>
+    <tr><th>Eight languages</th><td>Python, JavaScript, TypeScript, Java, JShell, C#, F# and C++ all work in the same document. Most notebooks only do one.</td></tr>
+    <tr><th>Learn by comparison</th><td>Any piece of code can be shown side by side in a language you are learning, with notes explaining what changed and why.</td></tr>
+    <tr><th>40 lessons included</th><td>Guided tutorials from absolute basics upward, where every line of code is explained.</td></tr>
+    <tr><th>Private</th><td>Everything runs locally. No telemetry, no cloud, no sign-up.</td></tr>
+  </table>
+
+  <div class="note calm">
+    <span class="note-t">You do not need to know what a "language" is yet</span>
+    Think of them as different ways of writing the same instructions, each
+    better at different jobs. Part four gets you running real code, and the
+    built-in lessons take it from there.
+  </div>
+</section>
+
+<!-- ============ 2. BEFORE YOU START ============ -->
+<section class="sec">
+  <div class="sec-kicker">Part two</div>
+  <h2>Before you start</h2>
+  <p class="sec-intro">
+    Two small things to know, then we install.
+  </p>
+
+  <h3>You will use the terminal - and that is fine</h3>
+  <p>
+    The terminal is a window where you type commands instead of clicking
+    buttons. You will use it twice: once to install, once to start. You will
+    copy and paste both times.
+  </p>
+
+  <table>
+    <tr>
+      <th>Windows</th>
+      <td>Press the <strong>Windows key</strong>, type <code>powershell</code>,
+          and open <strong>Windows PowerShell</strong>.</td>
+    </tr>
+    <tr>
+      <th>Mac</th>
+      <td>Press <strong>Command + Space</strong>, type <code>terminal</code>,
+          and press Enter.</td>
+    </tr>
+    <tr>
+      <th>Linux</th>
+      <td>Press <strong>Ctrl + Alt + T</strong>, or find Terminal in your
+          applications.</td>
+    </tr>
+  </table>
+
+  <div class="note">
+    <span class="note-t">A black window with text is normal</span>
+    It is not an error. It is just waiting for you to type something.
+  </div>
+
+  <h3>What the installer needs</h3>
+  <p>
+    Arima needs <strong>Java</strong> to run. If you do not have it, the
+    installer offers to fetch it for you - you do not need to find or install
+    anything yourself beforehand.
+  </p>
+  <p>
+    Everything else is optional. Arima works without it; the extras simply
+    unlock more languages later.
+  </p>
+
+  <h3>What the installer will do</h3>
+  <ul class="checklist">
+    <li>Show you what it is about to do, and wait for you to say yes</li>
+    <li>Check what is already on your computer, and show you a list</li>
+    <li>Offer to install only what is missing, one item at a time</li>
+    <li>Download Arima Notebooks and prepare it</li>
+    <li>Tell you clearly when it has finished</li>
+  </ul>
+
+  <div class="note">
+    <span class="note-t">Nothing is installed without your approval</span>
+    The installer explains itself first and stops for your answer. If you change
+    your mind, close the window - nothing has happened yet.
+  </div>
+</section>
+
+<!-- ============ 3. INSTALL ============ -->
+<section class="sec">
+  <div class="sec-kicker">Part three</div>
+  <h2>Installing Arima Notebooks</h2>
+  <p class="sec-intro">
+    One command. Copy the one for your computer, paste it into the terminal, and
+    press Enter.
+  </p>
+
+  <div class="step">
+    <div class="step-n">1</div>
+    <div class="step-b">
+      <h3>Open your terminal</h3>
+      <p>Use the instructions from part two. Leave the window open.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">2</div>
+    <div class="step-b">
+      <h3>Copy the command for your computer</h3>
+      <p><strong>On Windows</strong> - paste this into PowerShell:</p>
+      <div class="cmd"><span class="prompt">&gt; </span>irm https://raw.githubusercontent.com/snchande/arima-notebooks/master/install.ps1 | iex</div>
+      <p><strong>On Mac or Linux</strong> - paste this into Terminal:</p>
+      <div class="cmd"><span class="prompt">$ </span>curl -fsSL https://raw.githubusercontent.com/snchande/arima-notebooks/master/install.sh | bash</div>
+      <p>
+        Paste with <strong>Ctrl + V</strong> (Windows and Linux) or
+        <strong>Command + V</strong> (Mac), then press <strong>Enter</strong>.
+      </p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">3</div>
+    <div class="step-b">
+      <h3>Read what it tells you, then say yes</h3>
+      <p>
+        Before changing anything, the installer explains what Arima is, what it
+        will install and where. It looks like this:
+      </p>
+      <div class="screen">
+        <div class="screen-bar">Windows PowerShell</div>
+        <div class="screen-body">  DEPENDENCY CHECK
+  ------------------------------------------------------------
+    <span class="ok">[ok]</span> Java         java version "21"
+    <span class="ok">[ok]</span> Git          v2.51.0
+    <span class="dim">[--]</span> Node.js      missing (optional) <span class="dim">-- JavaScript cells</span>
+    <span class="dim">[--]</span> Python       missing (optional) <span class="dim">-- Python cells</span>
+
+  <span class="amber">Install the missing pieces? [y/N]</span></div>
+      </div>
+      <p>Type <strong>y</strong> and press Enter to continue.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">4</div>
+    <div class="step-b">
+      <h3>Wait for it to finish</h3>
+      <p>
+        It works through one item at a time and prints a tick beside each. This
+        usually takes a few minutes, mostly downloading. You will see:
+      </p>
+      <div class="cmd"><span class="c">INSTALLATION COMPLETE</span>
+Run <span class="prompt">arima start</span> to open Arima Notebooks.</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="note-t">If it stops with an error</span>
+    Nothing is broken. The installer remembers how far it reached - run the same
+    command again and it carries on from where it stopped rather than starting
+    over. If it stops in the same place twice, part six tells you how to get
+    help.
+  </div>
+
+  <div class="note calm">
+    <span class="note-t">Curious before committing?</span>
+    Add <code>-CheckOnly</code> (Windows) or <code>--check-only</code> (Mac and
+    Linux) to the end of the command. It shows you everything it would do, then
+    stops without changing a thing.
+  </div>
+</section>
+
+<!-- ============ 4. FIRST RUN ============ -->
+<section class="sec">
+  <div class="sec-kicker">Part four</div>
+  <h2>Your first notebook</h2>
+  <p class="sec-intro">
+    Arima is installed. Let us run something.
+  </p>
+
+  <div class="step">
+    <div class="step-n">1</div>
+    <div class="step-b">
+      <h3>Start it</h3>
+      <p>In the same terminal window, type:</p>
+      <div class="cmd"><span class="prompt">&gt; </span>arima start</div>
+      <p>
+        Your web browser opens automatically at
+        <strong>localhost:8585</strong>. That address means "this computer" -
+        the page is not on the internet, it is being served by your own machine.
+      </p>
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="note-t">Stopping and starting</span>
+    Close the browser tab whenever you like - your work is saved. Type
+    <code>arima stop</code> in the terminal to shut it down, and
+    <code>arima start</code> to bring it back.
+  </div>
+
+  <div class="step">
+    <div class="step-n">2</div>
+    <div class="step-b">
+      <h3>Make a new notebook</h3>
+      <p>
+        Click <strong>+ New Notebook</strong>. Give it a name - "My first
+        notebook" is fine - and choose <strong>Python</strong> as the language.
+        Python is the friendliest place to begin.
+      </p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">3</div>
+    <div class="step-b">
+      <h3>Write one line and run it</h3>
+      <p>Click into the empty box - a <strong>cell</strong> - and type:</p>
+      <div class="cmd">print("Hello from my own computer")</div>
+      <p>
+        Now press <strong>Shift + Enter</strong> (hold Shift, press Enter). The
+        answer appears just below the box:
+      </p>
+      <div class="screen">
+        <div class="screen-bar">Cell 1 - Python</div>
+        <div class="screen-body">print("Hello from my own computer")
+
+<span class="dim">Output</span>
+Hello from my own computer</div>
+      </div>
+      <p>That is the whole loop. Everything else is a variation of it.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">4</div>
+    <div class="step-b">
+      <h3>Try something that calculates</h3>
+      <p>Add another cell, type this, and run it the same way:</p>
+      <div class="cmd">price = 4.50
+cups  = 3
+print(f"Total: {price * cups} pounds")</div>
+      <p>
+        You have just stored two values, multiplied them, and printed a
+        sentence. Change <code>cups</code> to 10 and run it again - the answer
+        updates instantly. That is the loop that makes notebooks useful.
+      </p>
+    </div>
+  </div>
+
+  <h3>Where to go next</h3>
+  <p>
+    Click <strong>Browse</strong> and open <strong>Arima Tutorials</strong>.
+    Start with <strong>Python 101</strong>. Every line of code in the built-in
+    lessons is explained, so you are never left guessing what something does.
+  </p>
+
+</section>
+
+<!-- ============ 5. USEFUL TO KNOW ============ -->
+<section class="sec">
+  <div class="sec-kicker">Part five</div>
+  <h2>Useful things to know</h2>
+  <p class="sec-intro">
+    A short reference for your first week.
+  </p>
+
+  <h3>Commands you will actually use</h3>
+  <table>
+    <tr><th><code>arima start</code></th><td>Start Arima and open it in your browser</td></tr>
+    <tr><th><code>arima stop</code></th><td>Shut it down</td></tr>
+    <tr><th><code>arima status</code></th><td>Check whether it is running, and what it found on your computer</td></tr>
+    <tr><th><code>arima register</code></th><td>Make notebook files open in Arima when you double-click them</td></tr>
+    <tr><th><code>arima help</code></th><td>Show everything it can do</td></tr>
+  </table>
+
+  <h3>Inside a notebook</h3>
+  <table>
+    <tr><th>Shift + Enter</th><td>Run the cell you are in</td></tr>
+    <tr><th>+ Code</th><td>Add a new cell for code</td></tr>
+    <tr><th>+ Markdown</th><td>Add a cell for notes and headings, not code</td></tr>
+    <tr><th>Browse</th><td>Open your notebooks, or the 40 built-in lessons</td></tr>
+  </table>
+
+  <h3>Where your work is kept</h3>
+  <p>
+    Notebooks are ordinary files on your computer, named after the notebook
+    itself and ending in <code>.anb</code>. You can copy, back up, or email
+    them like any other file. Nothing is hidden in a cloud account.
+  </p>
+
+  <h3>If something looks wrong</h3>
+  <table>
+    <tr><th>Browser did not open</th><td>Go to <strong>localhost:8585</strong> yourself.</td></tr>
+    <tr><th>"arima is not recognised"</th><td>Close the terminal and open a new one. Newly installed commands only appear in new windows.</td></tr>
+    <tr><th>Page will not load</th><td>Check it is running with <code>arima status</code>, then <code>arima start</code>.</td></tr>
+    <tr><th>A cell shows red text</th><td>That is an error message, not damage. Read the last line - it usually names the problem. Fix the code and run it again.</td></tr>
+  </table>
+
+  <div class="note calm">
+    <span class="note-t">You cannot break it</span>
+    Nothing you type in a cell can harm your computer or lose your work. If a
+    notebook gets into a muddle, restart it from the toolbar and run the cells
+    again from the top.
+  </div>
+</section>
+
+<!-- ============ 6. HELP ============ -->
+<section class="sec">
+  <div class="sec-kicker">Part six</div>
+  <h2>Getting help</h2>
+  <p class="sec-intro">
+    If you get stuck, saying so helps the project.
+  </p>
+
+  <p>
+    Arima Notebooks is open source and still young. If the installer fails, or
+    something does not behave as this guide describes, please report it - a
+    clear report from someone new is genuinely more valuable than one from
+    someone who already knows the workarounds.
+  </p>
+
+  <h3>How to report a problem</h3>
+  <ol>
+    <li>Go to <strong>github.com/snchande/arima-notebooks/issues</strong></li>
+    <li>Click <strong>New issue</strong></li>
+    <li>Say what you were doing, what you expected, and what happened instead</li>
+    <li>Copy in any red or error text from the terminal</li>
+  </ol>
+
+  <p>
+    If the installer itself fails, it prints the exact address to report to,
+    along with details about your computer. Copying that block into the issue is
+    the single most useful thing you can do.
+  </p>
+
+  <h3>Reading more</h3>
+  <table>
+    <tr><th>In the app</th><td>The <strong>Docs</strong> tab, with the full guide</td></tr>
+    <tr><th>Project home</th><td>github.com/snchande/arima-notebooks</td></tr>
+    <tr><th>Terminal</th><td><code>arima docs</code> opens the documentation</td></tr>
+  </table>
+
+  <div class="note">
+    <span class="note-t">Thank you for trying it early</span>
+    You are reading this because you are one of the first people outside the
+    project to install it. Tell us where you got confused - that is exactly what
+    we want to know.
+  </div>
+</section>
+
+</body>
+</html>
