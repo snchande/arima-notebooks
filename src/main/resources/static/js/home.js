@@ -112,7 +112,6 @@ const Home = (function () {
           <div class="home-quick">
             <button class="home-chip" data-new>＋ New notebook</button>
             <button class="home-chip" data-view="tutorials">📚 Tutorials</button>
-            <button class="home-chip" data-view="config">⚙️ Configuration</button>
             <button class="home-chip" data-tab="agents">🤖 Agents</button>
           </div>
         </div>
