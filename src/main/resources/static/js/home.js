@@ -267,7 +267,9 @@ const Home = (function () {
     try {
       const nbs = (await Arima.api('GET', '/notebooks')) || [];
       nbs.sort((a, b) => String(b.modified || '').localeCompare(String(a.modified || '')));
-      const recent = nbs.slice(0, 6);
+      // Show a deep list and let the panel scroll. This was capped at 6, so the
+      // rest of your notebooks were unreachable from Home no matter how you scrolled.
+      const recent = nbs.slice(0, 50);
       if (!recent.length) {
         list.innerHTML = `<div class="home-muted">No notebooks yet — <button class="home-link" data-new>create your first</button>.</div>`;
         list.querySelector('[data-new]')?.addEventListener('click', () => document.getElementById('btn-new')?.click());
