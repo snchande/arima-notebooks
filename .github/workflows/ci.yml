@@ -33,7 +33,7 @@ jobs:
         run: mvn test --no-transfer-progress
 
       - name: Upload JAR
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: success()
         with:
           name: arima-notebooks-jar
