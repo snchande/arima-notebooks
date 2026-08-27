@@ -89,6 +89,14 @@ public class UserService {
         String userId = getLocalUserId();
         UserProfile existing = loadUserFromDisk(userId);
         if (existing != null) {
+            // A profile saved before Arima asked the OS for a display name still holds
+            // the capitalised login name. Upgrade it, but only when it is exactly that,
+            // so anything the user has set themselves is left alone.
+            String osUserName = System.getProperty("user.name", "User");
+            if (capitalize(osUserName).equals(existing.getName())) {
+                String full = resolveOsFullName(osUserName);
+                if (!full.equals(existing.getName())) existing.setName(full);
+            }
             existing.setLastSeenAt(LocalDateTime.now());
             try { saveUserToDisk(existing); } catch (IOException ignore) {}
             return existing;
@@ -97,7 +105,7 @@ public class UserService {
         String osUser = System.getProperty("user.name", "User");
         UserProfile profile = UserProfile.builder()
                 .id(userId)
-                .name(capitalize(osUser))
+                .name(resolveOsFullName(osUser))
                 .authProvider(AuthProvider.LOCAL)
                 .createdAt(LocalDateTime.now())
                 .lastSeenAt(LocalDateTime.now())
@@ -106,6 +114,56 @@ public class UserService {
             log.warn("Could not persist local user profile: {}", e.getMessage());
         }
         return profile;
+    }
+
+    /**
+     * The person's actual name, not their login name.
+     *
+     * <p>{@code user.name} gives the account ("sures"), which reads oddly in a UI that
+     * greets you. Each OS records a display name somewhere different, so ask it, and
+     * fall back to the capitalised login name when it is not available - that is only
+     * cosmetic, so it must never fail loudly or hold up startup.
+     */
+    static String resolveOsFullName(String osUser) {
+        String os = System.getProperty("os.name", "").toLowerCase();
+        try {
+            if (os.contains("win")) {
+                String out = runQuietly(6, "net", "user", osUser);
+                for (String line : out.split("\\r?\\n")) {
+                    if (line.toLowerCase().startsWith("full name")) {
+                        String name = line.substring("full name".length()).trim();
+                        if (!name.isBlank()) return name;
+                    }
+                }
+            } else if (os.contains("mac")) {
+                String out = runQuietly(6, "id", "-F");
+                if (!out.isBlank()) return out.trim();
+            } else {
+                // GECOS: user:x:uid:gid:Full Name,,,:/home/user:/bin/bash
+                String out = runQuietly(6, "getent", "passwd", osUser);
+                String[] parts = out.split(":");
+                if (parts.length > 4) {
+                    String gecos = parts[4].split(",")[0].trim();
+                    if (!gecos.isBlank()) return gecos;
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Could not read the OS display name: {}", e.getMessage());
+        }
+        return capitalize(osUser);
+    }
+
+    private static String runQuietly(int timeoutSec, String... command) throws Exception {
+        ProcessBuilder pb = new ProcessBuilder(java.util.List.of(command));
+        pb.redirectErrorStream(true);
+        Process p = pb.start();
+        String out = new String(p.getInputStream().readAllBytes(),
+                                java.nio.charset.StandardCharsets.UTF_8);
+        if (!p.waitFor(timeoutSec, java.util.concurrent.TimeUnit.SECONDS)) {
+            p.destroyForcibly();
+            return "";
+        }
+        return p.exitValue() == 0 ? out : "";
     }
 
     private UserProfile loadOrCreateOAuthUser(OAuth2AuthenticationToken token) {

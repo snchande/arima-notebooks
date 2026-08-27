@@ -269,3 +269,7 @@ const ServerLifecycle = (() => {
 
     return { restart, shutdown, cancelReconnect, onWsConnect, onWsDisconnect };
 })();
+
+/* Published on `window` explicitly: a top-level `const` creates a global binding
+   but NOT a window property, so `if (window.X)` guards elsewhere would never fire. */
+window.ServerLifecycle = ServerLifecycle;

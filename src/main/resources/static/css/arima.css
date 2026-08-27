@@ -3870,10 +3870,16 @@ table.barista-df th { position: relative; padding-bottom: 14px; }
    exactly like a narrow screen, so media queries fire.
    ═══════════════════════════════════════════════════════ */
 
-/* topbar sections must not overflow each other */
-.topbar { overflow: hidden; }
+/* topbar sections must not overflow each other.
+   The bar itself must stay `visible`: the notification popover and the account
+   menu are absolutely-positioned children that hang below its 52px height, and
+   `overflow:hidden` here CLIPPED them - they looked buried under the page, and no
+   amount of z-index could rescue them, because clipping is not a stacking problem.
+   The horizontal clamp still works, since it comes from the inner sections below. */
+.topbar { overflow: visible; }
 .topbar-left  { flex: 0 1 auto; min-width: 0; overflow: hidden; }
 .topbar-center { min-width: 0; overflow: hidden; }
+.topbar-right { overflow: visible; }
 
 /* 1100px — hide brand text, keep icon */
 @media (max-width: 1100px) {
@@ -5149,3 +5155,318 @@ body.fre-on #fre-tip { display: block; }
 .upd-apply:hover{ background:rgba(245,166,35,.12); }
 .upd-later:hover{ border-color:var(--text-3,#6b6d8a); }
 .upd-banner.upd-working{ border-color:var(--arima,#f5a623); }
+
+/* -- Account chip: the single entry point for identity, settings, docs, help -- */
+.user-widget{ cursor:pointer; user-select:none; }
+.user-widget:hover{ border-color:var(--accent,#7c8ef7); }
+.user-widget:focus-visible{ outline:2px solid var(--accent,#7c8ef7); outline-offset:2px; }
+.user-name{ white-space:nowrap; }
+.user-gear{
+  width:13px; height:13px; margin-left:2px; flex:0 0 auto;
+  color:var(--text-3,#6b6d8a); transition:color .15s, transform .25s;
+}
+.user-widget:hover .user-gear{ color:var(--text-1,#e2e4f0); transform:rotate(35deg); }
+
+/* -- About ------------------------------------------------------------- */
+.abt-backdrop{
+  position:fixed; inset:0; z-index:9500;
+  background:rgba(6,6,12,.72); backdrop-filter:blur(3px);
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+.abt-modal{
+  position:relative; width:min(540px,100%); max-height:86vh; overflow:auto;
+  background:var(--surface-1,#161622); color:var(--text-1,#e2e4f0);
+  border:1px solid var(--border,#2a2a33); border-radius:12px;
+  padding:24px 26px; box-shadow:0 24px 70px rgba(0,0,0,.55);
+}
+.abt-close{
+  position:absolute; top:12px; right:14px; width:28px; height:28px;
+  border:0; border-radius:6px; background:transparent; cursor:pointer;
+  color:var(--text-3,#6b6d8a); font-size:20px; line-height:1;
+}
+.abt-close:hover{ background:rgba(255,255,255,.06); color:var(--text-1,#e2e4f0); }
+.abt-head{ display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+.abt-logo{ width:46px; height:46px; flex:0 0 auto; }
+.abt-head h2{ margin:0; font-size:18px; }
+.abt-ver{ font-size:12px; color:var(--text-3,#6b6d8a); margin-top:2px; }
+.abt-tag{ margin:0 0 18px; font-size:13px; line-height:1.6; color:var(--text-2,#a8aac8); }
+.abt-grid{
+  display:grid; grid-template-columns:auto 1fr; gap:7px 16px;
+  font-size:12.5px; padding:14px 0; border-top:1px solid var(--border,#2a2a33);
+  border-bottom:1px solid var(--border,#2a2a33);
+}
+.abt-k{ color:var(--text-3,#6b6d8a); white-space:nowrap; }
+.abt-note{ color:var(--green,#6bcf8f); font-size:11px; }
+.abt-links{ display:flex; flex-wrap:wrap; gap:14px; padding:14px 0 4px; font-size:12.5px; }
+.abt-links a{ color:var(--accent,#7c8ef7); text-decoration:none; }
+.abt-links a:hover{ text-decoration:underline; }
+.abt-foot{ font-size:11.5px; color:var(--text-3,#6b6d8a); padding-top:8px; }
+
+/* -- Settings areas ----------------------------------------------------- */
+.settings-tabs{
+  display:flex; flex-wrap:wrap; gap:4px;
+  margin:0 0 20px; padding-bottom:10px;
+  border-bottom:1px solid var(--border,#2a2a33);
+}
+.st-tab{
+  display:inline-flex; align-items:center; gap:7px;
+  padding:7px 13px; border-radius:8px;
+  border:1px solid transparent; background:transparent;
+  color:var(--text-3,#6b6d8a); font:inherit; font-size:12.5px; font-weight:500;
+  cursor:pointer; white-space:nowrap; transition:background .12s, color .12s;
+}
+.st-tab svg{ width:14px; height:14px; flex:0 0 auto; }
+.st-tab:hover{ background:rgba(255,255,255,.05); color:var(--text-1,#e2e4f0); }
+.st-tab.active{
+  background:var(--accent-dim,rgba(124,142,247,.15));
+  border-color:rgba(124,142,247,.35);
+  color:var(--accent,#7c8ef7); font-weight:600;
+}
+@media (max-width: 720px){
+  .settings-tabs{ overflow-x:auto; flex-wrap:nowrap; }
+}
+
+/* == Settings areas =====================================================
+   Filtering is attribute-driven so it FAILS VISIBLE: with no
+   data-active-group set (script not loaded, or an error), nothing below
+   matches and every card shows. A settings screen must never go blank. */
+#settings-view-config[data-active-group] .card[data-settings-group]{ display:none; }
+#settings-view-config[data-active-group="ai"] .card[data-settings-group="ai"]{ display:block; }
+#settings-view-config[data-active-group="editor"] .card[data-settings-group="editor"]{ display:block; }
+#settings-view-config[data-active-group="polyglot"] .card[data-settings-group="polyglot"]{ display:block; }
+#settings-view-config[data-active-group="security"] .card[data-settings-group="security"]{ display:block; }
+#settings-view-config[data-active-group="account"] .card[data-settings-group="account"]{ display:block; }
+#settings-view-config[data-active-group="tour"] .card[data-settings-group="tour"]{ display:block; }
+#settings-view-config[data-active-group="server"] .card[data-settings-group="server"]{ display:block; }
+
+/* Areas use the full width of the panel and lay their fields out in columns,
+   instead of one narrow column running far off the bottom of the screen. */
+#settings-view-config .card[data-settings-group]{
+  margin-bottom:18px;
+  border-radius:12px;
+  overflow:visible;
+}
+#settings-view-config .card[data-settings-group] > .card-title{
+  padding:13px 18px; font-size:13px; letter-spacing:.01em;
+  color:var(--text-1,#e2e4f0);
+  background:linear-gradient(180deg, var(--surface-3,#252538), var(--surface-2,#1e1e2e));
+  border-bottom:1px solid var(--border,#2a2a33);
+  border-radius:12px 12px 0 0;
+}
+#settings-view-config .card[data-settings-group] > .card-body{
+  padding:20px 22px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(330px, 1fr));
+  gap:6px 34px;
+  align-items:start;
+}
+
+/* Blocks that explain rather than configure span the full width - splitting a
+   paragraph or a warning into a narrow column makes it unreadable. */
+#settings-view-config .card-body > .settings-note,
+#settings-view-config .card-body > .settings-danger,
+#settings-view-config .card-body > .settings-subhead,
+#settings-view-config .card-body > .ai-provider-picker,
+#settings-view-config .card-body > .pg-pick-grid,
+#settings-view-config .card-body > p,
+#settings-view-config .card-body > table,
+#settings-view-config .card-body > pre,
+#settings-view-config .card-body > hr{
+  grid-column:1 / -1;
+}
+
+/* Each field becomes its own panel, so a column of controls reads as a list of
+   distinct settings rather than a wall of labels. */
+#settings-view-config .card-body > .field-group{
+  background:var(--surface-1,#161622);
+  border:1px solid var(--border,#2a2a33);
+  border-radius:9px;
+  padding:12px 14px;
+  margin:0 0 10px;
+}
+#settings-view-config .card-body > .field-group:hover{
+  border-color:var(--border-strong,rgba(255,255,255,.18));
+}
+#settings-view-config .card-body > .field-group.inline-field{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+#settings-view-config .card-body > .field-group.danger-field{
+  border-color:rgba(240,120,120,.45);
+  background:rgba(240,120,120,.05);
+}
+#settings-view-config .card-body > .field-group > label{
+  font-size:12.5px; font-weight:500;
+}
+#settings-view-config .card-body > .field-group .hint{
+  display:block; margin-top:3px;
+  font-size:11px; font-weight:400; line-height:1.5;
+  color:var(--text-3,#6b6d8a);
+}
+
+@media (max-width: 780px){
+  #settings-view-config .card[data-settings-group] > .card-body{
+    grid-template-columns:1fr;
+  }
+}
+
+/* == Account menu ======================================================== */
+/* Visibility is class-driven rather than inline display, so the panel can
+   actually animate open instead of appearing instantly. */
+.user-dropdown{
+  /* No `display` forcing here. The element carries the standard `hidden`
+     attribute, so it stays closed even if this stylesheet is stale or missing -
+     an earlier version controlled visibility from a new class alone, and with a
+     cached CSS the menu sat permanently open over the toolbar and home page,
+     swallowing clicks meant for the bell and the home links. */
+  position:absolute; top:calc(100% + 8px); right:0; z-index:1300;
+  width:290px; max-height:min(78vh, 620px); overflow-y:auto;
+  padding:0 0 6px;
+  background:var(--surface-1,#161622);
+  border:1px solid var(--border-strong,rgba(255,255,255,.18));
+  border-radius:12px;
+  box-shadow:0 18px 48px rgba(0,0,0,.5);
+  opacity:0; visibility:hidden;
+  transform:translateY(-8px) scale(.985);
+  transform-origin:top right;
+  transition:opacity .16s ease, transform .18s cubic-bezier(.2,.8,.3,1), visibility .18s;
+}
+.user-dropdown[hidden]{ display:none !important; }
+.user-dropdown.open{ opacity:1; visibility:visible; transform:translateY(0) scale(1); }
+
+.udd-head{
+  display:flex; gap:12px; align-items:center;
+  padding:15px 16px 13px;
+  background:linear-gradient(180deg, var(--surface-3,#252538), var(--surface-1,#161622));
+  border-bottom:1px solid var(--border,#2a2a33);
+  border-radius:12px 12px 0 0;
+}
+.udd-avatar{
+  width:38px; height:38px; border-radius:50%; flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; letter-spacing:.02em; color:#fff;
+  background:linear-gradient(140deg, var(--accent,#7c8ef7), var(--arima,#f5a623));
+}
+.udd-avatar img{ width:100%; height:100%; border-radius:50%; object-fit:cover; }
+.udd-who{ min-width:0; }
+.udd-greeting{ font-size:13.5px; font-weight:600; color:var(--text-1,#e2e4f0);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.udd-email{ font-size:11px; color:var(--text-3,#6b6d8a);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.udd-where{ font-size:10.5px; color:var(--green,#6bcf8f); margin-top:3px; }
+
+.udd-group{ padding:8px 8px 2px; }
+.udd-group + .udd-group{ border-top:1px solid var(--border,#2a2a33); }
+.udd-label{
+  padding:2px 8px 6px; font-size:10px; font-weight:700;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--text-3,#6b6d8a);
+}
+.udd-btn{
+  display:flex; align-items:flex-start; gap:10px; width:100%;
+  padding:8px 9px; margin-bottom:2px;
+  border:0; border-radius:8px; background:transparent; cursor:pointer;
+  color:var(--text-1,#e2e4f0); font:inherit; font-size:12.5px; text-align:left;
+}
+.udd-btn:hover{ background:rgba(255,255,255,.06); }
+.udd-btn svg{ width:15px; height:15px; margin-top:1px; flex:0 0 auto; color:var(--text-3,#6b6d8a); }
+.udd-btn:hover svg{ color:var(--accent,#7c8ef7); }
+.udd-btn span{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+.udd-btn em{ font-style:normal; font-size:10.5px; color:var(--text-3,#6b6d8a); line-height:1.4; }
+.udd-logout, .udd-logout:hover svg{ color:var(--red,#f07878); }
+
+/* ============================================================================
+   Account control — avatar, name, and the menu that drops from it
+   ----------------------------------------------------------------------------
+   Visibility is driven by the `hidden` attribute (see user-menu.js), so the
+   panel stays closed even with no stylesheet. `.open` only animates it in; it
+   is never what makes it appear. That ordering matters: an earlier version
+   keyed visibility on a class alone, and a cached stylesheet left the panel
+   permanently open on top of the page, swallowing clicks meant for the toolbar.
+   ========================================================================== */
+.acct { position: relative; flex-shrink: 0; }
+
+.acct-btn {
+  display: flex; align-items: center; gap: 9px;
+  padding: 4px 8px 4px 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-1);
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.acct-btn:hover { background: var(--surface-3); border-color: rgba(255,255,255,.14); }
+.acct-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.acct-avatar {
+  width: 28px; height: 28px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+  color: #fff;
+  font-size: 11px; font-weight: 700; letter-spacing: .3px;
+  overflow: hidden;
+}
+.acct-avatar.lg { width: 40px; height: 40px; font-size: 15px; }
+.acct-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.acct-id { display: flex; flex-direction: column; line-height: 1.25; text-align: left; min-width: 0; }
+.acct-name { font-size: 12.5px; font-weight: 600; white-space: nowrap;
+             overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.acct-sub  { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .4px; }
+
+.acct-caret { width: 12px; height: 12px; fill: var(--text-3); transition: transform .18s; }
+.acct-btn[aria-expanded="true"] .acct-caret { transform: rotate(180deg); }
+
+/* -- the panel ------------------------------------------------------------ */
+.acct-menu {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  z-index: 1300;                       /* above the notification popover */
+  width: 274px;
+  padding: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  opacity: 0; transform: translateY(-6px) scale(.98);
+  transition: opacity .14s ease, transform .14s ease;
+}
+.acct-menu[hidden] { display: none; }
+.acct-menu.open { opacity: 1; transform: translateY(0) scale(1); }
+
+.acct-head {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 10px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.acct-head-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.acct-head-name  { font-size: 13.5px; font-weight: 600; color: var(--text-1); }
+.acct-head-sub   { font-size: 11.5px; color: var(--text-2);
+                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acct-head-where { font-size: 10.5px; color: var(--green); margin-top: 3px; }
+
+.acct-sect { padding: 3px 0; }
+.acct-sect + .acct-sect { border-top: 1px solid var(--border); margin-top: 3px; }
+
+.acct-lbl {
+  display: block; padding: 6px 10px 3px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .7px;
+  text-transform: uppercase; color: var(--text-3);
+}
+
+.acct-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 7px 10px;
+  background: none; border: none; border-radius: var(--radius);
+  color: var(--text-2);
+  font-family: var(--font-ui); font-size: 12.5px; text-align: left;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.acct-item[hidden] { display: none; }
+.acct-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .8; }
+.acct-item:hover { background: var(--accent-dim); color: var(--text-1); }
+.acct-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.acct-item[data-act="signout"] { color: var(--red); }
+.acct-item[data-act="signout"]:hover { background: rgba(240,120,120,.1); }

@@ -878,11 +878,38 @@ const NotebookEditor = (() => {
   }
 
   /** Close a tab. Switches to nearest neighbor if it was active. */
+  /**
+   * A notebook the user created and then abandoned: no cells, still carrying the
+   * name the dialog proposed. Creating one costs a file on disk, so closing the tab
+   * used to leave "Untitled Notebook - 0 cells" behind in the browser every time.
+   * Anything typed, renamed, or added disqualifies it, so real work is never at risk.
+   */
+  function isAbandonedDraft(nb) {
+    if (!nb || !nb.id) return false;
+    if ((nb.cells || []).length > 0) return false;
+    const name = (nb.name || '').trim().toLowerCase();
+    return name === 'untitled notebook' || name === 'untitled';
+  }
+
+  /** Delete an abandoned draft. Best-effort: a failure here must not block closing. */
+  async function discardIfAbandoned(nb) {
+    if (!isAbandonedDraft(nb)) return;
+    try {
+      await Arima.api('DELETE', `/notebooks/${nb.id}`);
+      await refreshList();
+    } catch (e) {
+      console.warn('[notebook] could not discard empty draft', nb.id, e);
+    }
+  }
+
   function closeTab(id) {
     const idx = tabOrder.indexOf(id);
     if (idx < 0) return;
+    const closing = tabStore.get(id);
     tabOrder.splice(idx, 1);
     tabStore.delete(id);
+    // Run after the tab strip re-renders so the delete never delays the close.
+    setTimeout(() => discardIfAbandoned(closing), 0);
 
     if (id === activeTabId) {
       activeTabId = null;
@@ -3507,14 +3534,21 @@ const NotebookEditor = (() => {
 
   /* ── Toolbar bindings ─────────────────────────────── */
   function bindToolbar() {
-    // New notebook: no prompt — create "Untitled", open it, and let Arima suggest a
-    // name from your content later (double-click the tab name to rename anytime).
-    const createUntitled = async () => {
-      const nb = await Arima.api('POST', '/notebooks', { name: 'Untitled notebook' });
-      if (nb) { nb._autoNamed = true; await refreshList(); loadNotebook(nb.id); }
+    // Every "new notebook" entry point routes through this one function, so the
+    // toolbar button, the Home chip, the Notebook tab and the notebook browser all
+    // ask for a name and language first. They used to differ: this path created an
+    // "Untitled notebook" outright while the browser's button prompted, so the same
+    // action behaved differently depending on where you started it. Asking up front
+    // also means the notebook's cells default to the language you actually want.
+    const createNew = async () => {
+      const created = await promptNewNotebook();
+      if (!created) return;                 // cancelled - create nothing
+      rememberMode(created.mode);
+      const nb = await Arima.api('POST', '/notebooks', created);
+      if (nb) { await refreshList(); loadNotebook(nb.id); }
     };
-    document.getElementById('btn-new')?.addEventListener('click', createUntitled);
-    document.getElementById('btn-create-first')?.addEventListener('click', createUntitled);
+    document.getElementById('btn-new')?.addEventListener('click', createNew);
+    document.getElementById('btn-create-first')?.addEventListener('click', createNew);
     document.getElementById('btn-save')?.addEventListener('click', save);
 
     document.getElementById('btn-reveal-nb')?.addEventListener('click', () =>

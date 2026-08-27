@@ -18,7 +18,7 @@ const Arima = (() => {
     const nbToolbar = document.getElementById('nb-toolbar');
 
     btns.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (ev) => {
         // Buttons without a data-tab (e.g. the Home tab) manage their own view — skip.
         const tab = btn.dataset.tab;
         if (!tab) return;
@@ -28,6 +28,23 @@ const Arima = (() => {
         document.getElementById(`panel-${tab}`)?.classList.add('active');
         // Only show notebook toolbar on notebook tab
         nbToolbar.toggleAttribute('data-hidden', tab !== 'notebook');
+
+        // Home is an overlay that lives *inside* the notebook panel, so activating
+        // that panel is not enough - without this the Notebook tab looked dead,
+        // because Home stayed painted on top of the workspace it had just revealed.
+        if (tab === 'notebook' && window.Home) {
+          if (Arima.state.currentNotebookId) {
+            Home.hide();
+          } else if (ev.isTrusted) {
+            // Nothing open yet. Only a real user gesture opens the dialog: several
+            // modules (Home.go, notifications, agents) click this tab programmatically
+            // just to switch panels, and they must not trigger a "New notebook" prompt.
+            // The route is the same one "+ New" and the Home chip take, so every
+            // entry point lands on the identical dialog.
+            Home.show();
+            document.getElementById('btn-new')?.click();
+          }
+        }
       });
     });
   }
@@ -445,8 +462,13 @@ const Arima = (() => {
 
   /* ── Shutdown ───────────────────────────────────── */
   function initDocs() {
-    document.getElementById('btn-docs')?.addEventListener('click', () => {
-      DocsPanel?.show('usage');
+    // Docs moved from the toolbar into the account menu; both ids are bound so a
+    // stale cached page keeps working.
+    ['btn-docs'].forEach(id => {
+      document.getElementById(id)?.addEventListener('click', () => {
+        UserAuth?.closeMenu?.();
+        DocsPanel?.show('usage');
+      });
     });
   }
 
@@ -829,32 +851,20 @@ const UserAuth = (() => {
     }
   }
 
+  /**
+   * The account widget is owned by user-menu.js now. This used to reach into its
+   * elements directly and, once that markup was rebuilt, every getElementById
+   * returned null - the first `.textContent =` threw a TypeError, which aborted the
+   * rest of this module's setup and left the whole toolbar and home page unresponsive.
+   * Rendering is delegated, and nothing here can take the page down again.
+   */
   function _renderWidget() {
     if (!_user) return;
-    const isLocal = _user.authProvider === 'LOCAL';
-
-    // Avatar: initials circle or provider photo
-    const avatarEl = document.getElementById('user-avatar');
-    if (_user.avatarUrl) {
-      avatarEl.innerHTML = `<img src="${_user.avatarUrl}" alt="${_user.name}" class="user-avatar-img">`;
-    } else {
-      const initials = (_user.name || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
-      avatarEl.textContent = initials;
+    try {
+      if (window.UserMenu) UserMenu.paint(_user);
+    } catch (e) {
+      console.warn('[UserAuth] could not render the account widget:', e);
     }
-
-    // Name + provider badge
-    document.getElementById('user-name').textContent = _user.firstName || _user.name || 'User';
-    const provEl = document.getElementById('user-provider');
-    provEl.textContent = isLocal ? 'local' : _user.authProvider.toLowerCase();
-    provEl.className = 'user-provider prov-' + (isLocal ? 'local' : _user.authProvider.toLowerCase());
-
-    // Dropdown content
-    document.getElementById('udd-greeting').textContent = greeting(_user.firstName);
-    document.getElementById('udd-email').textContent = _user.email || 'No email set';
-    // OAuth users get Logout + Switch Account; local users get neither (no session to clear)
-    document.getElementById('udd-logout-btn').style.display  = isLocal ? 'none' : '';
-    document.getElementById('udd-switch-btn').style.display  = isLocal ? 'none' : '';
-    document.getElementById('udd-login-btn').style.display   = 'none';
   }
 
   function greeting(name) {
@@ -863,26 +873,10 @@ const UserAuth = (() => {
     return `${tod}, ${name || 'there'}!`;
   }
 
-  /* Toggle the dropdown menu */
-  function toggleMenu() {
-    const dd = document.getElementById('user-dropdown');
-    if (!dd) return;
-    _menuOpen = !_menuOpen;
-    dd.style.display = _menuOpen ? '' : 'none';
-    if (_menuOpen) {
-      // Close when clicking outside
-      setTimeout(() => document.addEventListener('click', _closeMenuOnOutside, { once: true }), 50);
-    }
-  }
+  /* Kept as thin delegates: the account menu is owned by user-menu.js now. */
+  function toggleMenu() { if (window.UserMenu) UserMenu.toggle ? UserMenu.toggle() : UserMenu.close(); }
+  function closeMenu()  { if (window.UserMenu) UserMenu.close(); }
 
-  function _closeMenuOnOutside(e) {
-    const widget = document.getElementById('user-widget');
-    if (widget && !widget.contains(e.target)) {
-      _menuOpen = false;
-      const dd = document.getElementById('user-dropdown');
-      if (dd) dd.style.display = 'none';
-    }
-  }
 
   /* Show the OAuth login modal */
   async function showLogin() {
@@ -938,9 +932,7 @@ const UserAuth = (() => {
 
   /* Show the email capture prompt */
   function showEmailPrompt() {
-    _menuOpen = false;
-    const dd = document.getElementById('user-dropdown');
-    if (dd) dd.style.display = 'none';
+    closeMenu();
     const modal = document.getElementById('email-prompt');
     if (modal) {
       const inp = document.getElementById('email-input');
@@ -961,7 +953,7 @@ const UserAuth = (() => {
     try {
       const resp = await Arima.api('PUT', '/user/me/email', { email });
       if (_user) _user.email = resp.email;
-      document.getElementById('udd-email').textContent = resp.email;
+      if (window.UserMenu) UserMenu.refresh();
       hideEmailPrompt();
       Arima.setStatus('Email saved ✓');
     } catch (e) {
@@ -984,9 +976,7 @@ const UserAuth = (() => {
 
   /** Sign out then immediately show the provider selection modal */
   async function switchAccount() {
-    _menuOpen = false;
-    const dd = document.getElementById('user-dropdown');
-    if (dd) dd.style.display = 'none';
+    closeMenu();
     try { await Arima.api('POST', '/user/logout'); } catch { /* ignore */ }
     _user = null;
     _resetWidget();
@@ -1010,5 +1000,10 @@ const UserAuth = (() => {
   /* Expose current user to other modules */
   function getUser() { return _user; }
 
-  return { init, getUser, showLogin, hideLogin, toggleMenu, showEmailPrompt, hideEmailPrompt, saveEmail, logout, continueLocal };
+  return { init, getUser, showLogin, hideLogin, toggleMenu, closeMenu, showEmailPrompt, hideEmailPrompt, saveEmail, logout, continueLocal };
 })();
+
+/* Published on `window` explicitly: a top-level `const` creates a global binding
+   but NOT a window property, so `if (window.X)` guards elsewhere never fired. */
+window.Arima = Arima;
+window.UserAuth = UserAuth;
