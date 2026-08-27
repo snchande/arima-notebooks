@@ -528,7 +528,18 @@
 .home-link { background: none; border: none; color: var(--accent); cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600; padding: 0; }
 .home-muted { color: var(--text-3); font-size: 12.5px; }
 
-.home-recent-list { display: flex; flex-direction: column; gap: 6px; }
+.home-recent-list {
+  display: flex; flex-direction: column; gap: 6px;
+  /* Scrolls within the card so a long list cannot stretch the Home layout. */
+  max-height: 340px; overflow-y: auto; overscroll-behavior: contain;
+  padding-right: 4px;                    /* keep the scrollbar off the item borders */
+}
+.home-recent-list::-webkit-scrollbar { width: 8px; }
+.home-recent-list::-webkit-scrollbar-thumb {
+  background: var(--surface-4); border-radius: 4px;
+}
+.home-recent-list::-webkit-scrollbar-thumb:hover { background: var(--surface-5); }
+.home-recent-list::-webkit-scrollbar-track { background: transparent; }
 .home-recent-item {
   display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; cursor: pointer;
   padding: 9px 11px; border-radius: 8px; background: var(--surface-3); border: 1px solid transparent; transition: all .15s;
