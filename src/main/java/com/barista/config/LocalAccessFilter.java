@@ -10,12 +10,24 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.barista.service.ApprovalService;
+import com.barista.service.SettingsService;
+
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.net.UnknownHostException;
 import java.util.Locale;
 
@@ -47,6 +59,40 @@ public class LocalAccessFilter implements Filter {
     /** Logged once per distinct peer, so a scanner cannot flood the log. */
     private volatile String lastRejectedPeer = "";
 
+    // ObjectProvider, not a hard dependency: this filter must still construct in a
+    // slice context where those beans are absent, and when they are it falls back to
+    // the closed position - network access off - rather than failing open.
+    private final ObjectProvider<SettingsService> settingsService;
+    private final ObjectProvider<ApprovalService> approvalService;
+
+    public LocalAccessFilter(ObjectProvider<SettingsService> settingsService,
+                             ObjectProvider<ApprovalService> approvalService) {
+        this.settingsService = settingsService;
+        this.approvalService = approvalService;
+    }
+
+    private boolean networkAccessEnabled() {
+        SettingsService s = settingsService.getIfAvailable();
+        return s != null && s.getSettings().isNetworkAccessEnabled();
+    }
+
+    /**
+     * Endpoints that run code or change what will run. Reached from another machine,
+     * these are held for the local user's approval; everything else (reading a
+     * notebook, the UI itself) is served normally.
+     */
+    private static boolean isExecution(String path) {
+        if (path == null) return false;
+        // Never gate the approval endpoints themselves: a remote caller cannot reach
+        // them to approve its own work, and gating them would deadlock the local user.
+        if (path.startsWith("/api/approvals")) return false;
+        return path.startsWith("/api/shell/execute")
+            || path.startsWith("/api/shell/run-to-here")
+            || path.startsWith("/api/mcp/")
+            || path.startsWith("/api/agents/run")
+            || path.startsWith("/actuator/shutdown");
+    }
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -56,10 +102,39 @@ public class LocalAccessFilter implements Filter {
 
         String peer = request.getRemoteAddr();
         if (!isLoopback(peer)) {
-            deny(res, peer, "remote address " + peer + " is not loopback");
-            return;
+            if (!networkAccessEnabled()) {
+                deny(res, peer, "remote address " + peer + " is not loopback");
+                return;
+            }
+            // Network access is on, so this peer is allowed to ask - but anything that
+            // executes waits for the person at the machine to agree to it.
+            if (isExecution(req.getRequestURI())) {
+                String body = readBody(req);
+                ApprovalService approvals = approvalService.getIfAvailable();
+                if (approvals == null) {
+                    deny(res, peer, "the approval gate is unavailable, so remote work cannot run");
+                    return;
+                }
+                boolean ok = approvals.awaitApproval(
+                        peer, req.getMethod() + " " + req.getRequestURI(),
+                        guessLanguage(body), body, req.getRequestURI());
+                if (!ok) {
+                    res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    res.setContentType("application/json");
+                    res.getWriter().write(
+                        "{\"error\":\"Refused by the user at the machine running Arima.\"}");
+                    return;
+                }
+                chain.doFilter(new CachedBodyRequest(req, body), response);
+                return;
+            }
         }
-        if (!isLoopbackHost(req.getHeader("Host"))) {
+        // The Host check exists to stop DNS rebinding against a loopback-only server.
+        // Once the user has deliberately opened Arima to the network, a legitimate
+        // request genuinely carries the LAN address or hostname, and rebinding buys an
+        // attacker nothing they cannot already do directly - the approval gate is what
+        // protects execution there.
+        if (!networkAccessEnabled() && !isLoopbackHost(req.getHeader("Host"))) {
             deny(res, peer, "Host header '" + req.getHeader("Host") + "' is not a loopback name");
             return;
         }
@@ -80,7 +155,61 @@ public class LocalAccessFilter implements Filter {
                 localhost. See docs/SECURITY.md."}""");
     }
 
-    static boolean isLoopback(String addr) {
+    /**
+     * A servlet body can be read once. It has to be read here to show the user what
+     * they are approving, so it is cached and replayed to the controller afterwards.
+     */
+    private static String readBody(HttpServletRequest req) throws IOException {
+        try (BufferedReader r = req.getReader()) {
+            StringBuilder sb = new StringBuilder();
+            char[] buf = new char[4096];
+            int n;
+            while ((n = r.read(buf)) > 0) sb.append(buf, 0, n);
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /** Best effort, for the review screen's syntax label only. */
+    static String guessLanguage(String body) {
+        if (body == null) return "";
+        int i = body.indexOf("\"mode\"");
+        if (i < 0) return "";
+        int q = body.indexOf('"', body.indexOf(':', i) + 1);
+        if (q < 0) return "";
+        int end = body.indexOf('"', q + 1);
+        return end > q ? body.substring(q + 1, end) : "";
+    }
+
+    /** Replays the cached body so the controller still sees its request intact. */
+    private static final class CachedBodyRequest extends HttpServletRequestWrapper {
+        private final byte[] body;
+
+        CachedBodyRequest(HttpServletRequest request, String cached) {
+            super(request);
+            this.body = cached.getBytes(StandardCharsets.UTF_8);
+        }
+
+        @Override
+        public ServletInputStream getInputStream() {
+            ByteArrayInputStream in = new ByteArrayInputStream(body);
+            return new ServletInputStream() {
+                @Override public int read() { return in.read(); }
+                @Override public boolean isFinished() { return in.available() == 0; }
+                @Override public boolean isReady() { return true; }
+                @Override public void setReadListener(ReadListener l) { }
+            };
+        }
+
+        @Override
+        public BufferedReader getReader() {
+            return new BufferedReader(new InputStreamReader(getInputStream(), StandardCharsets.UTF_8));
+        }
+    }
+
+    /** Public so callers outside this package can enforce the same rule. */
+    public static boolean isLoopback(String addr) {
         if (addr == null || addr.isBlank()) return false;
         try {
             return InetAddress.getByName(addr).isLoopbackAddress();

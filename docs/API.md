@@ -750,7 +750,7 @@ Unlike `GET /api/settings/status` (which reports configuration and AI-provider a
   "name": "Arima Notebooks",
   "tagline": "A local-first, AI-native notebook for eight languages - run code, build pipelines, and drive it all over MCP.",
   "status": "running",
-  "version": "1.0.0-SNAPSHOT",
+  "version": "4.0.1",
   "buildTimestamp": "2026-08-24T22:09:23Z",
   "startedAt": "2026-08-24 15:10:02 PDT",
   "startedAtEpochMs": 1787609402878,

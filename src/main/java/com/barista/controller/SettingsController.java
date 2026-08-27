@@ -251,6 +251,8 @@ public class SettingsController {
         c.setConsoleFontSize(s.getConsoleFontSize());
         c.setConsoleHistorySize(s.getConsoleHistorySize());
         c.setEnableAutoComplete(s.isEnableAutoComplete());
+        // Network access
+        c.setNetworkAccessEnabled(s.isNetworkAccessEnabled());
         // Polyglot
         c.setPolyglotEnabled(s.isPolyglotEnabled());
         c.setPolyglotDominantLanguage(s.getPolyglotDominantLanguage());

@@ -58,7 +58,7 @@ if defined AI_FOUND (
 echo.
 
 REM ── Build if JAR missing ───────────────────────────────────────────────────
-set JAR=target\arima-notebooks-1.0.0-SNAPSHOT.jar
+set JAR=target\arima-notebooks-4.0.1.jar
 
 if not exist "%JAR%" (
     echo Building Arima Notebooks...

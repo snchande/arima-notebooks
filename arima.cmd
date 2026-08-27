@@ -23,7 +23,7 @@ rem Prefer the bundled Maven Wrapper: it pins the build version, and a fresh
 rem machine then needs only a JDK - Maven is not distributed through winget.
 set "MVNCMD=mvn"
 if exist "%~dp0mvnw.cmd" set "MVNCMD=%~dp0mvnw.cmd"
-set "ARIMA_JAR=target\arima-notebooks-1.0.0-SNAPSHOT.jar"
+set "ARIMA_JAR=target\arima-notebooks-4.0.1.jar"
 set "ARIMA_MCP=%ARIMA_URL%/api/mcp/messages"
 set "MIN_JAVA=17"
 set "RULE=------------------------------------------------------------"

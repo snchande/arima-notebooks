@@ -13,7 +13,7 @@
 
     <groupId>com.barista</groupId>
     <artifactId>arima-notebooks</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>4.0.1</version>
     <packaging>jar</packaging>
     <name>Arima Notebooks</name>
     <description>Arima Notebooks — interactive multi-language notebooks (Java/JShell, JavaScript, TypeScript, C#, F#, C++), brewed by the Barista engine</description>

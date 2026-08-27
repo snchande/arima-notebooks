@@ -990,6 +990,32 @@ dotnet fsi --version  # verify F# Interactive</pre>
               <label>Focus executing cell <span class="hint">Auto-scroll to the cell being run</span></label>
               <label class="toggle"><input type="checkbox" id="s-focus-cell" checked><span class="slider"></span></label>
             </div>
+            <h3 class="settings-subhead">Network access</h3>
+            <p class="settings-note"><strong>Arima runs code with your user account.</strong> By default it
+               listens on this computer only, and nothing else on your network can reach it.</p>
+            <div class="field-group inline-field danger-field">
+              <label>Allow access from my local network
+                <span class="hint">Other devices on your Wi-Fi or LAN can reach this Arima</span></label>
+              <label class="toggle"><input type="checkbox" id="s-network-access"><span class="slider"></span></label>
+            </div>
+            <div class="settings-danger" id="network-risk">
+              <strong>Understand the risk before turning this on.</strong>
+              <ul>
+                <li>Anyone who can reach this machine on the network can ask Arima to run code -
+                    including a CLI or an AI agent on another device.</li>
+                <li>Code runs as <em>you</em>, with your files, your network and your permissions.
+                    There is no sandbox.</li>
+                <li>On a shared network - an office, a cafe, a hotel - that means people you
+                    do not know and cannot see.</li>
+              </ul>
+              <p><strong>What protects you:</strong> anything arriving from another machine is
+                 held and shown to you first. Arima brings this window to the front and nothing
+                 runs until you press <em>Run it</em>. Unanswered requests are refused.</p>
+              <p class="settings-note">Takes effect after a restart. See
+                 <a href="https://github.com/snchande/arima-notebooks/blob/master/docs/SECURITY.md"
+                    target="_blank" rel="noreferrer">docs/SECURITY.md</a>.</p>
+            </div>
+
             <h3 class="settings-subhead">Polyglot</h3>
             <p class="settings-note">Read a cell in a language you are learning, beside the one you already think in. Each translation is generated once, then saved with the notebook.</p>
             <div class="field-group inline-field">
@@ -1718,6 +1744,8 @@ dotnet fsi --version  # verify F# Interactive</pre>
 <script src="/js/prefs.js"></script>
 <script src="/js/notifications.js"></script>
 <script src="/js/orchestration.js"></script>
+<script src="/js/update.js"></script>
+<script src="/js/approvals.js"></script>
 <script src="/js/polyglot.js"></script>
 <script src="/js/notebook.js"></script>
 <script src="/js/agent.js"></script>

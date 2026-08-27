@@ -724,7 +724,7 @@ show_success() {
     ok   "  $PRODUCT is installed and ready."
     echo
     row ok 'Location' "$DIR"
-    row ok 'JAR'      "$DIR/target/arima-notebooks-1.0.0-SNAPSHOT.jar"
+    row ok 'JAR'      "$DIR/target/arima-notebooks-4.0.1.jar"
 
     section 'NEXT'
     plain '    arima start        Start the server and open the notebook UI'

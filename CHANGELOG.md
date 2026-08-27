@@ -5,6 +5,89 @@ Dates are in `YYYY-MM-DD` format.
 
 ---
 
+## [4.0.1] - 2026-08-26
+
+Arima Notebooks is a notebook that runs on your own computer, where eight languages
+work side by side. This release makes it **safe by default**, **easy to install**, and
+adds a way to **read any cell in a language you are learning**.
+
+Full detail for each item is in the linked documentation.
+
+### Important security fix - please update
+
+Arima was reachable from your **local network**, and it runs code with your user
+account. Anyone on the same Wi-Fi could have run code on your machine without any
+password. That is now closed: Arima listens on your own computer only, and refuses
+anything that did not come from it.
+
+If you want to reach Arima from another device you can turn that on deliberately in
+**Settings -> Network access**. The risk is spelled out there, and anything arriving
+from another machine is **held until you approve it** - Arima brings the window to the
+front and shows you the code before a single line runs.
+-> [docs/SECURITY.md](docs/SECURITY.md)
+
+### Install with one command
+
+Download one file, run it, and it does the rest. It explains what it will change
+before it changes anything, checks what you already have, and installs only what is
+missing. If it fails it resumes from where it stopped rather than starting over.
+Maven is no longer needed - a Java installation is enough.
+-> [Get started](README.md#get-started) - or the illustrated
+[Getting Started guide (PDF)](docs/guide/Arima-Notebooks-Getting-Started.pdf)
+
+### Read a cell in a language you are learning
+
+Every code cell can now show itself in another of the eight languages, side by side
+with the one you already know. The translation is written to be idiomatic rather than
+literal, and comments only the places where the new language genuinely does things
+differently. Both sides can be run, and Arima tells you whether they agree.
+-> [Polyglot](docs/USAGE.md#polyglot--learn-a-language-in-terms-of-the-one-you-know)
+
+### Your work keeps its own name
+
+Notebooks are now `.anb` files named after the notebook - `sales-analysis.anb` rather
+than a long string of letters and numbers. Existing files are renamed automatically
+when you upgrade. Double-clicking one opens it in Arima once you run `arima register`.
+
+### Cells remember what you did
+
+Python, JavaScript and TypeScript cells now share one session, so something you define
+in one cell is still there in the next - as Java always did. Restarting a notebook, or
+running a pipeline, rebuilds everything cleanly from the top.
+-> [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+### Every lesson explains itself
+
+All 40 built-in tutorials now explain their code line by line - what each line does and
+why it is written that way. Adds a new lesson on pipelines and orchestration.
+
+### Reach it from another device, if you choose to
+
+**Settings -> Network access** lets other devices on your Wi-Fi or LAN reach your
+Arima. It is off by default, and the risk is spelled out where you turn it on: Arima
+runs code as you, with no sandbox.
+
+What protects you is that nothing from another machine runs on arrival. It is held,
+Arima brings the browser to the front with the code on screen, and it runs only when
+you press **Run it**. A request nobody answers is refused. Only the machine running
+Arima can approve - a remote agent cannot approve its own code.
+-> [docs/SECURITY.md](docs/SECURITY.md)
+
+### It tells you when there is a newer version
+
+Arima checks whether `master` has moved on and shows you what changed. **Update and
+restart** pulls, rebuilds and restarts for you, and the page reconnects on its own.
+It will not discard uncommitted work to do it.
+-> [Staying up to date](docs/USAGE.md#staying-up-to-date)
+
+### Also fixed
+
+Thirteen bugs that predate this release, including Python pipelines running as Java,
+tutorials that could not be read over MCP, and chart library names quietly colliding
+with ordinary code. Each is listed in the entries below.
+
+---
+
 ## [Unreleased]
 
 ### Security - Arima is reachable only from your own machine
