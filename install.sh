@@ -39,6 +39,16 @@ CLONE_DEPTH='--depth 1'
 PORT=8585
 URL="http://localhost:${PORT}"
 MIN_JAVA=17      # the JAR's real floor (see arima.sh)
+
+# Recommended floors for the optional runtimes. These are SOFT: a tool below its
+# floor is kept and used, never replaced - we only report what will not work.
+# Presence alone used to be the whole check, so an old Node reported as present and
+# TypeScript cells then failed at runtime with nothing having warned at install time.
+MIN_NODE=22      # 22.6+ for built-in type-stripping
+MIN_NODE_TS=6
+MIN_DOTNET=8     # C# / F# cells target the .NET 8 SDK
+MIN_PY_MAJOR=3
+MIN_PY_MINOR=8
 WANT_JAVA=21     # what we install when Java is missing
 RULE="------------------------------------------------------------"
 
@@ -283,6 +293,36 @@ EOF
 }
 
 # JShell is a JDK tool, so a bare JRE does not count however new it is.
+# Version probes. Anything unparseable returns 0 and callers treat that as
+# acceptable, so a runtime whose version we cannot read is never called too old.
+ver_field() { echo "$1" | tr -d 'v' | cut -d. -f"$2" | sed 's/[^0-9].*//'; }
+
+node_ts_ready() {
+    have node || return 1
+    local v maj min; v=$(node --version 2>/dev/null)
+    maj=$(ver_field "$v" 1); min=$(ver_field "$v" 2)
+    [ -z "$maj" ] && return 0
+    [ "$maj" -gt "$MIN_NODE" ] 2>/dev/null && return 0
+    [ "$maj" -eq "$MIN_NODE" ] 2>/dev/null && [ "${min:-0}" -ge "$MIN_NODE_TS" ] 2>/dev/null
+}
+
+dotnet_ok() {
+    have dotnet || return 1
+    local maj; maj=$(ver_field "$(dotnet --version 2>/dev/null)" 1)
+    [ -z "$maj" ] && return 0
+    [ "$maj" -ge "$MIN_DOTNET" ] 2>/dev/null
+}
+
+py_ok() {
+    local v maj min
+    v=$("$1" --version 2>&1 | tr -d '' | awk '{print $2}')
+    [ -z "$v" ] && return 0
+    maj=$(ver_field "$v" 1); min=$(ver_field "$v" 2)
+    [ -z "$maj" ] && return 0
+    [ "$maj" -gt "$MIN_PY_MAJOR" ] 2>/dev/null && return 0
+    [ "$maj" -eq "$MIN_PY_MAJOR" ] 2>/dev/null && [ "${min:-0}" -ge "$MIN_PY_MINOR" ] 2>/dev/null
+}
+
 dep_present() {
     case "$1" in
         java)   [ "$(java_major)" -ge "$MIN_JAVA" ] 2>/dev/null && have javac ;;
@@ -309,9 +349,17 @@ dep_detail() {
             fi ;;
         mvn)    mvn --version 2>&1 | grep 'Apache Maven' | head -n1 ;;
         git)    git --version 2>&1 | head -n1 | sed 's/git version /v/' ;;
-        node)   node --version 2>&1 | head -n1 ;;
-        dotnet) dotnet --version 2>&1 | head -n1 ;;
-        python) local p; p=$(python_bin); [ -n "$p" ] && $p --version 2>&1 | head -n1 || echo 'NOT FOUND' ;;
+        node)
+            if node_ts_ready; then node --version 2>&1 | head -n1
+            else printf '%s -- keeping it; JS fine, TS needs %s.%s+'                      "$(node --version 2>&1 | head -n1)" "$MIN_NODE" "$MIN_NODE_TS"; fi ;;
+        dotnet)
+            if dotnet_ok; then dotnet --version 2>&1 | head -n1
+            else printf '%s -- keeping it; C#/F# expect %s.0+'                      "$(dotnet --version 2>&1 | head -n1)" "$MIN_DOTNET"; fi ;;
+        python)
+            local p; p=$(python_bin)
+            if [ -z "$p" ]; then echo 'NOT FOUND'
+            elif py_ok "$p"; then $p --version 2>&1 | head -n1
+            else printf '%s -- keeping it; %s.%s+ recommended for PyPI'                      "$($p --version 2>&1 | head -n1)" "$MIN_PY_MAJOR" "$MIN_PY_MINOR"; fi ;;
         cpp)    local c; c=$(cpp_bin);    [ -n "$c" ] && echo "$c" || echo 'NOT FOUND' ;;
         *)      echo found ;;
     esac

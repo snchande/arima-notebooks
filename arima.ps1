@@ -72,6 +72,18 @@ $Url     = "http://localhost:$Port"
 $LogOut  = Join-Path $RepoRoot 'arima.log'
 $LogErr  = Join-Path $RepoRoot 'arima-err.log'
 $MinJava = 17
+
+# Recommended floors for the optional runtimes. These are SOFT: a tool below its
+# floor is kept and used, never replaced - we only say plainly what will not work.
+# Only Java is hard, because the JAR cannot run below it.
+#
+# Presence alone used to be the whole check, so an old Node reported "all present"
+# and TypeScript cells then failed at runtime with nothing having warned at install.
+$MinNode     = 22   # 22.6+ for built-in type-stripping; below this TS cells are limited
+$MinNodeTs   = 6    # the minor that introduced it
+$MinDotnet   = 8    # C# / F# cells target the .NET 8 SDK
+$MinPyMajor  = 3
+$MinPyMinor  = 8    # PyPI installs use pip --target
 $McpUrl  = "$Url/api/mcp/messages"
 $Tagline = 'A local-first, AI-native notebook for eight languages - run code, build pipelines, and drive it all over MCP.'
 
@@ -309,6 +321,54 @@ function Get-JavaVersionLine {
 }
 
 # Parse "21.0.2" / "1.8.0_392" out of the java -version banner -> major int.
+# Version probes for the optional runtimes. Each returns 0 when the tool is absent
+# or its version cannot be parsed, and callers treat "unparseable" as acceptable -
+# a runtime we cannot read a version from must never be reported as too old.
+function Get-VersionParts ($Text) {
+    if (-not $Text) { return @(0, 0) }
+    $t = ($Text -replace '^[vV]', '').Trim()
+    $m = [regex]::Match($t, '(\d+)\.(\d+)')
+    if ($m.Success) { return @([int]$m.Groups[1].Value, [int]$m.Groups[2].Value) }
+    $m = [regex]::Match($t, '(\d+)')
+    if ($m.Success) { return @([int]$m.Groups[1].Value, 0) }
+    return @(0, 0)
+}
+
+# Node 22.6+ strips types natively. Below that JS still runs; TS is limited to tsc.
+function Test-NodeTsReady {
+    if (-not (Have node)) { return $false }
+    $p = Get-VersionParts (Invoke-NativeOut { node --version })
+    if ($p[0] -gt $MinNode) { return $true }
+    return ($p[0] -eq $MinNode -and $p[1] -ge $MinNodeTs)
+}
+
+function Test-DotnetOk {
+    if (-not (Have dotnet)) { return $false }
+    $p = Get-VersionParts (Invoke-NativeOut { dotnet --version })
+    if ($p[0] -eq 0) { return $true }        # unreadable -> do not call it old
+    return ($p[0] -ge $MinDotnet)
+}
+
+function Test-PythonOk ($Bin) {
+    if (-not $Bin) { return $false }
+    $raw = (Invoke-NativeOut { & $Bin --version }) -replace '^Python\s+', ''
+    $p = Get-VersionParts $raw
+    if ($p[0] -eq 0) { return $true }        # unreadable -> do not call it old
+    if ($p[0] -gt $MinPyMajor) { return $true }
+    return ($p[0] -eq $MinPyMajor -and $p[1] -ge $MinPyMinor)
+}
+
+# Count runtimes that are present but below their recommended floor, so the
+# installer's "all present" cannot quietly hide an old Node, .NET or Python.
+function Get-AgedCount {
+    $n = 0
+    if ((Have node)   -and -not (Test-NodeTsReady)) { $n++ }
+    if ((Have dotnet) -and -not (Test-DotnetOk))    { $n++ }
+    $py = Get-PythonBin
+    if ($py -and -not (Test-PythonOk $py))          { $n++ }
+    return $n
+}
+
 function Get-JavaMajor {
     $line = Get-JavaVersionLine
     if (-not $line) { return 0 }
@@ -434,8 +494,15 @@ function Show-Runtimes {
         Write-Row 'err' 'Maven' 'NOT FOUND -- needed to build (https://maven.apache.org/)'
     }
 
+    # Below a recommended floor we keep the installed version and say what it costs.
+    # Nothing here is replaced or upgraded - the machine's toolchain is left as it is.
     if (Have node) {
-        Write-Row 'ok' 'Node.js' "$(node --version)  -- JS / TS cells"
+        if (Test-NodeTsReady) {
+            Write-Row 'ok' 'Node.js' "$(node --version)  -- JS / TS cells"
+        } else {
+            Write-Row 'warn' 'Node.js' "$(node --version)  -- keeping it; JS cells fine, TS needs $MinNode.$MinNodeTs+"
+            W-Dim "                 TypeScript type-stripping unavailable; install tsc for TS support"
+        }
     } else {
         Write-Row 'warn' 'Node.js' 'not found -- JS / TS cells disabled (nodejs.org)'
     }
@@ -447,14 +514,22 @@ function Show-Runtimes {
     }
 
     if (Have dotnet) {
-        Write-Row 'ok' '.NET' "$(dotnet --version)  -- C# / F# cells"
+        if (Test-DotnetOk) {
+            Write-Row 'ok' '.NET' "$(dotnet --version)  -- C# / F# cells"
+        } else {
+            Write-Row 'warn' '.NET' "$(dotnet --version)  -- keeping it; C# / F# cells expect $MinDotnet.0+"
+        }
     } else {
         Write-Row 'warn' '.NET' 'not found -- C# / F# cells disabled (https://dot.net)'
     }
 
     $py = Get-PythonBin
     if ($py) {
-        Write-Row 'ok' 'Python' "$(Invoke-NativeOut { & $py --version })  -- Python cells + PyPI"
+        if (Test-PythonOk $py) {
+            Write-Row 'ok' 'Python' "$(Invoke-NativeOut { & $py --version })  -- Python cells + PyPI"
+        } else {
+            Write-Row 'warn' 'Python' "$(Invoke-NativeOut { & $py --version })  -- keeping it; $MinPyMajor.$MinPyMinor+ recommended for PyPI"
+        }
     } else {
         Write-Row 'warn' 'Python' 'not found -- Python cells disabled (python.org)'
     }
@@ -609,6 +684,11 @@ function Cmd-Install {
     if ($missing.Count -eq 0) {
         Write-Bar 100 'nothing to install'
         Write-Row 'ok' 'Dependencies' 'all present'
+        $aged = Get-AgedCount
+        if ($aged -gt 0) {
+            Write-Row 'warn' 'Versions' "$aged below the recommended floor -- keeping them, see notes above"
+            W-Dim '                 nothing was upgraded; re-run after updating a tool to re-check'
+        }
     } elseif (-not (Have winget)) {
         Write-Bar 100 'winget unavailable'
         Write-Row 'err' 'winget' 'not available -- install these by hand:'
