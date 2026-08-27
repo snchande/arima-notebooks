@@ -4,7 +4,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-JAR="$PROJECT_DIR/target/arima-notebooks-1.0.0-SNAPSHOT.jar"
+JAR="$PROJECT_DIR/target/arima-notebooks-4.0.1.jar"
 
 cd "$PROJECT_DIR"
 

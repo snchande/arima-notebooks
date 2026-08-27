@@ -50,6 +50,39 @@ machine. This is recorded because the class of bug matters more than the instanc
 
 ---
 
+## Opening it to your local network (optional, off by default)
+
+**Settings -> Network access** binds Arima to every interface instead of loopback, so
+another device on your Wi-Fi or LAN can reach it. It takes effect on the next start,
+because a listening socket cannot be re-bound underneath a running server.
+
+Understand what you are turning on. Arima runs code as **you**, with no sandbox, and
+does not authenticate callers. On a shared network - an office, a cafe, a hotel - that
+includes people you cannot see.
+
+### What still protects you
+
+Everything that executes is **held until you approve it**:
+
+| | |
+|---|---|
+| **Held, not queued** | The remote caller's HTTP request blocks. It cannot report success for code that never ran. |
+| **Brought to you** | Arima raises the browser window with the code on screen, rather than leaving a line in a log. |
+| **Refused by default** | A request nobody answers expires and is refused. Silence never means yes. |
+| **Only you can decide** | `/api/approvals/*` refuses any non-loopback caller, so a remote agent cannot approve its own code. |
+
+Reads (opening a notebook, the UI itself) are served normally once network access is
+on - that is what enabling it means. Execution is what is gated:
+`/api/shell/execute`, `/api/shell/run-to-here`, `/api/mcp/**`, `/api/agents/run`, and
+`/actuator/shutdown`.
+
+### If you did not turn this on
+
+Switch it off in Settings and restart. The banner printed at startup, and the warning
+in Settings, both say plainly when it is active.
+
+---
+
 ## For contributors
 
 ### Do not widen the bind

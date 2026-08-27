@@ -34,6 +34,7 @@ const SettingsPanel = (() => {
         setCheck('s-linenums',    s.showLineNumbers !== false);
         setCheck('s-focus-cell',  s.focusExecutingCell !== false);
 
+        setCheck('s-network-access', !!s.networkAccessEnabled);
         setCheck('s-pg-enabled', s.polyglotEnabled !== false);
         setCheck('s-pg-sbs',     !!s.polyglotSideBySide);
         setVal('s-pg-dominant',  s.polyglotDominantLanguage || '');
@@ -67,6 +68,7 @@ const SettingsPanel = (() => {
             editorFontSize:     parseInt(document.getElementById('s-fontsize')?.value) || 14,
             showLineNumbers:    document.getElementById('s-linenums')?.checked ?? true,
             focusExecutingCell: document.getElementById('s-focus-cell')?.checked ?? true,
+            networkAccessEnabled: document.getElementById('s-network-access')?.checked ?? false,
             polyglotEnabled:    document.getElementById('s-pg-enabled')?.checked ?? true,
             polyglotSideBySide: document.getElementById('s-pg-sbs')?.checked ?? false,
             polyglotDominantLanguage: document.getElementById('s-pg-dominant')?.value || '',

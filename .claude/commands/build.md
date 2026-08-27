@@ -13,12 +13,12 @@ cd $BARISTA_HOME && mvn clean package -DskipTests
 ```
 
 ## Build output
-The JAR will be at: `target/arima-notebooks-1.0.0-SNAPSHOT.jar`
+The JAR will be at: `target/arima-notebooks-4.0.1.jar`
 
 ## Run the built JAR
 ```bash
 java --add-opens=jdk.jshell/jdk.jshell=ALL-UNNAMED \
      --add-opens=java.base/java.lang=ALL-UNNAMED \
      --add-exports=jdk.jshell/jdk.jshell=ALL-UNNAMED \
-     -jar target/arima-notebooks-1.0.0-SNAPSHOT.jar
+     -jar target/arima-notebooks-4.0.1.jar
 ```

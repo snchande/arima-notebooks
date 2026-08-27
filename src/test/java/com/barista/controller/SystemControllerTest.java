@@ -35,7 +35,7 @@ class SystemControllerTest {
         Map<String, Object> info = new LinkedHashMap<>();
         info.put("name", "Arima Notebooks");
         info.put("status", "running");
-        info.put("version", "1.0.0-SNAPSHOT");
+        info.put("version", "4.0.1");
         info.put("uptime", "3h 14m 22s");
         info.put("pid", 30104);
         given(serverInfoService.getInfo()).willReturn(info);

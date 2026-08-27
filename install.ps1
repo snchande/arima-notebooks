@@ -720,7 +720,7 @@ function Show-Success {
     W-Ok   "  $ProductName is installed and ready."
     Write-Host ''
     Write-Row 'ok' 'Location' $Dir
-    Write-Row 'ok' 'JAR'      (Join-Path $Dir 'target\arima-notebooks-1.0.0-SNAPSHOT.jar')
+    Write-Row 'ok' 'JAR'      (Join-Path $Dir 'target\arima-notebooks-4.0.1.jar')
     if ($NoPath) {
         Write-Row 'warn' 'PATH' "not modified -- run the launcher as $Dir\arima.cmd"
     } else {

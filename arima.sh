@@ -20,7 +20,7 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-JAR="target/arima-notebooks-1.0.0-SNAPSHOT.jar"
+JAR="target/arima-notebooks-4.0.1.jar"
 
 # Prefer the bundled Maven Wrapper over a system Maven: it pins the build version
 # and means a fresh machine needs only a JDK.

@@ -49,6 +49,11 @@ public class BaristaSettings {
     private String  polyglotCompareLanguages = "";
     private boolean polyglotSideBySide = false;
 
+    // Network access. OFF by default: Arima executes code as this user and does
+    // not authenticate callers, so the machine boundary is the security boundary.
+    // Turning this on is a deliberate act with a real cost - see docs/SECURITY.md.
+    private boolean networkAccessEnabled = false;
+
     private String notebooksDir = "notebooks";
     private int    serverPort   = 8585;
 
@@ -88,6 +93,9 @@ public class BaristaSettings {
 
     public boolean isFocusExecutingCell() { return focusExecutingCell; }
     public void setFocusExecutingCell(boolean v) { this.focusExecutingCell = v; }
+
+    public boolean isNetworkAccessEnabled() { return networkAccessEnabled; }
+    public void setNetworkAccessEnabled(boolean v) { this.networkAccessEnabled = v; }
 
     public boolean isPolyglotEnabled() { return polyglotEnabled; }
     public void setPolyglotEnabled(boolean v) { this.polyglotEnabled = v; }

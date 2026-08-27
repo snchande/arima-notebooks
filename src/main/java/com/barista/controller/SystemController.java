@@ -83,6 +83,15 @@ public class SystemController {
         ));
     }
 
+    /**
+     * Restart after an update has rebuilt the jar. Same path as the API restart, so
+     * the launcher relaunches the newly built artifact rather than the running one.
+     */
+    public void restartForUpdate() {
+        log.info("Restarting to finish an update");
+        scheduleExit(EXIT_RESTART, true);
+    }
+
     // ── Internal ─────────────────────────────────────────────────────────────
 
     private void scheduleExit(int fallbackCode, boolean tryRestart) {
@@ -189,7 +198,7 @@ public class SystemController {
         } catch (URISyntaxException ignored) {}
 
         // 2. Fall back to well-known JAR path relative to working directory
-        File jar = new File("target/arima-notebooks-1.0.0-SNAPSHOT.jar");
+        File jar = new File("target/arima-notebooks-4.0.1.jar");
         if (jar.exists()) return jar.getAbsolutePath();
 
         return null;

@@ -321,6 +321,24 @@ public class Squares {
 
 ---
 
+## Staying up to date
+
+Arima checks whether `master` has moved on shortly after you open it. If it has, a
+notice appears in the corner listing what changed.
+
+- **Update and restart** pulls the new code, rebuilds, and restarts for you. The page
+  reconnects on its own when the server comes back.
+- **Not now** dismisses it until the next time you open Arima.
+
+The check is read-only - it fetches, it never changes your working copy. If you have
+uncommitted local changes the update is offered but blocked, with a note saying so:
+Arima will not discard your work to install a newer version. Only the machine running
+Arima can start an update, even with network access enabled.
+
+You can do the same thing from a terminal at any time with `arima update`.
+
+---
+
 ## Step Navigator
 
 The Step Navigator lets you walk through a notebook cell by cell — perfect for presentations, tutorials, or debugging.

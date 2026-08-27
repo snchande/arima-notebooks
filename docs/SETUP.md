@@ -284,7 +284,7 @@ export PATH=$JAVA_HOME/bin:$PATH
 mvn clean package -DskipTests
 ```
 
-This creates `target/arima-notebooks-1.0.0-SNAPSHOT.jar`.
+This creates `target/arima-notebooks-4.0.1.jar`.
 
 ### Step 4: Run
 
@@ -314,7 +314,7 @@ java \
   --add-opens=jdk.jshell/jdk.jshell=ALL-UNNAMED \
   --add-opens=java.base/java.lang=ALL-UNNAMED \
   --add-exports=jdk.jshell/jdk.jshell=ALL-UNNAMED \
-  -jar target/arima-notebooks-1.0.0-SNAPSHOT.jar
+  -jar target/arima-notebooks-4.0.1.jar
 ```
 
 ### Step 5: Open Browser
@@ -421,7 +421,7 @@ arima/
 ├── notebooks/
 │   └── welcome.vnb            # Pre-existing welcome notebook
 └── target/
-    └── arima-notebooks-1.0.0-SNAPSHOT.jar
+    └── arima-notebooks-4.0.1.jar
 ```
 
 ---

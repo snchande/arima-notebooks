@@ -66,7 +66,7 @@ function Get-MavenCommand {
     return 'mvn'
 }
 
-$JarPath = Join-Path 'target' 'arima-notebooks-1.0.0-SNAPSHOT.jar'
+$JarPath = Join-Path 'target' 'arima-notebooks-4.0.1.jar'
 $Port    = 8585
 $Url     = "http://localhost:$Port"
 $LogOut  = Join-Path $RepoRoot 'arima.log'

@@ -259,7 +259,7 @@ mvn spring-boot:run
 java --add-opens=jdk.jshell/jdk.jshell=ALL-UNNAMED \
      --add-opens=java.base/java.lang=ALL-UNNAMED \
      --add-exports=jdk.jshell/jdk.jshell=ALL-UNNAMED \
-     -jar target/arima-notebooks-1.0.0-SNAPSHOT.jar
+     -jar target/arima-notebooks-4.0.1.jar
 ```
 
 ### Step 4 — Open your browser
@@ -503,7 +503,7 @@ With no subcommand the CLI shows a **home screen** that adapts to what it finds:
   LIVE SERVER
   ------------------------------------------------------------
     [ok] Status       RUNNING at http://localhost:8585
-    [ok] Version      1.0.0-SNAPSHOT   (built 2026-08-24T22:09:23Z)
+    [ok] Version      4.0.1   (built 2026-08-24T22:09:23Z)
     [ok] Started      2026-08-24 15:20:19 PDT   (up 3m 0s)
     [ok] Process      PID 24132   port 8585   auth local
     [ok] Java         25  --  Java HotSpot(TM) 64-Bit Server VM
