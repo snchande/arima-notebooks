@@ -34,6 +34,17 @@ PORT=8585
 URL="http://localhost:${PORT}"
 MCP_URL="${URL}/api/mcp/messages"
 MIN_JAVA=17
+
+# Recommended floors for the optional runtimes. These are SOFT: a tool below its
+# floor is kept and used, never replaced - we only say plainly what will not work.
+# Only Java is hard, because the JAR cannot run below it.
+#
+# Presence alone used to be the whole check, so an old Node reported "all present"
+# and TypeScript cells then failed at runtime with nothing having warned at install.
+MIN_NODE=22        # 22.6+ for built-in type-stripping; below this TS cells are limited
+MIN_DOTNET=8       # C# / F# cells target the .NET 8 SDK
+MIN_PY_MAJOR=3
+MIN_PY_MINOR=8     # PyPI installs use pip --target
 RULE="------------------------------------------------------------"
 TAGLINE='A local-first, AI-native notebook for eight languages - run code, build pipelines, and drive it all over MCP.'
 
@@ -187,6 +198,47 @@ java_major() {
     esac
 }
 
+# Major version of a runtime, or 0 when absent/unparseable. Kept deliberately
+# forgiving: a version we cannot parse must never be reported as "too old".
+# `node --version` prints e.g. "v22.6.0". Split it once, into two globals-free echoes.
+node_ver_field() {
+    have node || { echo 0; return; }
+    local v; v=$(node --version 2>/dev/null | tr -d 'v')
+    local f; f=$(echo "$v" | cut -d. -f"$1")
+    case "$f" in ''|*[!0-9]*) echo 0 ;; *) echo "$f" ;; esac
+}
+node_major() { node_ver_field 1; }
+node_minor() { node_ver_field 2; }
+
+dotnet_major() {
+    have dotnet || { echo 0; return; }
+    # Windows dotnet appends CR, so strip it before splitting on the first dot.
+    local m; m=$(dotnet --version 2>/dev/null | tr -d '' | cut -d. -f1)
+    case "$m" in ''|*[!0-9]*) echo 0 ;; *) echo "$m" ;; esac
+}
+
+# Node 22.6+ strips types natively. Below that JS still runs; TS is limited to tsc.
+node_ts_ready() {
+    local maj min; maj=$(node_major); min=$(node_minor)
+    [ "$maj" -gt "$MIN_NODE" ] 2>/dev/null && return 0
+    [ "$maj" -eq "$MIN_NODE" ] 2>/dev/null && [ "$min" -ge 6 ] 2>/dev/null
+}
+
+# True when the interpreter meets the recommended floor. Unparseable -> treated as OK,
+# so a Python we cannot read a version from is never wrongly called too old.
+py_ok() {
+    # `python --version` prints e.g. "Python 3.13.14". Split on spaces then dots -
+    # no sed backreferences, which are easy to mangle when this file is generated.
+    local v maj min
+    v=$("$1" --version 2>&1 | tr -d '' | awk '{print $2}')
+    [ -z "$v" ] && return 0          # unreadable version is never called too old
+    maj=$(echo "$v" | cut -d. -f1); min=$(echo "$v" | cut -d. -f2)
+    case "$maj" in ''|*[!0-9]*) return 0 ;; esac
+    case "$min" in ''|*[!0-9]*) min=0 ;; esac
+    [ "$maj" -gt "$MIN_PY_MAJOR" ] 2>/dev/null && return 0
+    [ "$maj" -eq "$MIN_PY_MAJOR" ] 2>/dev/null && [ "$min" -ge "$MIN_PY_MINOR" ] 2>/dev/null
+}
+
 python_bin() {
     for b in python3 python py; do have "$b" && { echo "$b"; return; }; done
 }
@@ -314,17 +366,41 @@ show_runtimes() {
         row err 'Maven' 'NOT FOUND -- needed to build (https://maven.apache.org/)'
     fi
 
-    if have node; then row ok   'Node.js' "$(node --version)  -- JS / TS cells"
-    else               row warn 'Node.js' 'not found -- JS / TS cells disabled (nodejs.org)'; fi
+    # Below a recommended floor we keep the installed version and say what it costs.
+    # Nothing here is replaced or upgraded - the machine's toolchain is left as it is.
+    if have node; then
+        if node_ts_ready; then
+            row ok  'Node.js' "$(node --version)  -- JS / TS cells"
+        else
+            row warn 'Node.js' "$(node --version)  -- keeping it; JS cells fine, TS needs ${MIN_NODE}.6+"
+            dim  "                 TypeScript type-stripping unavailable; install tsc for TS support"
+        fi
+    else
+        row warn 'Node.js' 'not found -- JS / TS cells disabled (nodejs.org)'
+    fi
 
     have tsc && row ok 'tsc' 'found -- TypeScript type-check diagnostics on'
 
-    if have dotnet; then row ok   '.NET' "$(dotnet --version)  -- C# / F# cells"
-    else                 row warn '.NET' 'not found -- C# / F# cells disabled (https://dot.net)'; fi
+    if have dotnet; then
+        if [ "$(dotnet_major)" -ge "$MIN_DOTNET" ] 2>/dev/null; then
+            row ok  '.NET' "$(dotnet --version)  -- C# / F# cells"
+        else
+            row warn '.NET' "$(dotnet --version)  -- keeping it; C# / F# cells expect ${MIN_DOTNET}.0+"
+        fi
+    else
+        row warn '.NET' 'not found -- C# / F# cells disabled (https://dot.net)'
+    fi
 
     local py; py=$(python_bin)
-    if [ -n "$py" ]; then row ok   'Python' "$($py --version 2>&1)  -- Python cells + PyPI"
-    else                  row warn 'Python' 'not found -- Python cells disabled (python.org)'; fi
+    if [ -n "$py" ]; then
+        if py_ok "$py"; then
+            row ok  'Python' "$($py --version 2>&1)  -- Python cells + PyPI"
+        else
+            row warn 'Python' "$($py --version 2>&1)  -- keeping it; ${MIN_PY_MAJOR}.${MIN_PY_MINOR}+ recommended for PyPI"
+        fi
+    else
+        row warn 'Python' 'not found -- Python cells disabled (python.org)'
+    fi
 
     local cxx; cxx=$(cpp_bin)
     if [ -n "$cxx" ]; then row ok   'C++' "$cxx  -- C++ cells"
@@ -346,6 +422,18 @@ dotnet|.NET|0|dotnet-sdk|dotnet-sdk-8.0|https://dot.net/|C# + F# cells, NuGet pa
 python|Python|0|python@3.13|python3|https://www.python.org/downloads/|Python cells, PyPI packages
 cpp|C++|0|gcc|g++|https://gcc.gnu.org/|C++ cells
 EOF
+}
+
+# Present but below its recommended floor. Never makes a tool count as missing:
+# these are kept and used, and only reported. Java is absent here by design - its
+# floor is hard and handled by dep_present.
+dep_outdated() {
+    case "$1" in
+        node)   have node   && ! node_ts_ready ;;
+        dotnet) have dotnet && [ "$(dotnet_major)" -lt "$MIN_DOTNET" ] 2>/dev/null ;;
+        python) local py; py=$(python_bin); [ -n "$py" ] && ! py_ok "$py" ;;
+        *)      return 1 ;;
+    esac
 }
 
 dep_present() {
@@ -398,9 +486,19 @@ cmd_install() {
 
     step 2 $total 'Installing missing dependencies'
     local mgr; mgr=$(pkg_manager)
+    # Count what is present but below its floor, so "all present" cannot hide it.
+    local aged=0 k2
+    for k2 in node dotnet python; do dep_outdated "$k2" && aged=$((aged + 1)); done
+
     if [ "${#missing[@]}" -eq 0 ]; then
         bar 100 'nothing to install'
-        row ok 'Dependencies' 'all present'
+        if [ "$aged" -eq 0 ]; then
+            row ok 'Dependencies' 'all present'
+        else
+            row ok   'Dependencies' 'all present'
+            row warn 'Versions' "$aged below the recommended floor -- keeping them, see notes above"
+            dim  '                 nothing was upgraded; re-run after updating a tool to re-check'
+        fi
     elif [ -z "$mgr" ]; then
         bar 100 'no package manager found'
         row err 'Installer' 'no brew/apt/dnf/pacman -- install these by hand:'

@@ -26,6 +26,16 @@ if exist "%~dp0mvnw.cmd" set "MVNCMD=%~dp0mvnw.cmd"
 set "ARIMA_JAR=target\arima-notebooks-4.0.1.jar"
 set "ARIMA_MCP=%ARIMA_URL%/api/mcp/messages"
 set "MIN_JAVA=17"
+
+rem Recommended floors for the optional runtimes. These are SOFT: a tool below its
+rem floor is kept and used, never replaced - we only report what will not work.
+rem Presence alone used to be the whole check, so an old Node reported as present
+rem and TypeScript cells then failed at runtime with nothing having warned here.
+set "MIN_NODE=22"
+set "MIN_NODE_TS=6"
+set "MIN_DOTNET=8"
+set "MIN_PY_MAJOR=3"
+set "MIN_PY_MINOR=8"
 set "RULE=------------------------------------------------------------"
 set "ARIMA_TAGLINE=A local-first, AI-native notebook for eight languages - run code, build pipelines, and drive it all over MCP."
 
@@ -442,6 +452,61 @@ if not exist "AGENTS.md" call :row warn "Guardrails" "AGENTS.md missing"
 exit /b 0
 
 REM Prints the full runtime inventory, shared by install / status / version.
+:ver_parts
+rem Split "v22.6.0" / "10.0.204" into VP_MAJOR and VP_MINOR. Anything unparseable
+rem yields 0, and callers treat 0 as acceptable so it is never reported as too old.
+set "_vp=%~1"
+set "_vp=!_vp:v=!"
+for /f "tokens=1,2 delims=." %%a in ("!_vp!") do (
+    set "VP_MAJOR=%%a"
+    set "VP_MINOR=%%b"
+)
+if not defined VP_MAJOR set "VP_MAJOR=0"
+if not defined VP_MINOR set "VP_MINOR=0"
+set /a VP_MAJOR=VP_MAJOR+0 2>nul || set "VP_MAJOR=0"
+set /a VP_MINOR=VP_MINOR+0 2>nul || set "VP_MINOR=0"
+goto :eof
+
+:count_aged
+rem Counts runtimes that are present but below their recommended floor, so the
+rem installer's "all present" cannot quietly hide an old Node, .NET or Python.
+rem Written flat rather than in parenthesised blocks - batch mis-parses nested
+rem for/call inside ( ) often enough that the style here avoids them entirely.
+set /a AGED=0
+call :have node
+if not "!ERRORLEVEL!"=="0" goto :ca_net
+for /f "tokens=*" %%v in ('node --version') do set "CA_V=%%v"
+call :ver_parts "!CA_V!"
+set /a _c=0
+if !VP_MAJOR! gtr %MIN_NODE% set /a _c=1
+if !VP_MAJOR! equ %MIN_NODE% if !VP_MINOR! geq %MIN_NODE_TS% set /a _c=1
+if !VP_MAJOR! equ 0 set /a _c=1
+if "!_c!"=="0" set /a AGED+=1
+:ca_net
+call :have dotnet
+if not "!ERRORLEVEL!"=="0" goto :ca_py
+for /f "tokens=*" %%v in ('dotnet --version') do set "CA_V=%%v"
+call :ver_parts "!CA_V!"
+set /a _c=0
+if !VP_MAJOR! geq %MIN_DOTNET% set /a _c=1
+if !VP_MAJOR! equ 0 set /a _c=1
+if "!_c!"=="0" set /a AGED+=1
+:ca_py
+call :python_probe
+if not defined PY_BIN goto :ca_done
+set "CA_V="
+for /f "tokens=*" %%v in ('!PY_BIN! --version 2^>^&1') do if not defined CA_V set "CA_V=%%v"
+set "CA_NUM=!CA_V!"
+for /f "tokens=2" %%v in ("!CA_V!") do set "CA_NUM=%%v"
+call :ver_parts "!CA_NUM!"
+set /a _c=0
+if !VP_MAJOR! gtr %MIN_PY_MAJOR% set /a _c=1
+if !VP_MAJOR! equ %MIN_PY_MAJOR% if !VP_MINOR! geq %MIN_PY_MINOR% set /a _c=1
+if !VP_MAJOR! equ 0 set /a _c=1
+if "!_c!"=="0" set /a AGED+=1
+:ca_done
+goto :eof
+
 :show_runtimes
 call :java_probe
 if !JAVA_MAJOR! geq %MIN_JAVA% call :row ok  "Java" "!JAVA_LINE!"
@@ -461,7 +526,20 @@ call :row ok "Maven" "!MVN_LINE!"
 :sr_node
 call :have node
 if not "!ERRORLEVEL!"=="0" goto :sr_node_miss
-for /f "tokens=*" %%v in ('node --version') do call :row ok "Node.js" "%%v  -- JS / TS cells"
+rem Below the floor we keep the installed version and say what it costs. Nothing
+rem here is replaced or upgraded - the machine's toolchain is left as it is.
+for /f "tokens=*" %%v in ('node --version') do set "NODE_V=%%v"
+call :ver_parts "!NODE_V!"
+set /a _ok=0
+if !VP_MAJOR! gtr %MIN_NODE% set /a _ok=1
+if !VP_MAJOR! equ %MIN_NODE% if !VP_MINOR! geq %MIN_NODE_TS% set /a _ok=1
+if !VP_MAJOR! equ 0 set /a _ok=1
+if "!_ok!"=="1" (
+    call :row ok "Node.js" "!NODE_V!  -- JS / TS cells"
+) else (
+    call :row warn "Node.js" "!NODE_V!  -- keeping it; JS cells fine, TS needs %MIN_NODE%.%MIN_NODE_TS%+"
+    call :dim "                 TypeScript type-stripping unavailable; install tsc for TS support"
+)
 goto :sr_tsc
 :sr_node_miss
 call :row warn "Node.js" "not found -- JS / TS cells disabled (nodejs.org)"
@@ -472,7 +550,15 @@ if "!ERRORLEVEL!"=="0" call :row ok "tsc" "found -- TypeScript type-check diagno
 
 call :have dotnet
 if not "!ERRORLEVEL!"=="0" goto :sr_net_miss
-for /f "tokens=*" %%v in ('dotnet --version') do call :row ok ".NET" "%%v  -- C# / F# cells"
+for /f "tokens=*" %%v in ('dotnet --version') do set "NET_V=%%v"
+call :ver_parts "!NET_V!"
+if !VP_MAJOR! geq %MIN_DOTNET% (
+    call :row ok ".NET" "!NET_V!  -- C# / F# cells"
+) else if !VP_MAJOR! equ 0 (
+    call :row ok ".NET" "!NET_V!  -- C# / F# cells"
+) else (
+    call :row warn ".NET" "!NET_V!  -- keeping it; C# / F# cells expect %MIN_DOTNET%.0+"
+)
 goto :sr_py
 :sr_net_miss
 call :row warn ".NET" "not found -- C# / F# cells disabled (https://dot.net)"
@@ -480,7 +566,23 @@ call :row warn ".NET" "not found -- C# / F# cells disabled (https://dot.net)"
 :sr_py
 call :python_probe
 if not defined PY_BIN goto :sr_py_miss
-for /f "tokens=*" %%v in ('!PY_BIN! --version 2^>^&1') do call :row ok "Python" "%%v  -- Python cells + PyPI"
+rem `python --version` prints e.g. "Python 3.13.14" - take the version word before
+rem comparing. As with Node and .NET, an unparseable version (major 0) is treated as
+rem acceptable, so an interpreter we cannot read is never reported as too old.
+set "PY_V="
+for /f "tokens=*" %%v in ('!PY_BIN! --version 2^>^&1') do if not defined PY_V set "PY_V=%%v"
+set "PY_NUM=!PY_V!"
+for /f "tokens=2" %%v in ("!PY_V!") do set "PY_NUM=%%v"
+call :ver_parts "!PY_NUM!"
+set /a _ok=0
+if !VP_MAJOR! gtr %MIN_PY_MAJOR% set /a _ok=1
+if !VP_MAJOR! equ %MIN_PY_MAJOR% if !VP_MINOR! geq %MIN_PY_MINOR% set /a _ok=1
+if !VP_MAJOR! equ 0 set /a _ok=1
+if "!_ok!"=="1" (
+    call :row ok "Python" "!PY_V!  -- Python cells + PyPI"
+) else (
+    call :row warn "Python" "!PY_V!  -- keeping it; %MIN_PY_MAJOR%.%MIN_PY_MINOR%+ recommended for PyPI"
+)
 goto :sr_cpp
 :sr_py_miss
 call :row warn "Python" "not found -- Python cells disabled (python.org)"
@@ -588,6 +690,9 @@ goto :inst_workspace
 :inst_nothing
 call :bar 100 "nothing to install"
 call :row ok "Dependencies" "all present"
+call :count_aged
+if !AGED! gtr 0 call :row warn "Versions" "!AGED! below the recommended floor -- keeping them, see notes above"
+if !AGED! gtr 0 call :dim "                 nothing was upgraded; re-run after updating a tool to re-check"
 goto :inst_workspace
 
 :inst_nowinget
