@@ -1214,6 +1214,8 @@ a:hover { text-decoration: underline; }
 }
 .nb-tool svg { width: 13px; height: 13px; }
 .nb-tool:hover { background: var(--surface-3); border-color: var(--border); color: var(--text-1); }
+.nb-tool-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.nb-tool-primary:hover { background: var(--accent); border-color: var(--accent); filter: brightness(1.1); color: #fff; }
 .nb-tool-run { color: var(--green); }
 .nb-tool-run:hover { background: rgba(107,207,143,.1); border-color: var(--green); color: var(--green); }
 

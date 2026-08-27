@@ -3559,13 +3559,6 @@ const NotebookEditor = (() => {
       copyShareLink(notebook.id, null);
     });
 
-    document.getElementById('btn-delete-nb')?.addEventListener('click', async () => {
-      if (!notebook?.id) { Arima.toast?.('Open a notebook first.', 'warn'); return; }
-      if (notebook.readOnly) { Arima.toast?.('Tutorials are read-only.', 'warn'); return; }
-      // Deleting removes the .anb from disk — always confirm, never silently.
-      if (!confirm(`Delete "${notebook.name}" from disk?\n\nThis cannot be undone.`)) return;
-      await deleteNotebook(notebook.id);
-    });
     document.getElementById('btn-run-all')?.addEventListener('click', runAll);
     document.getElementById('btn-stop-run')?.addEventListener('click', stopRun);
     document.getElementById('btn-add-code')?.addEventListener('click', () => addCell('CODE'));
@@ -3609,9 +3602,10 @@ const NotebookEditor = (() => {
     });
 
     document.getElementById('btn-delete-notebook')?.addEventListener('click', async () => {
-      if (!notebook) return;
-      if (notebook._readOnly) return; // tutorials cannot be deleted
-      if (!confirm(`Delete "${notebook.name}"?\n\nThis cannot be undone.`)) return;
+      if (!notebook?.id) { Arima.toast?.('Open a notebook first.', 'warn'); return; }
+      if (notebook._readOnly) { Arima.toast?.('Tutorials are read-only.', 'warn'); return; }
+      // Deleting removes the .anb from disk — always confirm, never silently.
+      if (!confirm(`Delete "${notebook.name}" from disk?\n\nThis cannot be undone.`)) return;
       await deleteNotebook(notebook.id);
     });
   }
