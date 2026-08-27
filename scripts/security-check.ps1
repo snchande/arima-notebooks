@@ -95,7 +95,7 @@ $rules = @(
      msg='Lombok is forbidden (removed for JDK 25 compatibility) — use plain getters/setters + manual Builder' },
 
   # Local-first guarantee — WARN (allow-list lives below)
-  @{ name='net/outbound-url';        pattern='https?://(?!localhost|127\.0\.0\.1|0\.0\.0\.0)';
+  @{ name='net/outbound-url';        pattern='https?://';
      level='warn';
      msg='Outbound URL — confirm host is on the allow-list (Maven Central, npm, NuGet, AI CLI)' },
 
@@ -105,6 +105,11 @@ $rules = @(
   @{ name='style/todo-fixme';        pattern='\b(TODO|FIXME|XXX|HACK)\b'; level='info';
      msg='TODO/FIXME marker' }
 )
+
+# Loopback is never an outbound host - it is this machine. Kept separate from the
+# allow-list so the intent is clear: these are not third parties we have chosen to
+# trust. Matches the LOOPBACK list in security-check.sh.
+$loopbackHosts = @('localhost', '127\.0\.0\.1', '0\.0\.0\.0', '::1', '\[::1\]')
 
 # Allow-list for outbound hosts — exempt from net/outbound-url warning
 $hostAllowList = @(
@@ -169,12 +174,20 @@ foreach ($file in $files) {
       if ($line -match $rule.pattern) {
         # net/outbound-url allow-list — extract every host on the line, all must be allowed
         if ($rule.name -eq 'net/outbound-url') {
-          $allHosts = [regex]::Matches($line, 'https?://([A-Za-z0-9.-]+)') | ForEach-Object { $_.Groups[1].Value }
+          # Bracketed IPv6 literals are matched too, so [::1] is recognised rather
+          # than silently skipped by a host pattern that cannot express it.
+          $allHosts = [regex]::Matches($line, 'https?://(\[[0-9A-Fa-f:]+\]|[A-Za-z0-9.-]+)') |
+                      ForEach-Object { $_.Groups[1].Value }
           $unknown = @()
           foreach ($h in $allHosts) {
             $ok = $false
-            foreach ($allowed in $hostAllowList) {
-              if ($h -match "^$allowed`$") { $ok = $true; break }
+            foreach ($lb in $loopbackHosts) {
+              if ($h -match "^$lb`$") { $ok = $true; break }
+            }
+            if (-not $ok) {
+              foreach ($allowed in $hostAllowList) {
+                if ($h -match "^$allowed`$") { $ok = $true; break }
+              }
             }
             if (-not $ok) { $unknown += $h }
           }
