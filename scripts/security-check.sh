@@ -56,6 +56,9 @@ is_doc_file() {
 }
 
 # Outbound URL allow-list
+# Loopback is never an outbound host. Kept separate from ALLOW so the intent
+# is obvious: these are not third parties we have decided to trust.
+LOOPBACK='localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|::1'
 ALLOW='repo1\.maven\.org|search\.maven\.org|repo\.maven\.apache\.org|registry\.npmjs\.org|www\.npmjs\.com|api\.nuget\.org|www\.nuget\.org|api\.anthropic\.com|claude\.ai|fonts\.googleapis\.com|fonts\.gstatic\.com|cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|github\.com|api\.github\.com|spring\.io|dot\.net|dotnet\.microsoft\.com|oss\.sonatype\.org|central\.sonatype\.com|shields\.io|img\.shields\.io|openjdk\.org'
 
 # ──────────────────────────────────────────────────────────────
@@ -72,6 +75,7 @@ scan_rule() {
       # net/outbound-url allow-list
       if [[ "$name" == "net/outbound-url" ]]; then
         if echo "$line" | grep -qE "https?://($ALLOW)"; then continue; fi
+        if echo "$line" | grep -qE "https?://($LOOPBACK)"; then continue; fi
       fi
       add_finding "$level" "$name" "$f" "$lineno" "$msg"
     done < <(grep -nE "$pattern" "$f" 2>/dev/null || true)
@@ -110,7 +114,7 @@ scan_rule block ui/lombok \
 # ──────────────────────────────────────────────────────────────
 # Warn — outbound URLs
 # ──────────────────────────────────────────────────────────────
-scan_rule warn net/outbound-url 'https?://(?!localhost|127\.0\.0\.1|0\.0\.0\.0)' \
+scan_rule warn net/outbound-url 'https?://' \
   'Outbound URL — confirm host is on the allow-list (Maven Central, npm, NuGet, AI CLI)' no
 
 # ──────────────────────────────────────────────────────────────

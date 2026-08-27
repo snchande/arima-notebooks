@@ -117,7 +117,13 @@ public class SystemController {
      * fall back to the external watchdog (exit code 42).
      */
     private boolean trySpawnTrampoline() {
-        String jarPath = findJarPath();
+        String jarPath;
+        try {
+            jarPath = findJarPath();
+        } catch (Exception e) {
+            log.warn("Could not locate the JAR ({}), falling back to exit 42", e.toString());
+            return false;
+        }
         if (jarPath == null) {
             log.info("No runnable JAR found — relying on external watchdog (exit 42)");
             return false;
@@ -128,8 +134,8 @@ public class SystemController {
         boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("win");
 
         try {
-            Path script = writeTrampolineScript(isWindows, javaExe, jvmArgs, jarPath);
-            launchScript(isWindows, script);
+            Path script = writeTrampolineScript(isWindows);
+            launchScript(isWindows, script, javaExe, jvmArgs, jarPath);
             log.info("Trampoline launched — JAR: {}", jarPath);
             return true;
         } catch (Exception e) {
@@ -138,14 +144,22 @@ public class SystemController {
         }
     }
 
-    private Path writeTrampolineScript(boolean isWindows, String javaExe,
-                                       List<String> jvmArgs, String jarPath) throws IOException {
-        String jvmArgsStr = String.join(" ", jvmArgs);
+    /**
+     * Write the trampoline: wait for the port to be released, then relaunch.
+     *
+     * <p>The script body is FIXED TEXT. The command to run is not interpolated into
+     * it - it arrives as script arguments, passed through ProcessBuilder's argv list,
+     * so nothing is ever concatenated into a shell string. The values involved come
+     * from the JVM's own runtime rather than any request, but building a shell script
+     * by concatenation is the kind of thing that is safe until one day it is not, and
+     * this costs nothing to avoid.
+     */
+    private Path writeTrampolineScript(boolean isWindows) throws IOException {
         Path script;
 
         if (isWindows) {
             script = Files.createTempFile("barista-restart-", ".bat");
-            String content =
+            Files.writeString(script,
                 "@echo off\r\n" +
                 "setlocal\r\n" +
                 ":wait\r\n" +
@@ -154,33 +168,39 @@ public class SystemController {
                 "    timeout /t 1 /nobreak >nul\r\n" +
                 "    goto wait\r\n" +
                 ")\r\n" +
-                "start \"Arima Notebooks\" \"" + javaExe + "\" " + jvmArgsStr +
-                " -jar \"" + jarPath + "\"\r\n" +
-                "del \"%~f0\"\r\n";
-            Files.writeString(script, content);
+                // %* is the argv this script was invoked with - the java command.
+                "start \"Arima Notebooks\" %*\r\n" +
+                "del \"%~f0\"\r\n");
         } else {
             script = Files.createTempFile("barista-restart-", ".sh");
-            String content =
+            Files.writeString(script,
                 "#!/bin/bash\n" +
                 "while nc -z localhost 8585 2>/dev/null; do sleep 1; done\n" +
-                "\"" + javaExe + "\" " + jvmArgsStr + " -jar \"" + jarPath + "\" &\n" +
-                "rm -- \"$0\"\n";
-            Files.writeString(script, content);
+                // "$@" preserves each argument exactly as passed, spaces included.
+                "\"$@\" &\n" +
+                "rm -- \"$0\"\n");
             script.toFile().setExecutable(true);
         }
-
         return script;
     }
 
-    private void launchScript(boolean isWindows, Path script) throws IOException {
-        ProcessBuilder pb;
+    /** Run the trampoline, handing it the relaunch command as separate arguments. */
+    private void launchScript(boolean isWindows, Path script, String javaExe,
+                              List<String> jvmArgs, String jarPath) throws IOException {
+        List<String> cmd = new ArrayList<>();
         if (isWindows) {
             // Empty "" title arg so `start` treats the next token as the command,
-            // not as a window title — survives temp paths that contain spaces.
-            pb = new ProcessBuilder("cmd", "/c", "start", "\"\"", "/b", script.toString());
+            // not as a window title - survives temp paths that contain spaces.
+            cmd.addAll(List.of("cmd", "/c", "start", "\"\"", "/b", script.toString()));
         } else {
-            pb = new ProcessBuilder("/bin/bash", script.toString());
+            cmd.addAll(List.of("/bin/bash", script.toString()));
         }
+        cmd.add(javaExe);
+        cmd.addAll(jvmArgs);
+        cmd.add("-jar");
+        cmd.add(jarPath);
+
+        ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.inheritIO();
         pb.start();
     }
@@ -195,11 +215,23 @@ public class SystemController {
             if (f.getName().endsWith(".jar") && f.exists()) {
                 return f.getAbsolutePath();
             }
-        } catch (URISyntaxException ignored) {}
+        } catch (URISyntaxException | IllegalArgumentException ignored) {
+            // Running from a Spring Boot fat jar, the code source is a nested URL such
+            // as jar:file:/...!/BOOT-INF/classes!/ - not hierarchical, so new File(uri)
+            // throws IllegalArgumentException. Only URISyntaxException was caught, so it
+            // escaped findJarPath, killed the restart thread, and the server never
+            // restarted at all: the UI's restart button silently did nothing whenever
+            // Arima ran from the packaged jar, which is every normal install.
+        }
 
-        // 2. Fall back to well-known JAR path relative to working directory
-        File jar = new File("target/arima-notebooks-4.0.1.jar");
-        if (jar.exists()) return jar.getAbsolutePath();
+        // 2. Fall back to the built jar in target/. Matched by pattern rather than an
+        // exact name so a version bump cannot quietly disable restarting again.
+        File[] built = new File("target").listFiles((d, n) ->
+                n.startsWith("arima-notebooks-") && n.endsWith(".jar") && !n.endsWith(".original"));
+        if (built != null && built.length > 0) {
+            java.util.Arrays.sort(built, java.util.Comparator.comparingLong(File::lastModified).reversed());
+            return built[0].getAbsolutePath();
+        }
 
         return null;
     }
@@ -216,7 +248,7 @@ public class SystemController {
         for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
             if (arg.startsWith("--add-opens") || arg.startsWith("--add-exports")
                     || arg.startsWith("-D") || arg.startsWith("-X")) {
-                result.add("\"" + arg + "\"");
+                result.add(arg);
             }
         }
         return result;
