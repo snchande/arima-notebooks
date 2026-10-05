@@ -3,11 +3,11 @@
   "name": "Plugin 101 · Review Kit",
   "description": "Beginner plugin — bundles a code-reviewer agent, a commit-message skill and the word-count tool into one installable Claude Code plugin.",
   "metadata": {
-    "kind": "plugin",
     "category": "tutorial",
-    "subcategory": "Agents & Skills",
+    "subcategory": "Plugins",
     "language": "agent",
     "level": 101,
+    "kind": "plugin",
     "plugin": {
       "version": "1.0.0",
       "author": "Arima Notebooks",
@@ -31,7 +31,7 @@
       "id": "p101-build",
       "type": "MARKDOWN",
       "mode": "jshell",
-      "source": "## What Deploy writes\n\nPick a target in the banner and press **⤄ Deploy**:\n\n```\nplugins/plugin-101-review-kit/\n  .claude-plugin/plugin.json   name, version, description, author\n  agents/<name>.md             each member agent, frontmatter + instructions\n  skills/<name>/SKILL.md       each member skill\n  commands/<name>.md           one per member tool\n  .mcp.json                    points back at Arima's MCP server\n  README.md                    these markdown cells\n```\n\nMember **tools are not copied**. They stay here, and the generated command calls them over Arima's MCP server — one source of truth, and editing the tool notebook changes the deployed behaviour with no redeploy.",
+      "source": "## What Deploy writes\n\nPick a target in the banner and press **Deploy**:\n\n```\nplugins/plugin-101-review-kit/\n  .claude-plugin/plugin.json   name, version, description, author\n  agents/<name>.md             each member agent, frontmatter + instructions\n  skills/<name>/SKILL.md       each member skill\n  commands/<name>.md           one per member tool\n  .mcp.json                    points back at Arima's MCP server\n  README.md                    these markdown cells\n```\n\nMember **tools are not copied**. They stay here, and the generated command calls them over Arima's MCP server — one source of truth, and editing the tool notebook changes the deployed behaviour with no redeploy.",
       "output": "",
       "executed": false
     },
@@ -47,7 +47,7 @@
       "id": "p101-next",
       "type": "MARKDOWN",
       "mode": "jshell",
-      "source": "## Next\n\n- Create your own plugin (**+ New Plugin**), add one of your agents as a member, and deploy to `bundle` first to inspect the output.\n- Bump `version` in the banner and redeploy — the old files are replaced, and a member you removed is cleaned up rather than orphaned.\n- Deploy an agent on its own (the ⤄ button on its card) when you want just the one file instead of a bundle.",
+      "source": "## Try it\n\n1. Deploy to `bundle` and read every file it wrote. Six of them, and none is mysterious.\n2. Create your own plugin (**+ New Plugin**), add one of your agents as a member, and deploy to `bundle` too.\n3. Deploy an agent on its own (the download button on its card) to see the difference between one file and a bundle.\n\nNext: `plugin-201` on what belongs in a bundle together.",
       "output": "",
       "executed": false
     }

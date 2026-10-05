@@ -1,0 +1,65 @@
+{
+  "id": "connector-101",
+  "name": "Connector 101 · Your First Connector",
+  "description": "Beginner connector — attach Arima to an external MCP server, probe it, and see the tools it offers.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Connectors",
+    "language": "agent",
+    "level": 101,
+    "kind": "connector",
+    "connector": {
+      "transport": "stdio",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-everything"
+      ],
+      "url": "",
+      "env": {},
+      "enabled": true
+    }
+  },
+  "cells": [
+    {
+      "id": "c101-what",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Your First Connector\n\nArima runs an MCP **server** — that is how Claude Code reaches your notebooks and tools. A **connector** is the mirror image: an MCP server somewhere else that *Arima* attaches to, so its tools become usable from here.\n\n```\n  Claude Code  ---->  Arima  ---->  GitHub MCP server\n               MCP            MCP\n     (server)         (client)\n```\n\nFilesystem access, a GitHub API, a database, a company-internal service — anything that speaks MCP can be a connector. You do not write the server; you point at one.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c101-anatomy",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## What a connector is made of\n\nLike everything else in the factory, it is a notebook. The banner holds the whole configuration:\n\n| Field | Means |\n|---|---|\n| **transport** | `stdio` (a local subprocess) or `sse` (an HTTP endpoint) |\n| **command** | for stdio: the argv to launch, e.g. `npx -y @modelcontextprotocol/server-everything` |\n| **url** | for sse: the endpoint, e.g. `http://127.0.0.1:3000/sse` |\n| **env** | extra environment for a stdio subprocess — where an API token goes |\n| **enabled** | whether agents may reach it at all |\n\nThe markdown cells (these) are **notes for you**. They are never sent to the server.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c101-local",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Local by default, and why that matters\n\nThis connector uses **stdio**: Arima launches the command as a subprocess and talks JSON-RPC over its pipes. Nothing touches the network. That is the default on purpose — Arima binds to loopback and does not reach outside your machine unless you ask it to.\n\nAn **sse** connector pointed at `127.0.0.1` is equally local.\n\nAn sse connector pointed at a **real host** does leave your machine, and Arima will not do that quietly: every probe and every call stops and asks you to approve it first. That is `connector-301`.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c101-probe",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Probe it\n\nPress **Probe** in the dock below. Arima will:\n\n1. Launch `npx -y @modelcontextprotocol/server-everything` (the MCP project's own reference server — the first run downloads it).\n2. Send `initialize`, then `tools/list`.\n3. Print what the server says it can do, then shut the subprocess down.\n\nYou should see a list of tool names with their parameters — `echo`, `add`, `longRunningOperation` and friends. That list *is* the connector: whatever appears there is what an agent can call.\n\n**If it fails:** the error carries the subprocess's stderr. No `npx` on PATH is the usual cause — install Node.js and try again.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c101-next",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Probe, and read the tool list.\n2. Change the command to `npx -y @modelcontextprotocol/server-filesystem .` and probe again — a different server, different tools, same three steps.\n3. Untick **enabled** and note that agents can no longer reach it, while you can still probe it from here.\n\nNext: `connector-201` on stdio in depth — argv, environment and secrets.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

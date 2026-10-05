@@ -1,0 +1,58 @@
+{
+  "id": "skill-201",
+  "name": "Skill 201 · Anatomy of a Skill",
+  "description": "Intermediate skill — what a skill is made of, how it differs from an agent, and the frontmatter that decides when it fires.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Skills",
+    "language": "agent",
+    "level": 201,
+    "kind": "skill",
+    "agent": {
+      "provider": "claude",
+      "tools": []
+    }
+  },
+  "cells": [
+    {
+      "id": "s201-what",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Anatomy of a Skill\n\nA skill is **instructions, and nothing else**. No tools, no provider loop, no state. It is a piece of know-how you want available the moment it is relevant.\n\nWhen deployed, a skill is one file:\n\n```markdown\n---\nname: anatomy-of-a-skill\ndescription: What this skill is for, in one line.\n---\n\nThe instructions. Everything below the frontmatter is the skill.\n```\n\nArima builds that file for you: `name` is the slug of the notebook name, `description` is the notebook description, and the body is **every markdown cell, concatenated in order**. Which means the cells you are reading are literally the skill.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s201-vs",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Skill or agent?\n\n| | Skill | Agent |\n|---|---|---|\n| Is | instructions | instructions + tool grants |\n| Fires | when its description matches what is happening | when invoked by name or task |\n| Runs | inside the caller's turn | as its own run, with its own output |\n| Costs | nothing until used | a provider call |\n| Good for | conventions, formats, checklists, house style | work with steps and tools |\n\nThe rule of thumb: if you are teaching the model **how you like things done**, write a skill. If you are asking it to **go and do something**, write an agent.\n\nWhen in doubt, start with a skill. It is cheaper, simpler, and promoting it to an agent later is a two-minute job.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s201-structure",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## How to structure the body\n\nThe cells of a good skill tend to follow a shape:\n\n1. **What this is for** — one short paragraph. The model reads this first.\n2. **The rules** — a tight list. Specific, checkable, no hedging.\n3. **Examples** — one right, one wrong. Worth more than three more rules.\n4. **Edge cases** — only the ones that actually come up.\n\nKeep it short. A skill competing for attention with everything else in the context window wins on precision, not length. If yours is running past a page, it probably wants to be two skills.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s201-example",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Example: right and wrong\n\nA skill about pull-request descriptions.\n\n**Wrong — vague, unfalsifiable:**\n\n> Write good PR descriptions that explain the change clearly and help reviewers > understand what you did and why.\n\n**Right — specific, checkable:**\n\n> Open with one sentence naming the user-visible change. Then a **Why** paragraph > describing the problem, not the solution. Then a bulleted **What changed** list, one > bullet per file or concern. Never list files without saying what moved in them. > Close with how you verified it. No emoji. Under 300 words.\n\nThe second one is enforceable — you can look at the output and say whether it was followed.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s201-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Press **+ New Skill** in the Agents tab and name it `pr-description`.\n2. Write the four sections above into its markdown cells.\n3. Run it from the dock with a task like *\"I moved the retry logic out of HttpClient into a RetryPolicy class and added tests\"*.\n4. Read what comes back and go tighten whichever rule it ignored. That loop is most of skill authoring.\n\nNext: `skill-301` on the one line that decides whether a skill is ever used.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

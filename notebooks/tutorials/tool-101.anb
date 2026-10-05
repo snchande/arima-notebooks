@@ -3,11 +3,11 @@
   "name": "Tool 101 · Word Count",
   "description": "Beginner tool — counts words, lines and characters in a block of text. Shows how a notebook becomes a callable tool with a real signature.",
   "metadata": {
-    "kind": "tool",
     "category": "tutorial",
-    "subcategory": "Agents & Skills",
+    "subcategory": "Tools",
     "language": "agent",
     "level": 101,
+    "kind": "tool",
     "tool": {
       "mode": "python",
       "params": [
@@ -49,15 +49,15 @@
       "id": "t101-call",
       "type": "MARKDOWN",
       "mode": "jshell",
-      "source": "## Calling it\n\nThree ways, all the same tool:\n\n- **Here** — the *▶ Call tool* dock below fills in from the signature.\n- **From the Agents tab** — the tool's card has its own call form.\n- **From any MCP client** — it is advertised as `arima_tool_101_word_count` with this exact schema, so Claude Code can call it directly. `barista_list_tools` shows the catalog.\n\nAn **agent** reaches it the same way: grant the tool by name in the agent's banner, and the agent's prompt gains the signature and the MCP name.",
+      "source": "## Calling it\n\nThree ways, all the same tool:\n\n- **Here** — the *Call tool* dock below fills itself in from the signature.\n- **From the Agents tab** — the tool's card has its own call form.\n- **From any MCP client** — it is advertised as `arima_tool_101_word_count` with this exact schema, so Claude Code can call it directly. `barista_list_tools` shows the whole catalog.\n\nAn **agent** reaches it the same way: grant the tool by name in the agent's banner, and the agent's prompt gains the signature and the MCP name. That is `tool-401`.",
       "output": "",
       "executed": false
     },
     {
-      "id": "t101-next",
+      "id": "t101-try",
       "type": "MARKDOWN",
       "mode": "jshell",
-      "source": "## Next\n\n- Change `detailed` to a `string` and switch on it — the binding follows the declared type.\n- Rewrite the body in another language (pick one in the banner): the parameters are declared in whatever language you choose.\n- Bundle it: add this tool as a member of a **plugin** (see `plugin-101`) and deploy, and your CLI gets a slash command that calls it.",
+      "source": "## Try it\n\n1. Put a paragraph in the `text` box below and press **Call**.\n2. Flip `detailed` to `true` and call it again.\n3. Now clear `text` entirely and call it — you get *\"requires parameter 'text'\"* rather than a crash, because the parameter is marked required. Validation happens before a line of your body runs.\n\nNext: `tool-201` on the four parameter types and what defaults really do.",
       "output": "",
       "executed": false
     }

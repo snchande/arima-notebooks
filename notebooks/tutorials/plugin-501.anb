@@ -1,0 +1,63 @@
+{
+  "id": "plugin-501",
+  "name": "Plugin 501 · Shipping to the Harness",
+  "description": "Advanced plugin — installing a bundle into Claude Code, Copilot or Antigravity, verifying every piece loaded, and handing it to someone else.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Plugins",
+    "language": "agent",
+    "level": 501,
+    "kind": "plugin",
+    "plugin": {
+      "version": "1.0.0",
+      "author": "Arima Notebooks",
+      "members": [
+        "agent-201",
+        "skill-101",
+        "tool-101"
+      ]
+    }
+  },
+  "cells": [
+    {
+      "id": "p501-install",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Shipping to the Harness\n\nDeploying to `project` or `user` puts the bundle under that scope's `.claude/plugins/`, which is where Claude Code looks. Restart the CLI and it is installed.\n\n| Target | Directory | Who gets it |\n|---|---|---|\n| `project` | `<repo>/.claude/plugins/<slug>/` | this checkout; commit it and the team does too |\n| `user` | `~/.claude/plugins/<slug>/` | every project on this machine |\n| `bundle` | `data/plugins/<slug>/` | nobody — staged for reading |\n\nFor Copilot and Antigravity the same members deploy individually into `.github/` and `.antigravity/` — pick the provider on each member's own card. The plugin **bundle format is Claude Code's**; the others take the files, not the bundle.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p501-verify",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Verify each piece, separately\n\nA bundle can be half-working and look fine. Check the three kinds independently:\n\n| Piece | How to check | If it fails |\n|---|---|---|\n| 📦 the plugin | the CLI lists it among its plugins | `plugin.json` is missing or malformed |\n| 🤖 an agent | invoke it by name | check the frontmatter in `agents/<name>.md` |\n| ⭐ a skill | say its trigger phrase | the description — see `skill-301` |\n| 🔧 a tool | run its slash command | **is Arima running?** |\n\nThat last row is the one that catches people. Tool commands are pointers at a running Arima. If the agent and skill work but the tool command does not, start Arima before you debug anything else.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p501-sharing",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Handing it to someone else\n\n**A teammate, same repo.** Deploy to `project` and commit `.claude/plugins/<slug>/`. They pull, restart, and have it. Agents and skills work immediately. Tool commands need Arima running on **their** machine — say so in the plugin's README, which is what its markdown cells become.\n\n**Someone without Arima.** Agents and skills are plain markdown and work anywhere. Tools do not travel. If the bundle must stand alone, rewrite the tools as skills that describe the work, or accept that the recipient needs Arima.\n\n**Back upstream.** If a plugin would help other Arima users, the member *notebooks* are the thing to contribute, not the bundle — ask your agentic CLI to package them as a PR, following `AGENTS.md`.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p501-checklist",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Before you ship\n\n- [ ] The description says what someone gets, not what it contains.\n- [ ] No member shows as missing on the plugin's card.\n- [ ] Deployed to `bundle` and every generated file read at least once.\n- [ ] No secret in any member — especially a connector's `env`.\n- [ ] `version` bumped, major if a tool's required parameters changed.\n- [ ] Installed to `project`, CLI restarted, and all three kinds verified.\n- [ ] The README cells say whether Arima must be running.\n- [ ] You know how to undo it — the Deployed section, and **Undeploy**.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p501-end",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## The whole arc\n\nThat is the factory, end to end:\n\n| Section | Builds | Deploys as |\n|---|---|---|\n| 🔧 Tools | a callable function | a pointer over MCP |\n| ⭐ Skills | know-how | a markdown file |\n| 🤖 Agents | a worker with tools | a markdown file |\n| 🔌 Connectors | access to an outside server | an `.mcp.json` entry |\n| 📦 Plugins | all of the above, together | an installable directory |\n\nFive kinds, one storage format — every one of them is a notebook you can open, read and run. Nothing in the bundle is generated from something you cannot see.\n\nGo build the thing you actually needed when you started reading.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

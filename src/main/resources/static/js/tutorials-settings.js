@@ -10,13 +10,17 @@
  * the set at any time. Everything re-renders live on language / progress changes.
  */
 const TutorialsSettings = (function () {
-  const LANG_LABEL = { arima:'Arima Guide', jshell:'JShell', java:'Java', javascript:'JavaScript', typescript:'TypeScript',
-    csharp:'C#', fsharp:'F#', cpp:'C++', python:'Python' };
-  const LANG_ICON  = { arima:'📘', jshell:'☕', java:'♨', javascript:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙', python:'🐍' };
-  // 'arima' is a meta-guide about the product — always shown first, regardless of language selection.
-  const ORDER = ['arima', 'jshell', 'java', 'javascript', 'typescript', 'csharp', 'fsharp', 'cpp', 'python'];
-  const ALWAYS = ['arima'];
-  const SUBCAT_ORDER = ['Basics & Foundations', 'Advanced', 'Data Science & Analytics'];
+  const LANG_LABEL = { arima:'Arima Guide', agent:'Agents', jshell:'JShell', java:'Java', javascript:'JavaScript',
+    typescript:'TypeScript', csharp:'C#', fsharp:'F#', cpp:'C++', python:'Python' };
+  const LANG_ICON  = { arima:'📘', agent:'🤖', jshell:'☕', java:'♨', javascript:'⬡', typescript:'◆', csharp:'◈', fsharp:'◈', cpp:'⚙', python:'🐍' };
+  // 'arima' and 'agent' are about the product, not a programming language — always shown, and
+  // never offered in the Languages picker.
+  const ORDER = ['arima', 'agent', 'jshell', 'java', 'javascript', 'typescript', 'csharp', 'fsharp', 'cpp', 'python'];
+  const ALWAYS = ['arima', 'agent'];
+  const PICKABLE = ORDER.filter(l => !ALWAYS.includes(l));
+  // The Agents track is read as five sections, one per thing you can build, each running 101→501.
+  const SUBCAT_ORDER = ['Basics & Foundations', 'Advanced', 'Data Science & Analytics',
+    'Tools', 'Skills', 'Agents', 'Connectors', 'Plugins'];
 
   let tutorials = null;     // cached catalog (demos filtered out)
   let activeLang = null;    // active language tab
@@ -32,7 +36,7 @@ const TutorialsSettings = (function () {
     const grid = document.getElementById('lang-select-grid');
     if (!grid || grid.dataset.built) return;
     const sel = new Set(LangPrefs.get());
-    grid.innerHTML = ORDER.map(l => `
+    grid.innerHTML = PICKABLE.map(l => `
       <label class="lang-chip${sel.has(l) ? ' on' : ''}">
         <input type="checkbox" value="${l}"${sel.has(l) ? ' checked' : ''}>
         <span class="lang-chip-icon">${LANG_ICON[l]}</span>${LANG_LABEL[l]}

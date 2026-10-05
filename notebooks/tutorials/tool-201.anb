@@ -1,0 +1,87 @@
+{
+  "id": "tool-201",
+  "name": "Tool 201 · Typed Parameters",
+  "description": "Intermediate tool — the four parameter types, required versus optional, defaults, and what Arima does with a bad argument before your code ever runs.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Tools",
+    "language": "agent",
+    "level": 201,
+    "kind": "tool",
+    "tool": {
+      "mode": "nodejs",
+      "params": [
+        {
+          "name": "amount",
+          "type": "number",
+          "description": "The amount to convert",
+          "required": true
+        },
+        {
+          "name": "rate",
+          "type": "number",
+          "description": "Units of target per unit of source",
+          "required": false,
+          "default": "0.92"
+        },
+        {
+          "name": "places",
+          "type": "integer",
+          "description": "Decimal places in the result",
+          "required": false,
+          "default": "2"
+        },
+        {
+          "name": "verbose",
+          "type": "boolean",
+          "description": "Show the working",
+          "required": false,
+          "default": "false"
+        }
+      ]
+    }
+  },
+  "cells": [
+    {
+      "id": "t201-types",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Typed Parameters\n\nA tool's signature is not documentation — it is enforced. Four types:\n\n| Type | Accepts | Bound as |\n|---|---|---|\n| `string` | anything | the text |\n| `integer` | whole numbers | a 64-bit integer |\n| `number` | decimals | a double |\n| `boolean` | `true` / `false` | a real boolean |\n\nArima coerces each argument to its declared type **before** the body runs. Hand `places` the value `\"abc\"` and the call fails with *\"Parameter 'places' expects an integer\"* — your code never sees it.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t201-required",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Required, optional, default\n\nEach parameter is one of three things:\n\n- **Required** (`req` ticked, no default) — omit it and the call is refused.\n- **Optional with a default** — omit it and the default is used. `rate` below defaults to `0.92`.\n- **Optional with no default** — omit it and you get the type's zero: `\"\"`, `0`, `0.0`, `false`.\n\nThe third case is the one that bites. An optional `number` you forgot to give a default silently arrives as `0`, and a division quietly produces `Infinity`. If a parameter has a sensible value, **write the default down**.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t201-body",
+      "type": "CODE",
+      "mode": "nodejs",
+      "source": "const converted = amount * rate;\nconst result = converted.toFixed(places);\n\nif (verbose) {\n  console.log(`${amount} x ${rate} = ${converted}`);\n  console.log(`rounded to ${places} place(s):`);\n}\nconsole.log(result);",
+      "output": "",
+      "executed": false,
+      "anchor": "convert"
+    },
+    {
+      "id": "t201-schema",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## The signature is the API\n\nThat table becomes a JSON Schema — `GET /api/tools/tool-201/schema` returns it, and the MCP server hands the same schema to every connected client:\n\n```json\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"amount\": { \"type\": \"number\", \"description\": \"The amount to convert\" },\n    \"rate\":   { \"type\": \"number\", \"description\": \"Units of target per unit of source\" }\n  },\n  \"required\": [\"amount\"]\n}\n```\n\nWhich means **the `description` column is not a comment**. It is what an agent reads to decide what to pass. `\"Units of target per unit of source\"` tells a model something; `\"the rate\"` tells it nothing.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t201-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Call with `amount = 100` and nothing else — the defaults fill in.\n2. Set `places` to `0` and call again.\n3. Tick `verbose` and watch the working appear.\n4. Now untick **req** on `amount`, remove its value, and call — you get `0.00` instead of an error. That is the silent-zero trap. Put `req` back.\n\nNext: `tool-301` writes the same tool in four other languages.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

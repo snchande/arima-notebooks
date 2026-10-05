@@ -1,0 +1,65 @@
+{
+  "id": "connector-401",
+  "name": "Connector 401 · Connector Tools in an Agent",
+  "description": "Advanced connector — calling a connector's tools, mixing them with tools you authored, and where each one actually runs.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Connectors",
+    "language": "agent",
+    "level": 401,
+    "kind": "connector",
+    "connector": {
+      "transport": "stdio",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-everything"
+      ],
+      "url": "",
+      "env": {},
+      "enabled": true
+    }
+  },
+  "cells": [
+    {
+      "id": "c401-call",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Connector Tools in an Agent\n\nProbing tells you what a server offers. Calling one of its tools is the next step:\n\n```bash\ncurl -s -X POST http://localhost:8585/api/connectors/call \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"connectorId\":\"connector-401\",\"tool\":\"echo\",\n       \"args\":{\"message\":\"hello from Arima\"}}'\n```\n\nArima opens the conversation, sends `tools/call`, flattens the content blocks the server returns into text, and hands it back. If the connector is remote, the approval gate fires first — for the call, not just the probe.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c401-three",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Three places a tool can live\n\nBy now an agent can reach tools from three different places, and it is worth being clear about where each one runs:\n\n| Kind | Written by | Runs | Reached via |\n|---|---|---|---|\n| 🔧 Arima tool | you, as a notebook | inside Arima | `arima_<name>` over MCP |\n| 🔌 Connector tool | someone else | in their server | the connector |\n| CLI built-in | the CLI vendor | in the CLI | a plain grant, e.g. `Read` |\n\nAll three appear as tool grants on an agent. The difference that matters is **trust**: you can read the body of an Arima tool. You cannot read the inside of a connector.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c401-pattern",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## The useful pattern: wrap, do not expose\n\nHanding an agent a connector's raw tool surface is rarely the best move — a server with thirty tools eats the context window and the model picks badly.\n\nInstead, **wrap the one call you need in an Arima tool**:\n\n```python\n# body of an Arima tool, mode: python\nimport json, urllib.request\n\nreq = urllib.request.Request(\n    \"http://127.0.0.1:8585/api/connectors/call\",\n    data=json.dumps({\"connectorId\": \"connector-401\",\n                     \"tool\": \"echo\",\n                     \"args\": {\"message\": message}}).encode(),\n    headers={\"Content-Type\": \"application/json\"})\nprint(json.load(urllib.request.urlopen(req)).get(\"output\", \"\"))\n```\n\nNow the agent sees **one** well-named tool with a signature you wrote, and the thirty it does not need stay out of its way. The connector is an implementation detail.\n\nThat request goes to `127.0.0.1` — Arima calling itself — so it adds no outbound host of its own.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c401-fail",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## When it goes wrong\n\n- **`Connector 'x' is disabled`** — the enabled switch is off.\n- **`Reaching ... was not approved`** — the gate fired and was denied or timed out. Nothing was sent.\n- **The tool reported an error** — this came from the *server*, not from Arima. Its text is the server's own message; take it up with the server.\n- **Unknown tool** — probe again. Servers change their tool list between versions, and an `npx`-launched one may have updated under you.\n\nBecause each call is its own conversation, a failure never leaves a broken session behind. Fix the cause and call again.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c401-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Probe this connector and pick a tool from the list.\n2. Call it with the `curl` above, adjusting `tool` and `args` to match its schema.\n3. Create an Arima tool that wraps it, with a signature of your own choosing.\n4. Grant that tool to an agent and watch it use the connector without knowing there is one.\n\nNext: `connector-501` gives the harness the same connector.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

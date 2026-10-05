@@ -206,6 +206,19 @@ public class DeploymentService {
         return removed;
     }
 
+    /**
+     * Drop a record without touching the files, for a deploy whose target is <em>shared</em> — a
+     * connector's {@code .mcp.json} holds other servers' entries too, so its service edits the file
+     * itself and then calls this instead of {@link #undeploy}.
+     */
+    public synchronized boolean forget(String id, String target) {
+        String t = normalizeTarget(target);
+        List<Deployment> all = load();
+        boolean removed = all.removeIf(d -> id.equals(d.getId()) && t.equals(d.getTarget()));
+        if (removed) save(all);
+        return removed;
+    }
+
     // -- internals -------------------------------------------------------------
 
     /** Paths relative to their target's scope where possible — nicer in the UI than absolutes. */

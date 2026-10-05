@@ -89,10 +89,10 @@ If a change requires modifying any of these, open an issue first and tag `@sncha
 
 ### 2.6 The Agent Factory
 
-Agents, skills, tools and plugins are all **notebooks** with a `metadata.kind` flag — `agent`,
-`skill`, `tool` or `plugin`. There is no separate store, no new `CellType`, and no new model: each
-kind's service (`AgentService`, `ToolService`, `PluginService`) projects the notebook into a spec
-record (`AgentSpec`, `ToolSpec`, `PluginSpec`). Preserve that:
+Agents, skills, tools, connectors and plugins are all **notebooks** with a `metadata.kind` flag.
+There is no separate store, no new `CellType`, and no new model: each kind's service
+(`AgentService`, `ToolService`, `ConnectorService`, `PluginService`) projects the notebook into a
+spec record (`AgentSpec`, `ToolSpec`, `ConnectorSpec`, `PluginSpec`). Preserve that:
 
 - **Do not add a storage format** for a definition. If a new kind is needed, it is another
   `metadata.kind` value plus a service that projects it.
@@ -108,6 +108,15 @@ record (`AgentSpec`, `ToolSpec`, `PluginSpec`). Preserve that:
 - Tools reach the outside world over the **existing MCP server** (`arima_<tool_name>` entries
   generated from the catalog). A deployed plugin's `.mcp.json` points back at Arima's own loopback
   endpoint — that is not a new outbound host, and must not become one.
+- **Connectors are the one place Arima can reach a host it did not ship with, and the rule stands.**
+  A `stdio` connector is a local subprocess and an `sse` connector to loopback never leaves the
+  machine; neither needs permission. A connector pointed at a remote host **must** pass through
+  `ApprovalService` before every probe and every call, and must be refused when the user denies or
+  does not answer. Never add a default remote endpoint, never cache an approval across calls, and
+  never let a code path reach `McpClient` with a remote spec without passing the gate first.
+- A connector's `command` is handed to `ProcessBuilder(List<String>)` as argv. **Never build it into
+  a shell string** — that is §2.3, and it is why connector commands do not expand `~` or honour
+  `&&`.
 
 ---
 

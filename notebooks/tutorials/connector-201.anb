@@ -1,0 +1,66 @@
+{
+  "id": "connector-201",
+  "name": "Connector 201 · stdio in Depth",
+  "description": "Intermediate connector — argv, environment variables, where secrets go, and how to read the error when a server will not start.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Connectors",
+    "language": "agent",
+    "level": 201,
+    "kind": "connector",
+    "connector": {
+      "transport": "stdio",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ],
+      "url": "",
+      "env": {},
+      "enabled": true
+    }
+  },
+  "cells": [
+    {
+      "id": "c201-argv",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# stdio in Depth\n\nA stdio connector is a subprocess. The **command** field is an argv list — a program and its arguments — and it is handed to the operating system as a list, never to a shell.\n\nThat is a security property, not a detail. There is no shell, so there is no shell injection: a `;` or a backtick in an argument is just a character. It also means **shell syntax does not work**:\n\n| You might write | What happens |\n|---|---|\n| `npx server --path ~/docs` | `~` is passed literally, not expanded |\n| `server && other` | `&&` becomes an argument to `server` |\n| `server \"two words\"` | splits into `two` and `words` |\n\nWrite absolute paths. If you genuinely need a shell, make the shell the program: `bash -lc \"...\"`.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c201-env",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Environment and secrets\n\nMost interesting servers want credentials. The **env** field takes `KEY=value` pairs, space-separated, and they are added to the subprocess's environment:\n\n```\nGITHUB_PERSONAL_ACCESS_TOKEN=ghp_xxx  LOG_LEVEL=debug\n```\n\n**Where that value lives matters.** It is stored in the connector notebook, which is a file under `notebooks/<you>/`. So:\n\n- Do **not** commit a connector notebook with a real token in it.\n- Prefer a server that reads its own credential file or keychain, if it offers one.\n- If you must put a token in `env`, treat that notebook the way you treat `data/settings.json` — personal, gitignored, never shared.\n\nA deployed connector copies `env` into the harness's `.mcp.json` too, which is another file that then holds the secret. Know where your tokens are.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c201-debug",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## When it will not start\n\nArima gives the subprocess 30 seconds, then reports what it captured. Reading the error:\n\n| Error | Usually means |\n|---|---|\n| `Cannot run program \"npx\"` | the program is not on PATH — install it, or use an absolute path |\n| `the server sent no reply within 30s` | it started but never spoke MCP — wrong package, or it is waiting on a prompt |\n| stderr about a missing argument | the server needs a path or flag you did not pass |\n| an auth error from the server | `env` is missing or wrong |\n\nA server that writes logs to **stdout** instead of stderr will confuse any MCP client. Arima skips lines that are not JSON, which rescues most of them, but a server that interleaves log text *inside* a JSON message cannot be saved — look for a quiet mode or a `--log-file` flag.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c201-lifecycle",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## One conversation per call\n\nArima does not hold a connector open. Each probe and each tool call launches the server, exchanges messages, and shuts it down.\n\nThat is a deliberate trade:\n\n- **Good:** nothing to leak, nothing to reconnect after a restart, no stale subprocess when you edit the command.\n- **Cost:** a startup per call. For `npx`-launched servers that is a second or two after the first download.\n\nIf a server is slow to start and you call it constantly, run it yourself as a long-lived process with an SSE endpoint and connect to that instead — which is `connector-301`.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c201-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Probe this one. `server-filesystem .` exposes the directory Arima was started in.\n2. Change `.` to a path that does not exist and probe again — read the stderr in the error.\n3. Set **env** to `LOG_LEVEL=debug` and probe once more.\n4. Try `command` = `node --version`. It starts and exits without speaking MCP, so you get the *no reply* error — the signature of \"that program is not an MCP server\".\n\nNext: `connector-301` on SSE and the approval gate.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

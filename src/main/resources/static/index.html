@@ -469,13 +469,14 @@
         <div class="section-head agents-head">
           <div>
             <h2>The Agent Factory</h2>
-            <p>Author <b>agents</b>, <b>skills</b>, <b>tools</b> and <b>plugins</b> — each one <em>is</em> a notebook. Markdown cells are the instructions; a tool's code cells are its body. Run them here, then deploy them to the files your agentic CLI reads.</p>
+            <p>Author <b>agents</b>, <b>skills</b>, <b>tools</b>, <b>connectors</b> and <b>plugins</b> — each one <em>is</em> a notebook. Markdown cells are the instructions; a tool's code cells are its body. Run them here, then deploy them to the files your agentic CLI reads.</p>
           </div>
           <div class="agents-head-actions">
             <button class="btn-primary" id="agents-new-agent">+ New Agent</button>
             <button class="btn-secondary" id="agents-new-skill">+ New Skill</button>
             <button class="btn-secondary" id="agents-new-tool">+ New Tool</button>
             <button class="btn-secondary" id="agents-new-plugin">+ New Plugin</button>
+            <button class="btn-secondary" id="agents-new-connector">+ New Connector</button>
             <button class="btn-secondary" id="agents-refresh" title="Refresh list">↻</button>
           </div>
         </div>
@@ -499,6 +500,15 @@
             <span class="agents-subnote">Callable functions written in any of the eight languages. Every tool is advertised to MCP clients as <code>arima_&lt;name&gt;</code>.</span>
           </div>
           <div id="tools-grid" class="agents-grid"></div>
+        </div>
+
+        <!-- Connectors -->
+        <div class="agents-section">
+          <div class="agents-subhead">
+            Connectors
+            <span class="agents-subnote">External MCP servers Arima attaches to. The mirror of Arima's own MCP server: their tools become usable here, and deploy adds them to a CLI's <code>.mcp.json</code>.</span>
+          </div>
+          <div id="connectors-grid" class="agents-grid"></div>
         </div>
 
         <!-- Plugins -->
@@ -1843,6 +1853,7 @@ dotnet fsi --version  # verify F# Interactive</pre>
 <script src="/js/agents-tab.js"></script>
 <script src="/js/tools-tab.js"></script>
 <script src="/js/plugins-tab.js"></script>
+<script src="/js/connectors-tab.js"></script>
 <script src="/js/tutorial-player.js"></script>
 <script src="/js/tutorials-settings.js"></script>
 <script src="/js/home.js"></script>

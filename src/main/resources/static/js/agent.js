@@ -7,13 +7,14 @@
  *
  *   agent / skill — name · description · provider · tool grants, a Run dock, and Deploy
  *   tool          — name · description · language · a parameter table, and a Call dock
+ *   connector     — transport · endpoint · env, a Probe dock, and Deploy into a .mcp.json
  *   plugin        — name · description · version · member picker, and Deploy
  *
  * Runs stream over the existing STOMP channel (partial_output, cellId "__agent_run__"); nothing
  * here is a new endpoint or topic.
  *
  * Backend: /api/agents/{create,run,deploy,providers}, /api/tools/{create,invoke},
- * /api/plugins/{create,deploy,targets}.
+ * /api/connectors/{create,probe,deploy}, /api/plugins/{create,deploy,targets}.
  */
 const Agent = (function () {
   const RUN_CELL_ID = '__agent_run__';
@@ -23,7 +24,7 @@ const Agent = (function () {
     ['csharp', 'C#'], ['fsharp', 'F#'], ['cpp', 'C++'], ['python', 'Python']
   ];
   const PARAM_TYPES = ['string', 'integer', 'number', 'boolean'];
-  const KIND_ICONS = { agent: '🤖', skill: '⭐', tool: '🔧', plugin: '📦' };
+  const KIND_ICONS = { agent: '🤖', skill: '⭐', tool: '🔧', connector: '🔌', plugin: '📦' };
 
   let current = null;      // the open definition notebook (same ref as NotebookEditor's notebook)
   let avail = {};          // provider -> available
@@ -54,6 +55,7 @@ const Agent = (function () {
     if (kind === 'agent' || kind === 'skill') renderAgentUI(nb, kind);
     else if (kind === 'tool') renderToolUI(nb);
     else if (kind === 'plugin') renderPluginUI(nb);
+    else if (kind === 'connector') renderConnectorUI(nb);
   }
 
   function removeUI() {
@@ -532,6 +534,164 @@ const Agent = (function () {
       } else {
         Arima.setStatus('Deploy failed: ' + ((r && r.error) || 'unknown'));
       }
+    } catch (e) { Arima.setStatus('Deploy failed: ' + (e.message || e)); }
+  }
+
+  // ── Connectors ───────────────────────────────────────────────────────
+
+  function connectorMeta() {
+    current.metadata = current.metadata || {};
+    current.metadata.connector = current.metadata.connector
+      || { transport: 'stdio', command: [], url: '', env: {}, enabled: true };
+    const c = current.metadata.connector;
+    if (!Array.isArray(c.command)) c.command = [];
+    if (typeof c.env !== 'object' || c.env === null) c.env = {};
+    return c;
+  }
+
+  /** True when the endpoint leaves this machine — the thing the approval gate exists for. */
+  function isRemote(meta) {
+    if (meta.transport !== 'sse' || !meta.url) return false;
+    try {
+      const h = new URL(meta.url).hostname;
+      return !(h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === '[::1]');
+    } catch { return true; }
+  }
+
+  function renderConnectorUI(nb) {
+    const meta = connectorMeta();
+    const sse = meta.transport === 'sse';
+    const envRows = Object.entries(meta.env);
+
+    const endpointField = sse
+      ? `<label class="tool-arg-row">
+           <span class="tool-arg-name">url<span class="tool-arg-type">sse</span></span>
+           <input id="conn-url" class="tool-arg" value="${esc(meta.url)}" spellcheck="false"
+                  placeholder="http://127.0.0.1:3000/sse" />
+         </label>`
+      : `<label class="tool-arg-row">
+           <span class="tool-arg-name">command<span class="tool-arg-type">argv</span></span>
+           <input id="conn-command" class="tool-arg" value="${esc(meta.command.join(' '))}" spellcheck="false"
+                  placeholder="npx -y @modelcontextprotocol/server-filesystem /some/path" />
+         </label>`;
+
+    const banner = `
+      <div class="agent-banner-row">
+        <span class="agent-kind connector">CONNECTOR</span>
+        <input id="agent-name" class="agent-name" value="${esc(nb.name)}" spellcheck="false" />
+        <label class="agent-prov">transport
+          <select id="conn-transport">
+            <option value="stdio"${sse ? '' : ' selected'}>stdio — local subprocess</option>
+            <option value="sse"${sse ? ' selected' : ''}>sse — HTTP endpoint</option>
+          </select>
+        </label>
+        <label class="agent-prov">enabled
+          <input id="conn-enabled" type="checkbox"${meta.enabled ? ' checked' : ''} />
+        </label>
+        <label class="agent-prov">deploy to
+          <select id="agent-target">${targetOptions()}</select>
+        </label>
+        <button id="conn-deploy" class="agent-export" title="Add this server to the target's .mcp.json">⤓ Deploy</button>
+      </div>
+      <input id="agent-desc" class="agent-desc" value="${esc(nb.description)}" placeholder="Which server this connects to, and what its tools are for" />
+      <div class="conn-fields">
+        ${endpointField}
+        <label class="tool-arg-row">
+          <span class="tool-arg-name">env<span class="tool-arg-type">KEY=value</span></span>
+          <input id="conn-env" class="tool-arg" value="${esc(envRows.map(([k, v]) => k + '=' + v).join(' '))}"
+                 spellcheck="false" placeholder="GITHUB_TOKEN=... (space-separated)" />
+        </label>
+      </div>
+      <div class="agent-hint">
+        ${isRemote(meta)
+          ? '<b class="conn-remote-warn">This endpoint leaves your machine.</b> Every probe and every call asks you to approve it first — Arima will not reach a remote host on its own.'
+          : 'This connector stays on your machine, so nothing needs approving. Point it at a non-loopback URL and every connection goes through the approval gate instead.'}
+      </div>`;
+
+    const dock = `
+      <div class="agent-dock-head">⇄ Probe server</div>
+      <div class="agent-dock-actions">
+        <button id="conn-probe" class="agent-run">⇄ Probe</button>
+        <span id="agent-run-status" class="agent-run-status"></span>
+      </div>
+      <pre id="agent-output" class="agent-output" hidden></pre>`;
+
+    if (!mount(banner, dock)) return;
+    wireConnector(nb);
+  }
+
+  function wireConnector(nb) {
+    const nameEl = document.getElementById('agent-name');
+    const descEl = document.getElementById('agent-desc');
+
+    const persist = (rerender) => {
+      const meta = connectorMeta();
+      nb.name = nameEl.value.trim() || nb.name;
+      nb.description = descEl.value.trim();
+      meta.transport = document.getElementById('conn-transport').value;
+      meta.enabled = document.getElementById('conn-enabled').checked;
+
+      const urlEl = document.getElementById('conn-url');
+      const cmdEl = document.getElementById('conn-command');
+      if (urlEl) meta.url = urlEl.value.trim();
+      // argv, split on whitespace — never handed to a shell, so quoting is not a thing here.
+      if (cmdEl) meta.command = cmdEl.value.trim().split(/\s+/).filter(Boolean);
+
+      const env = {};
+      (document.getElementById('conn-env').value || '').trim().split(/\s+/).filter(Boolean)
+        .forEach(pair => {
+          const i = pair.indexOf('=');
+          if (i > 0) env[pair.slice(0, i)] = pair.slice(i + 1);
+        });
+      meta.env = env;
+
+      NotebookEditor.save();
+      if (rerender) { removeUI(); renderConnectorUI(nb); }
+    };
+
+    nameEl?.addEventListener('change', () => persist(false));
+    descEl?.addEventListener('change', () => persist(false));
+    document.getElementById('conn-transport')?.addEventListener('change', () => persist(true));
+    document.getElementById('conn-enabled')?.addEventListener('change', () => persist(false));
+    document.getElementById('conn-url')?.addEventListener('change', () => persist(true));
+    document.getElementById('conn-command')?.addEventListener('change', () => persist(false));
+    document.getElementById('conn-env')?.addEventListener('change', () => persist(false));
+
+    document.getElementById('conn-probe')?.addEventListener('click', probeConnector);
+    document.getElementById('conn-deploy')?.addEventListener('click', () =>
+      deployConnector(document.getElementById('agent-target')?.value));
+  }
+
+  async function probeConnector() {
+    const outEl = document.getElementById('agent-output');
+    const statusEl = document.getElementById('agent-run-status');
+    const btn = document.getElementById('conn-probe');
+    const remote = isRemote(connectorMeta());
+
+    outEl.hidden = false; outEl.textContent = '';
+    btn.disabled = true; btn.textContent = '● Connecting…';
+    statusEl.textContent = remote ? 'remote — waiting for your approval' : 'connecting';
+
+    try {
+      const r = await Arima.api('POST', '/connectors/probe', { connectorId: current.id });
+      outEl.textContent = window.ConnectorsTab
+        ? ConnectorsTab.renderProbe(r)
+        : JSON.stringify(r, null, 1);
+      statusEl.textContent = r && r.success ? `${(r.tools || []).length} tool(s)` : 'failed';
+    } catch (e) {
+      outEl.textContent = 'Error: ' + (e.message || e);
+      statusEl.textContent = 'error';
+    } finally {
+      btn.disabled = false; btn.textContent = '⇄ Probe';
+    }
+  }
+
+  async function deployConnector(target) {
+    try {
+      const r = await Arima.api('POST', '/connectors/deploy',
+        { connectorId: current.id, target: target || 'project' });
+      if (r && r.success) Arima.setStatus(`Connector ${r.slug} → ${r.targetLabel} (${r.path})`);
+      else Arima.setStatus('Deploy failed: ' + ((r && r.error) || 'unknown'));
     } catch (e) { Arima.setStatus('Deploy failed: ' + (e.message || e)); }
   }
 

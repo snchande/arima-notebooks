@@ -5590,3 +5590,11 @@ body.fre-on #fre-tip { display: block; }
   .tool-arg-row { flex-direction: column; align-items: stretch; gap: 4px; }
   .tool-arg-name { flex: none; }
 }
+
+/* Connectors — external MCP servers. */
+.agent-kind.connector { color: var(--cyan, #7ec8e3); background: rgba(126,200,227,.14); border-color: var(--cyan, #7ec8e3); }
+.connector-remote { font-family: var(--font-code); font-size: 11px; color: var(--yellow); }
+.connector-local  { font-family: var(--font-code); font-size: 11px; color: var(--green); }
+.conn-fields { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
+.conn-remote-warn { color: var(--yellow); }
+.agent-prov input[type="checkbox"] { accent-color: var(--purple); }

@@ -1,0 +1,67 @@
+{
+  "id": "tool-301",
+  "name": "Tool 301 · Any of the Eight Languages",
+  "description": "Intermediate tool — a tool body can be written in any language Arima executes. How the binding differs, what each language is good for, and how to choose.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Tools",
+    "language": "agent",
+    "level": 301,
+    "kind": "tool",
+    "tool": {
+      "mode": "jshell",
+      "params": [
+        {
+          "name": "n",
+          "type": "integer",
+          "description": "How many Fibonacci numbers to produce",
+          "required": true,
+          "default": "10"
+        }
+      ]
+    }
+  },
+  "cells": [
+    {
+      "id": "t301-idea",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Any of the Eight Languages\n\nThe **language** picker in the banner is not cosmetic. It decides which execution service runs the body — the very same ones your ordinary notebook cells use — and how the parameters are declared before it.\n\nThe caller cannot tell. A Python tool and a C++ tool present the identical JSON Schema over MCP. Pick the language that suits the *job*, not the caller.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t301-binding",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## How each language receives a parameter\n\nGiven `n` declared as an `integer` with the value `10`, Arima prepends:\n\n| Language | Preamble line |\n|---|---|\n| JShell / Java | `long n = 10L;` |\n| JavaScript / TypeScript | `const n = 10;` |\n| Python | `n = 10` |\n| C# | `long n = 10;` |\n| F# | `let n = 10L` |\n| C++ | `long long n = 10;` |\n\nA `string` is emitted as a quoted literal with newlines, tabs and quotes escaped, so multi-line text arrives intact. You never parse arguments yourself.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t301-body",
+      "type": "CODE",
+      "mode": "jshell",
+      "source": "long a = 0, b = 1;\nStringBuilder out = new StringBuilder();\nfor (long i = 0; i < n; i++) {\n    out.append(a).append(i < n - 1 ? \", \" : \"\");\n    long next = a + b;\n    a = b;\n    b = next;\n}\nSystem.out.println(out);",
+      "output": "",
+      "executed": false,
+      "anchor": "fib"
+    },
+    {
+      "id": "t301-choosing",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Choosing\n\n| Reach for | When |\n|---|---|\n| **Python** | text, data, anything with a PyPI package behind it |\n| **JavaScript** | JSON shaping, npm modules, quick string work |\n| **TypeScript** | the same, when you want the types checked |\n| **JShell** | you want Maven libraries and no ceremony |\n| **Java** | a real `main`, threads, heavier work |\n| **C# / F#** | .NET libraries, or you simply think better in them |\n| **C++** | numeric work where the speed actually matters |\n\nA tool's packages come from the same managers as everywhere else: Maven for JShell/Java, npm for JS/TS, NuGet for C#/F#, PyPI for Python. Install in the Packages tab and the tool body can import it.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t301-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Call it with `n = 15`.\n2. Switch **language** to Python and replace the body with:\n\n   ```python\n   a, b = 0, 1\n   out = []\n   for _ in range(n):\n       out.append(a)\n       a, b = b, a + b\n   print(\", \".join(map(str, out)))\n   ```\n\n   Call it again — same signature, same output, different runtime.\n3. Check `GET /api/tools/tool-301/schema` before and after. Identical.\n\nNext: `tool-401` hands a tool to an agent.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

@@ -8,8 +8,8 @@
  * channel agent.js uses (partial_output, cellId "__agent_run__") — and deploys one into a chosen
  * target (/api/agents/deploy). Active runs surface in a "running now" strip.
  *
- * Tools and plugins live in sibling modules (tools-tab.js, plugins-tab.js); refresh() drives all
- * three so one ↻ reloads the whole factory.
+ * Tools, connectors and plugins live in sibling modules (tools-tab.js, connectors-tab.js,
+ * plugins-tab.js); refresh() drives all of them so one ↻ reloads the whole factory.
  */
 const AgentsTab = (function () {
   const RUN_CELL_ID = '__agent_run__';
@@ -63,6 +63,7 @@ const AgentsTab = (function () {
     }
     // One ↻ reloads the whole factory.
     if (window.ToolsTab) ToolsTab.refresh();
+    if (window.ConnectorsTab) ConnectorsTab.refresh();
     if (window.PluginsTab) PluginsTab.refresh();
   }
 

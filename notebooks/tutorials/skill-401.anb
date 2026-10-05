@@ -1,0 +1,58 @@
+{
+  "id": "skill-401",
+  "name": "Skill 401 · Skills, Agents and Tools Together",
+  "description": "Advanced skill — choosing between the three, and composing them so each does the part it is actually good at.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Skills",
+    "language": "agent",
+    "level": 401,
+    "kind": "skill",
+    "agent": {
+      "provider": "claude",
+      "tools": []
+    }
+  },
+  "cells": [
+    {
+      "id": "s401-three",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Skills, Agents and Tools Together\n\nThree kinds, three jobs:\n\n| | Is | Decides nothing / something | Runs code |\n|---|---|---|---|\n| ⭐ **Skill** | know-how | nothing — it informs | no |\n| 🤖 **Agent** | a worker | what to do next | no, it asks for tools |\n| 🔧 **Tool** | a function | nothing — it computes | yes |\n\nMost people reach for an agent when they want a skill, and for a skill when they want a tool. The test:\n\n- Is the answer **deterministic**? That is a tool. Counting lines, parsing a file, calling an API — do not ask a model to do arithmetic.\n- Does it need **judgement, in one shot**? That is a skill. Formatting, naming, choosing a style.\n- Does it need **judgement, in several steps, with tools**? That is an agent.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s401-compose",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Composing them\n\nThe pattern that works, in order of how often you will want it:\n\n**Skill + tool.** The skill says *how to present something*; a tool produces the numbers. The skill mentions the tool by name so the model knows it exists.\n\n**Agent + tools.** The agent plans; the tools do the deterministic parts. Grant the agent only the tools it needs — a long grant list makes for worse choices.\n\n**Agent + skills.** The agent works; the skills shape the output when they are relevant. You do not wire this up — deployed skills are available to the agent in the harness automatically.\n\n**Everything, in a plugin.** When the set is coherent, bundle it. That is `plugin-201`.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s401-worked",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## A worked example\n\n*\"Review my changes and write the commit message.\"*\n\nBuilt badly, that is one agent with a long prompt doing all of it — and it will miscount the files, then write a message in whatever style it felt like.\n\nBuilt well, it is four pieces:\n\n| Piece | Kind | Why |\n|---|---|---|\n| `diff-stat` | 🔧 tool | counting is deterministic; a model should not guess |\n| `code-reviewer` | 🤖 agent | the review needs judgement and steps |\n| `commit-message` | ⭐ skill | the format is a convention, not a decision |\n| `review-kit` | 📦 plugin | ships the three together |\n\nEach piece is independently testable, and you can fix the commit format without touching the reviewer.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s401-smells",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Smells\n\n- **An agent whose prompt contains a format specification.** The format wants to be a skill.\n- **A skill that explains how to compute something.** That computation wants to be a tool.\n- **A tool that asks for a judgement call in a parameter.** Move the judgement up to the agent and keep the tool dumb.\n- **An agent with nine tool grants.** Split it, or drop the grants it has never used.\n- **Two skills that fire on the same phrase.** One of them will lose. Merge them.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s401-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\nTake something you do by hand each week and decompose it on paper first: which part is deterministic, which is a convention, which needs steps. Then build exactly those pieces — and resist putting any of them in the agent prompt.\n\nNext: `skill-501` deploys skills to the harness.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

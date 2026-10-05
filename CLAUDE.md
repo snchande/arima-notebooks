@@ -132,6 +132,7 @@ arima/
 │   │   ├── AgentService                #   Agents & skills: author, run, deploy
 │   │   ├── AgentProvider              #   One per agentic CLI — Claude, Copilot, Antigravity
 │   │   ├── ToolService                #   Tools: a notebook as a callable function (any of the 8)
+│   │   ├── ConnectorService / McpClient  # Connectors: external MCP servers Arima attaches to
 │   │   ├── PluginService              #   Plugins: bundle agents/skills/tools into a plugin dir
 │   │   ├── DeploymentService          #   Deploy targets (project/user/bundle) + reversible record
 │   │   ├── ClaudeService / GitHubCopilotService / CopilotCliService / GeminiService  # AI providers (Copilot→SDK; Gemini slot→Antigravity agy)
@@ -140,7 +141,7 @@ arima/
 │   └── controller/                    # REST + WebSocket — thin, one service call each:
 │       ├── NotebookController  ShellController  PackageController
 │       ├── NpmPackageController  NuGetController  LLMController
-│       ├── AgentController  ToolController  PluginController   #   The Agent Factory
+│       ├── AgentController  ToolController  ConnectorController  PluginController  # Agent Factory
 │       ├── SettingsController  SystemController  UserController
 │       └── McpController               #   MCP server (/api/mcp/sse, /api/mcp/messages)
 ├── src/main/resources/

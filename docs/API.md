@@ -331,6 +331,7 @@ separate storage format — the service for each kind projects the notebook into
 | `agent` | markdown cells = system prompt | — | `metadata.agent` (`provider`, `tools`) |
 | `skill` | markdown cells = instructions | — | `metadata.agent.provider` |
 | `tool` | markdown cells = docs | **code cells, any of the 8 languages** | `metadata.tool` (`mode`, `params`) |
+| `connector` | markdown cells = setup notes | an external MCP server | `metadata.connector` (`transport`, `command`/`url`, `env`, `enabled`) |
 | `plugin` | markdown cells = README | — | `metadata.plugin` (`version`, `author`, `members`) |
 
 Each provider knows how to **run** a definition (invoke the CLI, streaming output over the STOMP
@@ -338,9 +339,9 @@ topic `/topic/shell/{sessionId}` as `partial_output` with `cellId = "__agent_run
 **deploy** it into that CLI's native files. Three providers are registered: `claude`
 (`.claude/`), `copilot` (`.github/`) and `gemini` → Antigravity (`.antigravity/`).
 
-Built-in samples: `agent-101`, `agent-201`, `agent-301`, `agent-401` (reviewer in a pipeline),
-`agent-501` (multi-agent review), `agent-601` (MCP-driven), `skill-101`, `tool-101` (word count),
-`plugin-101` (review kit).
+Built-in samples run 101 to 501 in five sections — `agent-101`..`agent-601`,
+`skill-101`..`skill-501`, `tool-101`..`tool-501`, `connector-101`..`connector-501`,
+`plugin-101`..`plugin-501`. They are the Agents tutorial track.
 
 All of it is reachable over **MCP**: `barista_list_agents` / `barista_run_agent` for agents,
 `barista_list_tools` / `barista_invoke_tool` for tools, plus one `arima_<tool_name>` entry per
@@ -463,6 +464,71 @@ POST /api/tools/invoke
 **Response 200:** `{ "success": true, "output": "...", "returnValue": null, "error": "", "executionTimeMs": 222, "tool": "word-count", "mode": "python" }`
 
 A missing required argument returns `{ "success": false, "error": "Tool 'X' requires parameter 'y'." }`.
+
+---
+
+## Connectors
+
+A connector is an **external MCP server Arima attaches to** — the mirror of Arima's own MCP
+server. Its tools become callable from here, and deploying it adds the server to an agentic CLI's
+`.mcp.json`.
+
+Two transports:
+
+| `transport` | Config | Leaves the machine |
+|---|---|---|
+| `stdio` | `command` (argv list), `env` | no — a local subprocess |
+| `sse` | `url` | only if the host is not loopback |
+
+**The network rule.** A `stdio` connector is a subprocess and an `sse` connector to `127.0.0.1` or
+`localhost` never leaves the machine, so neither adds an outbound host. An `sse` connector pointed
+at a **remote** host does, so every probe and every call first blocks on the approval gate
+(`ApprovalService`, the same one that guards non-local access) and is refused unless the user
+approves that specific connection. The host is always the user's own choice, never a default.
+
+### List connectors
+```
+GET /api/connectors/list
+```
+**Response 200:** array of `{ id, name, slug, description, transport, endpoint, remote, enabled, source, deployedTo[] }`.
+
+### Create a connector notebook
+```
+POST /api/connectors/create
+{ "name": "github", "transport": "stdio" }
+```
+
+### Probe
+```
+POST /api/connectors/probe
+{ "connectorId": "connector-101" }
+```
+Connects, runs `initialize` then `tools/list`, and disconnects.
+**Response 200:** `{ "success": true, "serverName": "...", "serverVersion": "...", "transport": "stdio", "endpoint": "...", "remote": false, "tools": [{ "name", "description", "inputSchema" }] }`
+
+A denied or unanswered approval returns
+`{ "success": false, "error": "Reaching <endpoint> was not approved." }` — nothing is sent.
+
+### Call a tool
+```
+POST /api/connectors/call
+{ "connectorId": "connector-101", "tool": "echo", "args": { "message": "hi" } }
+```
+**Response 200:** `{ "success": true, "output": "...", "tool": "echo" }` — the server's content
+blocks, flattened to text.
+
+### Deploy
+```
+POST /api/connectors/deploy
+{ "connectorId": "connector-101", "target": "project" }
+```
+**Merges** the connector into that target's `.mcp.json` rather than replacing the file: only this
+connector's key is added or updated, and entries put there by anything else survive.
+`POST /api/connectors/undeploy` removes just that key, deleting the file only when nothing is left
+in it.
+
+Each probe and each call is its own short-lived conversation — Arima holds no connection open,
+so there is nothing to leak and nothing to reconnect after a restart.
 
 ---
 

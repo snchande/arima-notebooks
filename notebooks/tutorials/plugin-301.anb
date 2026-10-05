@@ -1,0 +1,63 @@
+{
+  "id": "plugin-301",
+  "name": "Plugin 301 · Inside the Bundle",
+  "description": "Intermediate plugin — every file a deploy writes, what reads it, and why the tools are pointers rather than copies.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Plugins",
+    "language": "agent",
+    "level": 301,
+    "kind": "plugin",
+    "plugin": {
+      "version": "1.0.0",
+      "author": "Arima Notebooks",
+      "members": [
+        "agent-101",
+        "skill-101",
+        "tool-101"
+      ]
+    }
+  },
+  "cells": [
+    {
+      "id": "p301-layout",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Inside the Bundle\n\nDeploy this plugin to `bundle` and open `data/plugins/plugin-301-inside-the-bundle/`. Six files, each with one job:\n\n```\n.claude-plugin/plugin.json   the manifest - this is what makes it a plugin\nagents/<name>.md             one per member agent\nskills/<name>/SKILL.md       one per member skill\ncommands/<name>.md           one per member tool\n.mcp.json                    how the commands reach Arima\nREADME.md                    these cells\n```\n\nNothing is generated that you could not have written by hand. That is the point — you can read a bundle and know exactly what installing it does.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p301-manifest",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## plugin.json\n\n```json\n{\n  \"name\": \"plugin-301-inside-the-bundle\",\n  \"version\": \"1.0.0\",\n  \"description\": \"Intermediate plugin - every file a deploy writes...\",\n  \"author\": { \"name\": \"Arima Notebooks\" }\n}\n```\n\n| Field | Comes from |\n|---|---|\n| `name` | the notebook name, kebab-cased — also the directory name |\n| `version` | the **version** box in the banner |\n| `description` | the notebook description, whitespace collapsed to one line |\n| `author` | the **author** field in `metadata.plugin` |\n\nThe CLI reads this to decide the plugin exists at all. A bundle without it is just a directory.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p301-members",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## The member files\n\n**Agents and skills** are copies. Frontmatter generated from the notebook's name, description and tool grants, then every markdown cell as the body. Self-contained — they work whether or not Arima is running.\n\n**Tools are not copies.** A tool's body is Python or C# or JShell; copying it would mean copying a runtime. Instead you get a command:\n\n```markdown\n---\ndescription: Counts words, lines and characters in a block of text.\n---\n\nInvoke the Arima tool `tool-101-word-count` over the `arima` MCP server\n(tool name `arima_tool_101_word_count`).\n\nParameters:\n\n- `text` (string, required) - The text to measure\n- `detailed` (boolean, optional) - Also list the five most frequent words\n```\n\nThe CLI user types a slash command; the call lands in Arima; your notebook's body runs.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p301-mcp",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## .mcp.json, and the trade it makes\n\n```json\n{ \"mcpServers\": { \"arima\": {\n    \"type\": \"sse\",\n    \"url\": \"http://127.0.0.1:8585/api/mcp/sse\" } } }\n```\n\nWritten only when the plugin has at least one tool member — a bundle of pure skills does not need it.\n\nThe address is **loopback**, which decides the trade:\n\n| | |\n|---|---|\n| **Gained** | edit the tool notebook and every installed copy changes, with no redeploy |\n| **Gained** | the implementation never leaves your machine |\n| **Cost** | tool commands only work while Arima is running |\n| **Cost** | the bundle is not portable to another machine's CLI unless Arima runs there too |\n\nSkills and agents in the same bundle keep working regardless. Only the tool commands depend on the pointer.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p301-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Deploy to `bundle` and read all six files.\n2. Edit `tool-101`'s body, then look at the bundle again — unchanged, because the command is a pointer.\n3. Edit `skill-101`'s text and look again — also unchanged, because that one *is* a copy and needs a redeploy.\n4. Remove the tool member and redeploy. `commands/` and `.mcp.json` both go.\n\nNext: `plugin-401` on versions and iterating.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

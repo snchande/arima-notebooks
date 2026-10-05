@@ -1,0 +1,73 @@
+{
+  "id": "tool-401",
+  "name": "Tool 401 · Giving a Tool to an Agent",
+  "description": "Advanced tool — how a tool grant reaches an agent's prompt, what the agent actually sees, and how to write a tool a model will use correctly.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Tools",
+    "language": "agent",
+    "level": 401,
+    "kind": "tool",
+    "tool": {
+      "mode": "python",
+      "params": [
+        {
+          "name": "path",
+          "type": "string",
+          "description": "Repository-relative path to inspect",
+          "required": true
+        },
+        {
+          "name": "max_lines",
+          "type": "integer",
+          "description": "Stop after this many lines",
+          "required": false,
+          "default": "40"
+        }
+      ]
+    }
+  },
+  "cells": [
+    {
+      "id": "t401-grant",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Giving a Tool to an Agent\n\nOpen any agent and look at the **tool chips** in its banner. Each chip is a grant. Arima resolves every grant against the tools you have authored:\n\n- **Matches an Arima tool** — the agent's prompt gains that tool's full signature and its MCP name.\n- **Matches nothing** — it is passed through to the CLI as one of its own built-ins (`Read`, `Grep`, `Bash`, and friends).\n\nSo one chip list covers both worlds, and you never have to say which is which.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t401-sees",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## What the agent actually sees\n\nGrant this tool to an agent and its system prompt grows a section:\n\n```markdown\n## Tools available in Arima\n\nThese are notebook-authored tools on this machine. Call one over the `arima` MCP\nserver, or ask the user to run it, and use its printed output.\n\n### `arima_tool_401_giving_a_tool_to_an_agent`\nReads the head of a file so an agent can see what it is working with.\n\nParameters:\n- `path` (string, required) — Repository-relative path to inspect\n- `max_lines` (integer, optional) — Stop after this many lines\n```\n\nThat text is generated from the parameter table. **Your descriptions are the agent's only documentation.** A vague one produces a wrong call.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t401-body",
+      "type": "CODE",
+      "mode": "python",
+      "source": "import os\n\n# Confine reads to the working tree - an agent should not be able to walk out of it\n# just by passing a crafted path.\nroot = os.path.abspath(os.getcwd())\ntarget = os.path.abspath(os.path.join(root, path))\n\nif not target.startswith(root):\n    print(f\"refused: {path} is outside the working tree\")\nelif not os.path.isfile(target):\n    print(f\"not found: {path}\")\nelse:\n    with open(target, encoding=\"utf-8\", errors=\"replace\") as fh:\n        for i, line in enumerate(fh):\n            if i >= max_lines:\n                print(f\"... truncated at {max_lines} lines\")\n                break\n            print(f\"{i + 1:>4}  {line.rstrip()}\")",
+      "output": "",
+      "executed": false,
+      "anchor": "head"
+    },
+    {
+      "id": "t401-writing",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Writing a tool a model will use well\n\n- **Name it for the job**, not the implementation. `fetch-quote` beats `http-get-json`.\n- **One description sentence that says when to reach for it.** The model is choosing between tools, not reading a manual.\n- **Few parameters.** Every optional one is a chance to guess wrong. Give defaults.\n- **Print a result, not a log.** Whatever lands on stdout is what the agent reads back — progress chatter becomes part of the answer.\n- **Fail in words.** `refused: path is outside the working tree` is something a model can recover from; a stack trace is not.\n- **Guard the edges.** A tool runs with your permissions. The body above refuses paths outside the working tree, and yours should refuse whatever it must.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t401-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Call it with `path = README.md` and `max_lines = 12`.\n2. Call it with `path = ../../etc/passwd` and watch it refuse.\n3. Open **agent-201 · Code Reviewer**, press **+ tool**, and type this notebook's name. Run the agent and ask it to review a file — the signature is now in its prompt.\n4. Try the same grant with the name `Bash`. No Arima tool matches, so it passes straight through to the CLI.\n\nNext: `tool-501` sends it out to the harness.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}
