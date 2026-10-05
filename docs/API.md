@@ -321,23 +321,37 @@ GET /api/shell/{sessionId}/info
 
 ---
 
-## Agents & Skills
+## Agents, Skills, Tools & Plugins
 
-An "agent notebook" is a normal notebook with `metadata.kind = "agent" | "skill"`. Its markdown cells,
-concatenated, are the system prompt; `metadata.agent.tools` holds declared tools (agents only). Each
-provider (Claude in v0) knows how to **run** it (invoke the CLI, streaming output over the STOMP topic
-`/topic/shell/{sessionId}` as `partial_output` with `cellId = "__agent_run__"`) and **export** it to that
-CLI's native files. Built-in samples: `agent-101`, `agent-201`, `agent-301`, `agent-401`
-(reviewer in a pipeline), `agent-501` (multi-agent review), `agent-601` (MCP-driven), `skill-101`.
+A **definition** is a normal notebook with `metadata.kind` set to one of four values. There is no
+separate storage format — the service for each kind projects the notebook into a spec.
 
-Agents are also reachable over **MCP** — `barista_list_agents` enumerates them and `barista_run_agent`
-runs one by id — so any MCP client can compose the same agents you author here (see the MCP section).
+| `metadata.kind` | Instructions / docs | Implementation | Metadata block |
+|---|---|---|---|
+| `agent` | markdown cells = system prompt | — | `metadata.agent` (`provider`, `tools`) |
+| `skill` | markdown cells = instructions | — | `metadata.agent.provider` |
+| `tool` | markdown cells = docs | **code cells, any of the 8 languages** | `metadata.tool` (`mode`, `params`) |
+| `connector` | markdown cells = setup notes | an external MCP server | `metadata.connector` (`transport`, `command`/`url`, `env`, `enabled`) |
+| `plugin` | markdown cells = README | — | `metadata.plugin` (`version`, `author`, `members`) |
+
+Each provider knows how to **run** a definition (invoke the CLI, streaming output over the STOMP
+topic `/topic/shell/{sessionId}` as `partial_output` with `cellId = "__agent_run__"`) and how to
+**deploy** it into that CLI's native files. Three providers are registered: `claude`
+(`.claude/`), `copilot` (`.github/`) and `gemini` → Antigravity (`.antigravity/`).
+
+Built-in samples run 101 to 501 in five sections — `agent-101`..`agent-601`,
+`skill-101`..`skill-501`, `tool-101`..`tool-501`, `connector-101`..`connector-501`,
+`plugin-101`..`plugin-501`. They are the Agents tutorial track.
+
+All of it is reachable over **MCP**: `barista_list_agents` / `barista_run_agent` for agents,
+`barista_list_tools` / `barista_invoke_tool` for tools, plus one `arima_<tool_name>` entry per
+authored tool carrying its own JSON Schema (see the MCP section).
 
 ### Provider availability
 ```
 GET /api/agents/providers
 ```
-**Response 200:** `{ "claude": true }`
+**Response 200:** `{ "claude": true, "copilot": true, "gemini": false }`
 
 ### Create an agent/skill notebook
 ```
@@ -353,13 +367,217 @@ POST /api/agents/run
 ```
 **Response 200:** `{ "output": "...", "provider": "claude", "success": true }` — output also streams live via STOMP.
 
-### Export to native files
+A tool grant in `metadata.agent.tools` that matches a tool authored in Arima is resolved before the
+run: the agent's prompt gains that tool's signature and its `arima_<name>` MCP name. Grants that
+match no Arima tool are passed through as the CLI's own built-ins (`Read`, `Bash`, …).
+
+### Deploy
+
+```
+POST /api/agents/deploy
+{ "notebookId": "agent-201", "provider": "claude", "target": "project" }
+```
+**Response 200:**
+```json
+{ "success": true, "kind": "agent", "slug": "code-reviewer", "target": "project",
+  "targetLabel": "this project (repo root)", "provider": "claude",
+  "paths": [".claude/agents/code-reviewer.md"], "path": ".claude/agents/code-reviewer.md",
+  "deployedAt": "2026-10-05T05:08:27Z" }
+```
+
+Targets:
+
+| `target` | Writes under | Meaning |
+|---|---|---|
+| `project` | repo root | this checkout only |
+| `user` | `~` | every project on this machine |
+| `bundle` | `data/` | staged copy, nothing installed |
+
+Skills deploy to `skills/<name>/SKILL.md` under the provider's folder; agents to
+`agents/<name>.md`. Every write is recorded in `data/deployments.json`, which is what makes a
+deploy reversible.
+
 ```
 POST /api/agents/export
 { "notebookId": "agent-201", "provider": "claude" }
 ```
+A thin alias of `deploy` with `target: "project"`, kept for existing callers.
 **Response 200:** `{ "path": ".claude/agents/code-reviewer.md", "success": true }`
-(skills export to `.claude/skills/<name>/SKILL.md`).
+
+### Deployments
+```
+GET /api/agents/deployments
+```
+**Response 200:** an array of `{ id, kind, slug, target, targetLabel, provider, paths[], deployedAt, present }`,
+newest first. `present` is false when the files were removed outside Arima.
+
+```
+POST /api/agents/undeploy
+{ "id": "agent-201", "target": "project" }
+```
+**Response 200:** `{ "success": true, "removed": 1, "target": "project" }` — deletes exactly the
+recorded paths and prunes the directories they emptied; never touches anything it did not write.
+
+---
+
+## Tools
+
+A tool is a notebook you can **call**. `metadata.tool.params` is the signature; the code cells are
+the body. On invocation each argument is validated, coerced to its declared type, and bound as a
+variable of the same name in the tool's own language before the body runs through that language's
+execution service. Whatever the tool prints is its return value.
+
+Parameter types: `string` · `integer` · `number` · `boolean`. Body modes: the eight Arima executes
+(`jshell`, `java`, `nodejs`, `typescript`, `csharp`, `fsharp`, `cpp`, `python`).
+
+### List tools
+```
+GET /api/tools/list
+```
+**Response 200:** array of `{ id, name, slug, description, mode, params[], paramCount, hasBody, source }`.
+
+### Body modes
+```
+GET /api/tools/modes
+```
+**Response 200:** `["jshell","java","nodejs","typescript","csharp","fsharp","cpp","python"]`
+
+### Create a tool notebook
+```
+POST /api/tools/create
+{ "name": "word-count", "mode": "python" }
+```
+Returns the created `Notebook`, pre-seeded with a docs cell, one `input` parameter, and a runnable body.
+
+### Parameter schema
+```
+GET /api/tools/{id}/schema
+```
+**Response 200:** `{ "name": "arima_word_count", "description": "...", "mode": "python", "inputSchema": { … } }`
+— the same JSON Schema the MCP server advertises.
+
+### Invoke
+```
+POST /api/tools/invoke
+{ "toolId": "tool-101", "args": { "text": "hello world", "detailed": "true" }, "sessionId": "nb-..." }
+```
+**Response 200:** `{ "success": true, "output": "...", "returnValue": null, "error": "", "executionTimeMs": 222, "tool": "word-count", "mode": "python" }`
+
+A missing required argument returns `{ "success": false, "error": "Tool 'X' requires parameter 'y'." }`.
+
+---
+
+## Connectors
+
+A connector is an **external MCP server Arima attaches to** — the mirror of Arima's own MCP
+server. Its tools become callable from here, and deploying it adds the server to an agentic CLI's
+`.mcp.json`.
+
+Two transports:
+
+| `transport` | Config | Leaves the machine |
+|---|---|---|
+| `stdio` | `command` (argv list), `env` | no — a local subprocess |
+| `sse` | `url` | only if the host is not loopback |
+
+**The network rule.** A `stdio` connector is a subprocess and an `sse` connector to `127.0.0.1` or
+`localhost` never leaves the machine, so neither adds an outbound host. An `sse` connector pointed
+at a **remote** host does, so every probe and every call first blocks on the approval gate
+(`ApprovalService`, the same one that guards non-local access) and is refused unless the user
+approves that specific connection. The host is always the user's own choice, never a default.
+
+### List connectors
+```
+GET /api/connectors/list
+```
+**Response 200:** array of `{ id, name, slug, description, transport, endpoint, remote, enabled, source, deployedTo[] }`.
+
+### Create a connector notebook
+```
+POST /api/connectors/create
+{ "name": "github", "transport": "stdio" }
+```
+
+### Probe
+```
+POST /api/connectors/probe
+{ "connectorId": "connector-101" }
+```
+Connects, runs `initialize` then `tools/list`, and disconnects.
+**Response 200:** `{ "success": true, "serverName": "...", "serverVersion": "...", "transport": "stdio", "endpoint": "...", "remote": false, "tools": [{ "name", "description", "inputSchema" }] }`
+
+A denied or unanswered approval returns
+`{ "success": false, "error": "Reaching <endpoint> was not approved." }` — nothing is sent.
+
+### Call a tool
+```
+POST /api/connectors/call
+{ "connectorId": "connector-101", "tool": "echo", "args": { "message": "hi" } }
+```
+**Response 200:** `{ "success": true, "output": "...", "tool": "echo" }` — the server's content
+blocks, flattened to text.
+
+### Deploy
+```
+POST /api/connectors/deploy
+{ "connectorId": "connector-101", "target": "project" }
+```
+**Merges** the connector into that target's `.mcp.json` rather than replacing the file: only this
+connector's key is added or updated, and entries put there by anything else survive.
+`POST /api/connectors/undeploy` removes just that key, deleting the file only when nothing is left
+in it.
+
+Each probe and each call is its own short-lived conversation — Arima holds no connection open,
+so there is nothing to leak and nothing to reconnect after a restart.
+
+---
+
+## Plugins
+
+A plugin bundles agents, skills and tools into one installable Claude Code plugin directory:
+
+```
+<target>/plugins/<slug>/
+  .claude-plugin/plugin.json   name, version, description, author
+  agents/<slug>.md             each member agent
+  skills/<slug>/SKILL.md       each member skill
+  commands/<slug>.md           one per member tool
+  .mcp.json                    points back at Arima's MCP server
+  README.md                    the plugin notebook's markdown cells
+```
+
+Member **tools are not copied into the bundle** — they stay in Arima and the generated command
+reaches them over the in-process MCP server. One source of truth, and no new outbound host.
+
+### List plugins
+```
+GET /api/plugins/list
+```
+**Response 200:** array of `{ id, name, slug, description, version, author, members[], memberCount, source, deployedTo[] }`
+where each member is `{ id, name, kind, missing }`.
+
+### Deploy targets
+```
+GET /api/plugins/targets
+```
+**Response 200:** `[{ "key": "project", "label": "this project (repo root)", "root": "...", "pluginRoot": "..." }, …]`
+
+### Create a plugin notebook
+```
+POST /api/plugins/create
+{ "name": "review-kit" }
+```
+
+### Deploy
+```
+POST /api/plugins/deploy
+{ "pluginId": "plugin-101", "target": "project" }
+```
+**Response 200:** `{ "success": true, "slug": "review-kit", "target": "project", "targetLabel": "...", "fileCount": 6, "root": "...", "deployedAt": "..." }`
+
+Members that no longer resolve are skipped with a warning rather than failing the bundle. A
+redeploy replaces the previous files and removes any the new build no longer produces. Undeploy via
+`POST /api/agents/undeploy` with the plugin's id.
 
 ---
 
@@ -950,6 +1168,14 @@ Handles JSON-RPC 2.0 messages.
 | `barista_append_cell` | `notebookId`, `source` | Append a cell, optionally execute |
 | `barista_list_agents` | *(none)* | List agent & skill definitions (yours + samples) |
 | `barista_run_agent` | `agentId`, `task` | Run an agent/skill against a task, return its response |
+| `barista_list_tools` | *(none)* | List the tools authored as notebooks, with their parameters |
+| `barista_invoke_tool` | `toolId` | Call a tool by id with an `args` map |
+| `arima_<tool_name>` | *the tool's own* | One entry per authored tool, carrying its real JSON Schema |
+
+The `arima_<tool_name>` entries are generated from the tool catalog on every `tools/list`, so a
+client sees `arima_word_count(text, detailed)` rather than a generic dispatcher — authoring a tool
+in Arima is all it takes to give every connected MCP client a new callable tool. A tool with no
+code cells yet is omitted (there is nothing to call).
 
 ---
 

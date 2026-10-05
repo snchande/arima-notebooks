@@ -1,0 +1,66 @@
+{
+  "id": "connector-501",
+  "name": "Connector 501 · Deploying a Connector to the Harness",
+  "description": "Advanced connector — writing the server into a CLI's .mcp.json, choosing a scope, and removing it again without disturbing anyone else's entries.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Connectors",
+    "language": "agent",
+    "level": 501,
+    "kind": "connector",
+    "connector": {
+      "transport": "stdio",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ],
+      "url": "",
+      "env": {},
+      "enabled": true
+    }
+  },
+  "cells": [
+    {
+      "id": "c501-what",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Deploying a Connector to the Harness\n\nDeploying a connector does not move anything. The server stays where it is; the harness is told how to reach it, by adding an entry to `.mcp.json` — the file every agentic CLI reads to learn which MCP servers it has.\n\nA stdio connector becomes:\n\n```json\n{ \"mcpServers\": {\n    \"connector-501-deploying-a-connector-to-the-harness\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@modelcontextprotocol/server-filesystem\", \".\"]\n    } } }\n```\n\nAn sse connector becomes `{ \"type\": \"sse\", \"url\": \"...\" }`. Either way the CLI now talks to that server **directly** — Arima is not in the path at all.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c501-merge",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## It merges, it does not overwrite\n\n`.mcp.json` is shared. Your CLI may already have servers in it, put there by you or by another tool. So a connector deploy:\n\n1. Reads the existing file if there is one.\n2. Adds or replaces **only this connector's key**.\n3. Writes the file back with everything else intact.\n\nUndeploy is the same in reverse: it removes only this connector's key, and deletes the file only if nothing is left in it. An entry you added by hand survives both.\n\nIf the existing file is not valid JSON, Arima says so in the log and writes a fresh one rather than guessing — worth knowing before you deploy over a file you have been editing.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c501-scope",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Scopes\n\n| Target | File | Who gets it |\n|---|---|---|\n| `project` | `<repo>/.claude/.mcp.json` | this checkout — commit it and the team does too |\n| `user` | `~/.claude/.mcp.json` | every project you open on this machine |\n| `bundle` | `data/.mcp.json` | nobody — staged so you can read it |\n\n**Think before committing a project deploy.** The entry travels to everyone who pulls the repo, and it will try to launch on their machine. Fine for `npx -y @modelcontextprotocol/server-filesystem .`, which is self-installing and harmless. Not fine for a command with your absolute home path in it, or an `env` carrying your token — `connector-201` said where secrets end up, and this is the place that bites.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c501-both",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Arima and the harness, side by side\n\nAfter deploying, the same server is reachable two ways:\n\n```\n  You, in Arima        ->  Arima  ->  the server\n  You, in Claude Code  ------------>  the server\n```\n\nThat is usually what you want: notebooks and agents here, the CLI there, one configuration. But know the consequences.\n\n- **The approval gate is Arima's, not the CLI's.** A remote connector deployed to the harness is reached by the CLI under *its* rules, not Arima's. The gate protects calls that go through Arima.\n- **Two clients, two subprocesses.** For stdio servers each client launches its own. Servers holding an exclusive lock on something may object.\n- **Edits do not propagate.** Change the command here and the deployed `.mcp.json` still has the old one until you deploy again. Unlike a tool, there is no live pointer — this is a copy.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c501-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Deploy this connector to `bundle` and open `data/.mcp.json`.\n2. Add a second server to that file by hand, then deploy again — your entry survives.\n3. **Undeploy** from the Deployed section and confirm only this connector's key went.\n4. Deploy to `project`, restart your CLI, and ask it what MCP servers it has.\n\nThat completes the Connectors section. Next: Plugins, which ship all of this as one unit.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

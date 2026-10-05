@@ -4,7 +4,7 @@
   "description": "Interwork — a Java cell feeds an agent cell, which binds its answer back for a final Java cell. Run the pipeline.",
   "metadata": {
     "category": "tutorial",
-    "subcategory": "Agents & Skills",
+    "subcategory": "Agents",
     "language": "agent",
     "level": 401
   },

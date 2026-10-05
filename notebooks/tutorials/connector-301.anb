@@ -1,0 +1,61 @@
+{
+  "id": "connector-301",
+  "name": "Connector 301 · SSE and the Approval Gate",
+  "description": "Intermediate connector — HTTP endpoints, the difference loopback makes, and the gate that stands between Arima and any host outside your machine.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Connectors",
+    "language": "agent",
+    "level": 301,
+    "kind": "connector",
+    "connector": {
+      "transport": "sse",
+      "command": [],
+      "url": "http://127.0.0.1:8585/api/mcp/sse",
+      "env": {},
+      "enabled": true
+    }
+  },
+  "cells": [
+    {
+      "id": "c301-sse",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# SSE and the Approval Gate\n\nThe second transport is **sse**: the server is already running somewhere and listening over HTTP. Arima opens the stream, reads the endpoint the server names, posts JSON-RPC there, and reads the replies back off the stream.\n\nUse it when the server is long-lived, shared between several clients, or simply not something you want to launch per call.\n\nThis connector is pointed at **Arima's own MCP endpoint** — a loop, deliberately. Probe it and you will see Arima's own tool catalog come back through the client half of the same program. It is the clearest demonstration there is that the two halves are the same protocol.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c301-loopback",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Loopback is not the network\n\nArima's security model is simple: **it binds to `127.0.0.1` and it does not reach outside your machine on its own.** Code runs here with your permissions, so reachability is the boundary.\n\nA connector respects that:\n\n| Endpoint | Leaves the machine? | Approval |\n|---|---|---|\n| `stdio` command | no — a subprocess | none needed |\n| `http://127.0.0.1:...` | no | none needed |\n| `http://localhost:...` | no | none needed |\n| `https://mcp.example.com/sse` | **yes** | **every time** |\n\nThe card in the Agents tab labels each connector `local` or `remote`, so you can see at a glance which is which.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c301-gate",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## What the gate does\n\nPoint a connector at a real host and the next probe does not just happen. Arima:\n\n1. Stops before opening the connection.\n2. Raises an approval request naming the connector and the exact endpoint.\n3. Waits for you to approve or deny it in the browser.\n4. Refuses if you deny — **or if you do not answer**.\n\nThis is the same gate that guards non-local access to Arima itself, reused rather than reinvented. It fires per connection, not once per connector: approving a probe does not pre-approve tomorrow's tool call.\n\nThe point is that the outbound host is always **your** choice, made at the moment it happens. Arima ships with no remote hosts of its own.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c301-remote",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Working with a remote server\n\nIf you do connect to one:\n\n- **Probe once and read the tool list carefully.** Those tools will run with whatever credentials that server holds.\n- **Know what the server can see.** An MCP server with your repository mounted can read all of it.\n- **Prefer a local proxy when one exists.** Many hosted services publish a stdio server that talks to their API; that keeps the gate out of your way and the credential on your machine.\n- **Leave it disabled when you are not using it.** The **enabled** switch stops agents reaching it without deleting the configuration.\n\nIf the browser is closed when a gate fires, nothing happens until you open it — the request simply expires and the call is refused.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "c301-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Probe this connector as it stands. Loopback — no gate, and Arima's own tools come back.\n2. Change the **url** host to `arima.invalid` and probe. The banner now warns you it leaves the machine, and the gate fires before any connection is attempted.\n3. Deny it, and read the error: *\"Reaching ... was not approved.\"*\n4. Put `127.0.0.1` back.\n\nNext: `connector-401` uses a connector's tools from an agent.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

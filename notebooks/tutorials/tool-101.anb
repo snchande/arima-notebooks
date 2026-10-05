@@ -1,0 +1,65 @@
+{
+  "id": "tool-101",
+  "name": "Tool 101 · Word Count",
+  "description": "Beginner tool — counts words, lines and characters in a block of text. Shows how a notebook becomes a callable tool with a real signature.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Tools",
+    "language": "agent",
+    "level": 101,
+    "kind": "tool",
+    "tool": {
+      "mode": "python",
+      "params": [
+        {
+          "name": "text",
+          "type": "string",
+          "description": "The text to measure",
+          "required": true
+        },
+        {
+          "name": "detailed",
+          "type": "boolean",
+          "description": "Also list the five most frequent words",
+          "required": false,
+          "default": "false"
+        }
+      ]
+    }
+  },
+  "cells": [
+    {
+      "id": "t101-what",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Word Count\n\nA **tool** is a notebook you can *call*. Three things make it one:\n\n1. `metadata.kind = \"tool\"` — set for you when you create it.\n2. A **signature** — the parameter table in the banner above.\n3. A **body** — the code cells below, in any of the eight languages.\n\nBefore the body runs, every parameter is bound as a variable of the same name. This tool declares `text` (required) and `detailed` (optional), so the Python body below can just use them. Whatever the tool prints is what the caller gets back.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t101-body",
+      "type": "CODE",
+      "mode": "python",
+      "source": "words = text.split()\nlines = text.count(\"\\n\") + 1 if text else 0\n\nprint(f\"words:      {len(words)}\")\nprint(f\"lines:      {lines}\")\nprint(f\"characters: {len(text)}\")\n\nif detailed and words:\n    from collections import Counter\n    top = Counter(w.lower().strip(\".,!?;:'\\\"\") for w in words).most_common(5)\n    print(\"\\ntop words:\")\n    for word, n in top:\n        print(f\"  {word:<15} {n}\")",
+      "output": "",
+      "executed": false,
+      "anchor": "count"
+    },
+    {
+      "id": "t101-call",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Calling it\n\nThree ways, all the same tool:\n\n- **Here** — the *Call tool* dock below fills itself in from the signature.\n- **From the Agents tab** — the tool's card has its own call form.\n- **From any MCP client** — it is advertised as `arima_tool_101_word_count` with this exact schema, so Claude Code can call it directly. `barista_list_tools` shows the whole catalog.\n\nAn **agent** reaches it the same way: grant the tool by name in the agent's banner, and the agent's prompt gains the signature and the MCP name. That is `tool-401`.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t101-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Put a paragraph in the `text` box below and press **Call**.\n2. Flip `detailed` to `true` and call it again.\n3. Now clear `text` entirely and call it — you get *\"requires parameter 'text'\"* rather than a crash, because the parameter is marked required. Validation happens before a line of your body runs.\n\nNext: `tool-201` on the four parameter types and what defaults really do.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

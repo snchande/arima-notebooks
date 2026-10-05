@@ -3,10 +3,11 @@ package com.barista.service;
 import com.barista.model.AgentSpec;
 import com.barista.model.Cell;
 import com.barista.model.CellType;
+import com.barista.model.Deployment;
 import com.barista.model.ExecutionResult;
 import com.barista.model.Notebook;
+import com.barista.model.ToolSpec;
 import com.barista.shell.JShellManager;
-import com.barista.util.BaristaHome;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -24,10 +25,14 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Author / run / export agents and skills. An "agent notebook" is a normal {@link Notebook} with
+ * Author / run / deploy agents and skills. An "agent notebook" is a normal {@link Notebook} with
  * {@code metadata.kind = "agent" | "skill"}; this service projects it into an {@link AgentSpec} and
  * dispatches to the selected {@link AgentProvider}. Reuses the STOMP {@code partial_output} channel
  * for live run output — no new endpoints or WebSocket topics.
+ *
+ * Tool grants are resolved against the tools authored in Arima ({@link ToolService}), so an agent
+ * that names one gets its signature and MCP name in the prompt; deploys are recorded by
+ * {@link DeploymentService} so they can be undone.
  */
 @Service
 public class AgentService {
@@ -41,6 +46,8 @@ public class AgentService {
     private final UserService userService;
     private final SimpMessagingTemplate messaging;
     private final JShellManager jShellManager;
+    private final ToolService toolService;
+    private final DeploymentService deployments;
     private final Map<String, AgentProvider> providers;
 
     private static final Pattern ANCHOR_REF = Pattern.compile("\\{\\{\\s*([A-Za-z0-9_-]+)\\s*\\}\\}");
@@ -49,11 +56,15 @@ public class AgentService {
                         UserService userService,
                         SimpMessagingTemplate messaging,
                         JShellManager jShellManager,
+                        ToolService toolService,
+                        DeploymentService deployments,
                         List<AgentProvider> providerBeans) {
         this.notebookService = notebookService;
         this.userService = userService;
         this.messaging = messaging;
         this.jShellManager = jShellManager;
+        this.toolService = toolService;
+        this.deployments = deployments;
         this.providers = providerBeans.stream()
                 .collect(Collectors.toMap(AgentProvider::key, p -> p, (a, b) -> a, LinkedHashMap::new));
     }
@@ -110,6 +121,9 @@ public class AgentService {
         card.put("tools", tools);
         card.put("source", source);
         card.put("cellCount", meta.getOrDefault("cellCount", 0));
+        card.put("deployedTo", DeploymentService.TARGETS.stream()
+                .filter(t -> deployments.isDeployed(str(meta.get("id")), t))
+                .collect(Collectors.toList()));
         return card;
     }
 
@@ -136,7 +150,7 @@ public class AgentService {
     /** Run the agent/skill in {@code notebookId} against {@code task}, streaming output to the browser. */
     public String run(String notebookId, String task, String providerKey, String sessionId) throws Exception {
         Notebook nb = loadOrThrow(notebookId);
-        AgentSpec spec = toSpec(nb);
+        AgentSpec spec = withToolDocs(toSpec(nb));
         AgentProvider provider = resolve(providerKey);
 
         final String topic = "/topic/shell/" + (sessionId == null ? notebookId : sessionId);
@@ -146,16 +160,100 @@ public class AgentService {
         return provider.run(spec, task, sink);
     }
 
-    /** Export the agent/skill to the provider's native files; returns the written path. */
-    public String export(String notebookId, String providerKey) throws Exception {
+    /**
+     * Deploy the agent/skill into {@code target} — the files the chosen agentic CLI actually reads.
+     * The provider decides the layout ({@code .claude/agents/<slug>.md} and so on);
+     * {@link DeploymentService} decides the root and records the write so it can be undone.
+     *
+     * @return {@code {slug, target, targetLabel, paths[], deployedAt}}
+     */
+    public Map<String, Object> deploy(String notebookId, String providerKey, String target)
+            throws Exception {
         Notebook nb = loadOrThrow(notebookId);
         AgentSpec spec = toSpec(nb);
         AgentProvider provider = resolve(providerKey);
-        Path repoRoot = BaristaHome.directory().toPath();
-        Path written = provider.export(spec, repoRoot);
-        // Return a repo-relative path when possible (nicer for the UI toast).
-        try { return repoRoot.relativize(written).toString().replace('\\', '/'); }
-        catch (Exception ignore) { return written.toString(); }
+        String t = deployments.normalizeTarget(target);
+
+        // Each provider appends its own native folder (.claude/, .github/, .antigravity/), so it
+        // gets the target's scope — the directory that folder is created in.
+        Path root = deployments.scopeRoot(t);
+        Path written = provider.export(spec, root);
+        Deployment record = deployments.record(nb.getId(), spec.kind().key(),
+                AgentSpec.slugify(spec.name()), t, provider.key(), List.of(written));
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("slug", record.getSlug());
+        out.put("kind", record.getKind());
+        out.put("target", record.getTarget());
+        out.put("targetLabel", deployments.labelFor(record.getTarget()));
+        out.put("provider", provider.key());
+        out.put("paths", List.of(relative(root, written)));
+        out.put("path", relative(root, written));   // the single path, for existing callers
+        out.put("deployedAt", record.getDeployedAt());
+        return out;
+    }
+
+    /**
+     * Export the agent/skill into this project — the original verb, now a thin alias of
+     * {@code deploy(..., "project")}. Returns the written path, relative where possible.
+     */
+    public String export(String notebookId, String providerKey) throws Exception {
+        return String.valueOf(deploy(notebookId, providerKey, "project").get("path"));
+    }
+
+    /** Everything Arima has deployed, across all targets. */
+    public List<Map<String, Object>> deployments() {
+        return deployments.deployments();
+    }
+
+    /** Remove a deploy; returns how many files were deleted. */
+    public int undeploy(String id, String target) {
+        return deployments.undeploy(id, target);
+    }
+
+    private String relative(Path root, Path written) {
+        try { return root.relativize(written).toString().replace('\\', '/'); }
+        catch (Exception ignore) { return written.toString().replace('\\', '/'); }
+    }
+
+    /**
+     * Resolve the agent's declared tool names against the tools authored in Arima, and append what
+     * it needs to actually call them: each tool's signature and its MCP name. Names that match no
+     * Arima tool are left to the provider as plain grants (they are the CLI's own built-ins, such
+     * as {@code Read} or {@code Bash}).
+     */
+    AgentSpec withToolDocs(AgentSpec spec) {
+        if (spec.kind() != AgentSpec.Kind.AGENT || spec.tools() == null || spec.tools().isEmpty()) {
+            return spec;
+        }
+        List<ToolSpec> arimaTools = new java.util.ArrayList<>();
+        for (String name : spec.tools()) {
+            toolService.specBySlug(AgentSpec.slugify(name))
+                    .or(() -> toolService.spec(name))
+                    .ifPresent(arimaTools::add);
+        }
+        if (arimaTools.isEmpty()) return spec;
+
+        StringBuilder sb = new StringBuilder(spec.body());
+        sb.append("\n\n## Tools available in Arima\n\n")
+          .append("These are notebook-authored tools on this machine. Call one over the `arima` MCP ")
+          .append("server, or ask the user to run it, and use its printed output.\n");
+        for (ToolSpec t : arimaTools) {
+            sb.append("\n### `arima_").append(t.slug().replace('-', '_')).append("`\n")
+              .append(t.description() == null || t.description().isBlank()
+                      ? "(no description)" : t.description().strip()).append('\n');
+            if (t.params().isEmpty()) {
+                sb.append("\nTakes no parameters.\n");
+            } else {
+                sb.append("\nParameters:\n");
+                for (ToolSpec.Param p : t.params()) {
+                    sb.append("- `").append(p.name()).append("` (").append(p.type())
+                      .append(p.required() ? ", required" : ", optional").append(") — ")
+                      .append(p.description() == null ? "" : p.description().strip()).append('\n');
+                }
+            }
+        }
+        return new AgentSpec(spec.name(), spec.description(), spec.kind(), spec.tools(), sb.toString());
     }
 
     /**
@@ -180,7 +278,7 @@ public class AgentService {
                 return agentError(sessionId, cellId, "Agent not found: '" + ac.agentId
                         + "'. Reference an agent notebook id or a built-in sample (agent-101 …).", start);
             }
-            AgentSpec spec = toSpec(def);
+            AgentSpec spec = withToolDocs(toSpec(def));
             AgentProvider provider = resolve(providerOf(def));
 
             String task = resolveAnchors(ac.task, host);

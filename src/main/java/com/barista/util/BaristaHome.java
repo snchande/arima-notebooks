@@ -30,4 +30,15 @@ public final class BaristaHome {
         File dir = new File(home);
         return dir.isDirectory() ? dir : null;
     }
+
+    /**
+     * The project root as a concrete directory, never {@code null} — for callers that must
+     * <em>write</em> somewhere (deploying an agent into {@code .claude/}) rather than merely hand
+     * a working directory to {@link ProcessBuilder}. Falls back to the JVM's working directory,
+     * which is already the repo root under {@code mvn spring-boot:run} and the launchers.
+     */
+    public static File root() {
+        File dir = directory();
+        return dir != null ? dir : new File(System.getProperty("user.dir", "."));
+    }
 }

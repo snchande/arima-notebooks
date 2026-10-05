@@ -1,0 +1,59 @@
+{
+  "id": "plugin-201",
+  "name": "Plugin 201 · Choosing Members",
+  "description": "Intermediate plugin — what belongs in one bundle, what does not, and why the answer is about the person installing it.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Plugins",
+    "language": "agent",
+    "level": 201,
+    "kind": "plugin",
+    "plugin": {
+      "version": "0.1.0",
+      "author": "Arima Notebooks",
+      "members": []
+    }
+  },
+  "cells": [
+    {
+      "id": "p201-question",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Choosing Members\n\nA plugin can hold any mix of agents, skills and tools. The question is not *what can go in* — it is **what the person installing it is trying to get**.\n\nA plugin is a unit of installation. Someone adds it because they want a capability, not because they want seven files. So the test for every member is:\n\n> If I removed this, would the plugin still deliver what its description promises?\n\nIf yes, it belongs in a different plugin.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p201-shapes",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Shapes that work\n\n**The workflow kit.** One agent, the tools it needs, and the skills that shape its output. `review-kit` is this: reviewer + counter + commit format. Coherent because you want all of it or none of it.\n\n**The house style.** Several skills, no agents. Commit messages, PR descriptions, changelog entries, code comments. Installed once per machine, fires when relevant. The most underrated shape.\n\n**The integration.** A connector plus the tools that wrap it plus one agent that knows how to drive them. Ships access to a system.\n\n**The single tool, nicely packaged.** One tool and nothing else, so the CLI gets a slash command instead of a raw MCP name. Perfectly legitimate.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p201-against",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Shapes that do not work\n\n- **Everything I have made.** A plugin is not a backup. Nobody installs \"my stuff\".\n- **Two unrelated workflows.** If half the members only matter to backend work and half to the docs, that is two plugins, and people want one of them.\n- **An agent whose tools live in a different plugin.** Members are resolved at deploy time from *your* notebooks; a user installing only one half gets an agent granting a tool that is not there. Keep an agent and its tools together.\n- **A plugin that is one skill.** Deploy the skill directly — the bundle is overhead with nothing to show for it.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p201-members",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Working with the member list\n\nPress **+ member** in the banner and Arima lists every agent, skill and tool you have, with its id. Members are stored as ids, which has two consequences worth knowing:\n\n- **Renaming a member is safe.** The id does not change, so the bundle keeps building. Only the generated filename changes.\n- **Deleting a member is not an error.** The card shows it in red as missing, and a deploy skips it with a warning rather than failing. Convenient, but it means a bundle can quietly lose a piece — check the card before you ship.\n\nPlugins do not nest. Listing a plugin as a member of a plugin is ignored.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p201-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\nThis plugin is deliberately empty. Fill it:\n\n1. Add `skill-101` and deploy to `bundle`. One skill, one file.\n2. Add `tool-101` and deploy again — note the `commands/` entry and the new `.mcp.json`.\n3. Add `agent-201`, deploy, and read `agents/`.\n4. Now ask the real question: would you install this? Write the description it would need to earn that, and see whether the members match the promise.\n\nNext: `plugin-301` opens the bundle up file by file.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

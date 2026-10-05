@@ -1,17 +1,22 @@
 /**
- * Agents tab (Phase 2 — the Agents Arena).
+ * Agents section of the Agent Factory.
  *
- * A browse/author/run arena over agent & skill notebooks. The source of truth stays the agent
- * notebooks themselves: this tab lists them (user notebooks + built-in samples) via /api/agents/list,
- * opens one for editing (hands off to NotebookEditor + agent.js), creates new ones (/api/agents/create),
- * and runs one inline — streaming the provider CLI over the same STOMP channel agent.js uses
- * (partial_output, cellId "__agent_run__"). Active runs surface in a "running now" strip.
+ * A browse/author/run/deploy arena over agent & skill notebooks. The source of truth stays the
+ * notebooks themselves: this tab lists them (user notebooks + built-in samples) via
+ * /api/agents/list, opens one for editing (hands off to NotebookEditor + agent.js), creates new
+ * ones (/api/agents/create), runs one inline — streaming the provider CLI over the same STOMP
+ * channel agent.js uses (partial_output, cellId "__agent_run__") — and deploys one into a chosen
+ * target (/api/agents/deploy). Active runs surface in a "running now" strip.
+ *
+ * Tools, connectors and plugins live in sibling modules (tools-tab.js, connectors-tab.js,
+ * plugins-tab.js); refresh() drives all of them so one ↻ reloads the whole factory.
  */
 const AgentsTab = (function () {
   const RUN_CELL_ID = '__agent_run__';
   const PROVIDER_LABELS = { claude: 'Claude', copilot: 'Copilot', gemini: 'Antigravity' };
 
   let avail = {};                 // provider -> available
+  let targets = [];               // deploy targets: [{key, label, root}]
   let loaded = false;             // first-open lazy load guard
   const running = new Map();      // agentId -> { name, unsub, startedAt }
 
@@ -24,6 +29,12 @@ const AgentsTab = (function () {
       if (!loaded) refresh();
     });
     Arima.api('GET', '/agents/providers').then(a => { avail = a || {}; }).catch(() => {});
+  }
+
+  /** Deploy targets, shared with the plugin cards so both offer the same choices. */
+  async function deployTargets() {
+    if (window.PluginsTab) return (await PluginsTab.loadTargets()) || [];
+    try { return await Arima.api('GET', '/plugins/targets') || []; } catch { return []; }
   }
 
   function esc(s) {
@@ -41,6 +52,7 @@ const AgentsTab = (function () {
     samples.innerHTML = '';
     try {
       avail = await Arima.api('GET', '/agents/providers').catch(() => avail) || avail;
+      targets = await deployTargets();
       const list = await Arima.api('GET', '/agents/list') || [];
       const mineList = list.filter(a => a.source === 'mine');
       const sampleList = list.filter(a => a.source !== 'mine');
@@ -49,6 +61,10 @@ const AgentsTab = (function () {
     } catch (e) {
       mine.innerHTML = `<div class="agents-empty">Failed to load: ${esc(e.message || e)}</div>`;
     }
+    // One ↻ reloads the whole factory.
+    if (window.ToolsTab) ToolsTab.refresh();
+    if (window.ConnectorsTab) ConnectorsTab.refresh();
+    if (window.PluginsTab) PluginsTab.refresh();
   }
 
   function render(container, agents, emptyMsg) {
@@ -65,6 +81,7 @@ const AgentsTab = (function () {
     const toolChips = kind === 'AGENT' && tools.length
       ? `<div class="agent-card-tools">${tools.map(t => `<span class="agent-card-tool">${esc(t)}</span>`).join('')}</div>`
       : '';
+    const deployed = Array.isArray(a.deployedTo) ? a.deployedTo : [];
     return `
       <div class="agent-card" data-agent-id="${esc(a.id)}">
         <div class="agent-card-top">
@@ -76,9 +93,13 @@ const AgentsTab = (function () {
         <div class="agent-card-meta">
           <span class="agent-card-prov ${provOk ? '' : 'off'}" title="${provOk ? '' : 'CLI not installed'}">${esc(provLabel)}</span>
           <span class="agent-card-count">${a.cellCount || 0} cell${a.cellCount === 1 ? '' : 's'}</span>
+          ${deployed.length
+            ? `<span class="plugin-card-deployed">deployed: ${deployed.map(esc).join(', ')}</span>`
+            : ''}
         </div>
         <div class="agent-card-actions">
           <button class="btn-secondary agent-card-open">Open</button>
+          <button class="btn-secondary agent-card-deploy" title="Write this ${a.kind} to the files an agentic CLI reads">⤓</button>
           <button class="btn-primary agent-card-run">▶ Run</button>
         </div>
         <div class="agent-card-run-box" hidden>
@@ -89,6 +110,20 @@ const AgentsTab = (function () {
             <span class="agent-card-status"></span>
           </div>
           <pre class="agent-card-output" hidden></pre>
+        </div>
+        <div class="agent-card-run-box agent-card-deploy-box" hidden>
+          <label class="tool-arg-row">
+            <span class="tool-arg-name">target</span>
+            <select class="agent-card-target">
+              ${targets.map(t => `<option value="${esc(t.key)}">${esc(t.label)}</option>`).join('')}
+            </select>
+          </label>
+          <div class="agent-card-run-actions">
+            <button class="btn-primary agent-card-deploy-go">Deploy</button>
+            <button class="btn-secondary agent-card-deploy-cancel">Close</button>
+            <span class="agent-card-status agent-card-deploy-status"></span>
+          </div>
+          <pre class="agent-card-output agent-card-deploy-output" hidden></pre>
         </div>
       </div>`;
   }
@@ -107,6 +142,47 @@ const AgentsTab = (function () {
     el.querySelector('.agent-card-task')?.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runCard(el, a); }
     });
+
+    const deployBox = el.querySelector('.agent-card-deploy-box');
+    el.querySelector('.agent-card-deploy')?.addEventListener('click', () => {
+      deployBox.hidden = !deployBox.hidden;
+    });
+    el.querySelector('.agent-card-deploy-cancel')?.addEventListener('click', () => {
+      deployBox.hidden = true;
+    });
+    el.querySelector('.agent-card-deploy-go')?.addEventListener('click', () => deployCard(el, a));
+  }
+
+  /** Write this agent/skill into the chosen target via its provider's native layout. */
+  async function deployCard(el, a) {
+    const target = el.querySelector('.agent-card-target')?.value || 'project';
+    const outEl = el.querySelector('.agent-card-deploy-output');
+    const statusEl = el.querySelector('.agent-card-deploy-status');
+    const goBtn = el.querySelector('.agent-card-deploy-go');
+    const provider = a.provider || 'claude';
+
+    outEl.hidden = false; outEl.textContent = '';
+    goBtn.disabled = true; goBtn.textContent = '● Deploying…';
+    statusEl.textContent = 'writing';
+
+    try {
+      const r = await Arima.api('POST', '/agents/deploy',
+        { notebookId: a.id, provider, target });
+      if (!r || r.success === false) {
+        outEl.textContent = '⚠ ' + ((r && r.error) || 'deploy failed');
+        statusEl.textContent = 'failed';
+      } else {
+        outEl.textContent = (r.paths || [r.path]).join('\n');
+        statusEl.textContent = 'deployed';
+        Arima.setStatus(`Deployed ${r.kind} ${r.slug} → ${r.targetLabel}`);
+        refresh();
+      }
+    } catch (e) {
+      outEl.textContent = 'Error: ' + (e.message || e);
+      statusEl.textContent = 'error';
+    } finally {
+      goBtn.disabled = false; goBtn.textContent = 'Deploy';
+    }
   }
 
   // Best-effort CSS.escape shim (agent ids are UUIDs/slugs, so this is usually a no-op).

@@ -699,13 +699,14 @@ const NotebookEditor = (() => {
       const cur  = sel.value;
       sel.innerHTML = '<option value="">— select notebook —</option>';
 
-      // Group by notebook type (Agents · Skills · Notebooks) instead of a flat list.
-      const groups = { agent: [], skill: [], notebook: [] };
+      // Group by notebook type (Agents · Skills · Tools · Plugins · Notebooks) instead of a flat list.
+      const groups = { agent: [], skill: [], tool: [], plugin: [], notebook: [] };
       list.forEach(nb => {
         const kind = nb.metadata && nb.metadata.kind;
-        groups[kind === 'agent' ? 'agent' : kind === 'skill' ? 'skill' : 'notebook'].push(nb);
+        groups[groups[kind] ? kind : 'notebook'].push(nb);
       });
-      [['agent', '🤖 Agents'], ['skill', '⭐ Skills'], ['notebook', '📓 Notebooks']].forEach(([key, label]) => {
+      [['agent', '🤖 Agents'], ['skill', '⭐ Skills'], ['tool', '🔧 Tools'],
+       ['plugin', '📦 Plugins'], ['notebook', '📓 Notebooks']].forEach(([key, label]) => {
         const items = groups[key];
         if (!items.length) return;
         const og = document.createElement('optgroup');

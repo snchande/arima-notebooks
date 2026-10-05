@@ -4,7 +4,7 @@
   "description": "Two agents on one input — Explain (agent-101) and Review (agent-201) fan out from a Java cell, then a Java cell combines both. Run the pipeline.",
   "metadata": {
     "category": "tutorial",
-    "subcategory": "Agents & Skills",
+    "subcategory": "Agents",
     "language": "agent",
     "level": 501
   },

@@ -87,6 +87,39 @@ If a change requires modifying any of these, open an issue first and tag `@sncha
 - **No emojis** in source files, commit messages, or docs unless the user asks for them.
 - **Tests are integration-leaning.** Mocks are tolerated for IO, not for the database layer or for execution services.
 
+### 2.6 The Agent Factory
+
+Agents, skills, tools, connectors and plugins are all **notebooks** with a `metadata.kind` flag.
+There is no separate store, no new `CellType`, and no new model: each kind's service
+(`AgentService`, `ToolService`, `ConnectorService`, `PluginService`) projects the notebook into a
+spec record (`AgentSpec`, `ToolSpec`, `ConnectorSpec`, `PluginSpec`). Preserve that:
+
+- **Do not add a storage format** for a definition. If a new kind is needed, it is another
+  `metadata.kind` value plus a service that projects it.
+- A **tool's body runs through the existing execution services** — `ToolService` dispatches on the
+  same eight modes `ShellController` does, and must keep returning `ExecutionResult`. Do not give
+  tools their own runtime.
+- **Providers are the extension seam.** One `AgentProvider` per agentic CLI (`ClaudeAgentProvider`,
+  `CopilotAgentProvider`, `AntigravityAgentProvider`); add a provider and it gets both verbs — run
+  and deploy — for free. Do not special-case a provider inside `AgentService`.
+- **Every deploy goes through `DeploymentService`** so it is recorded and reversible. Never write
+  into `.claude/`, `.github/`, `.antigravity/` or a home directory from anywhere else, and never
+  delete a path that is not in the deployment record.
+- Tools reach the outside world over the **existing MCP server** (`arima_<tool_name>` entries
+  generated from the catalog). A deployed plugin's `.mcp.json` points back at Arima's own loopback
+  endpoint — that is not a new outbound host, and must not become one.
+- **Connectors are the one place Arima can reach a host it did not ship with, and the rule stands.**
+  A `stdio` connector is a local subprocess and an `sse` connector to loopback never leaves the
+  machine; neither needs permission. A connector pointed at a remote host **must** pass through
+  `ApprovalService` before every probe and every call, and must be refused when the user denies or
+  does not answer. Never add a default remote endpoint, never cache an approval across calls, and
+  never let a code path reach `McpClient` with a remote spec without passing the gate first.
+- A connector's `command` is handed to `ProcessBuilder(List<String>)` as argv. **Never build it into
+  a shell string** — that is §2.3, and it is why connector commands do not expand `~` or honour
+  `&&`.
+
+---
+
 ---
 
 ## 3. The contribution loop
@@ -114,6 +147,7 @@ If the security check, `mvn test`, or `architecture-lint` fails in CI, **fix the
 ## 4. What you may do freely
 
 - Add a new tutorial under `notebooks/` (especially `notebooks/tutorials/`).
+- Add an agent, skill, tool or plugin sample under `notebooks/tutorials/`.
 - Add a new execution helper inside an existing execution service.
 - Add a new REST endpoint, as long as it stays inside the controller→service pattern.
 - Add a new field to `BaristaSettings`, with a sensible default.

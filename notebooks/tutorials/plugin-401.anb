@@ -1,0 +1,62 @@
+{
+  "id": "plugin-401",
+  "name": "Plugin 401 · Versioning and Iterating",
+  "description": "Advanced plugin — what a redeploy actually does, how removed members are cleaned up, and how to iterate without leaving debris behind.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Plugins",
+    "language": "agent",
+    "level": 401,
+    "kind": "plugin",
+    "plugin": {
+      "version": "0.2.0",
+      "author": "Arima Notebooks",
+      "members": [
+        "skill-101",
+        "tool-101"
+      ]
+    }
+  },
+  "cells": [
+    {
+      "id": "p401-redeploy",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Versioning and Iterating\n\nA redeploy is not a merge and not a wipe. Arima remembers every path the last deploy wrote, so on the next one it:\n\n1. Builds the bundle fresh from the current notebooks.\n2. Writes every file the new build produces, overwriting as needed.\n3. **Deletes the files the last deploy wrote that this one did not** — the member you removed, the skill you renamed.\n4. Replaces the record with the new file list.\n\nWhich means you never accumulate orphans, and you never have to clean up by hand after a rename. It also means a file you added to the bundle directory yourself will be removed, because Arima did not write it.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p401-version",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## The version field\n\n`version` goes straight into `plugin.json`. Arima does not interpret it — it does not compare versions, refuse a downgrade, or keep old copies. It is for the humans and the CLI.\n\nA convention that works:\n\n| Bump | When |\n|---|---|\n| patch `1.0.1` | wording, a tightened skill, a fixed tool body |\n| minor `1.1.0` | a new member, a new tool parameter with a default |\n| major `2.0.0` | a member removed, a tool's required parameters changed |\n\nThe major case is the one that matters: someone's workflow calls your tool with specific arguments. Changing a required parameter breaks them silently, and the version is the only warning they get.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p401-loop",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## The iteration loop\n\n```\nedit a member notebook\n   -> deploy to bundle\n   -> read the generated files\n   -> deploy to project\n   -> restart the CLI and actually use it\n   -> back to the top\n```\n\nTwo shortcuts that are not shortcuts:\n\n- **Skipping `bundle`.** It costs one click and shows you precisely what you are about to install. Skip it only once the bundle's shape has stopped changing.\n- **Skipping the restart.** Agents and skills are read when the CLI starts. You will test the old copy and conclude your edit did nothing.\n\nTool bodies are the exception — those are live, because the command is a pointer into Arima. Edit and call again.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p401-hygiene",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Hygiene\n\n- **One plugin, one target.** Deploying to both `project` and `user` leaves two installs, and the CLI will load whichever it finds — usually not the one you just edited.\n- **Check the Deployed section after a rename.** The old files should be gone. If one is listed as *files missing*, someone deleted it outside Arima and the record is stale; undeploy to clear it.\n- **Undeploy before you delete a plugin notebook.** Once the notebook is gone there is nothing to deploy from, but the record and the installed files remain.\n- **Do not hand-edit a deployed bundle.** The next redeploy overwrites it. Edit the notebook.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p401-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Deploy to `bundle` and list the files.\n2. Remove `tool-101` from the members and deploy again. `commands/` and `.mcp.json` are gone — Arima cleaned up after itself.\n3. Rename this notebook, deploy, and check that the old directory is not left behind.\n4. Bump `version` to `1.0.0`, deploy, and read `plugin.json`.\n\nNext: `plugin-501` ships it.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

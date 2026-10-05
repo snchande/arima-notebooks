@@ -1,0 +1,67 @@
+{
+  "id": "tool-501",
+  "name": "Tool 501 · Deploying a Tool to the Harness",
+  "description": "Advanced tool — how a tool leaves Arima and becomes callable from Claude Code, GitHub Copilot or Antigravity, and why the implementation stays here.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Tools",
+    "language": "agent",
+    "level": 501,
+    "kind": "tool",
+    "tool": {
+      "mode": "python",
+      "params": [
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Who to greet",
+          "required": false,
+          "default": "world"
+        }
+      ]
+    }
+  },
+  "cells": [
+    {
+      "id": "t501-route",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Deploying a Tool to the Harness\n\nAn agent or a skill deploys as a **file**. A tool does not — and that is deliberate.\n\nA tool's body is Python, or C#, or JShell. Copying it into a CLI's config directory would mean copying a runtime too. Instead the tool stays in Arima and the harness is told **how to reach it**, over the MCP server Arima is already running:\n\n```\nClaude Code  --MCP-->  Arima  --executes-->  your tool body\n```\n\nOne source of truth. Edit the notebook and the deployed behaviour changes with it — no redeploy.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t501-two-routes",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## The two routes out\n\n**1. Already done: the MCP catalog.**\nEvery tool with a body is advertised on `tools/list` as `arima_<name>`, carrying its real JSON Schema. Any client pointed at `http://127.0.0.1:8585/api/mcp/sse` sees it. Nothing to deploy — authoring *is* publishing.\n\n**2. A plugin, for a nicer surface.**\nAdd the tool as a member of a plugin and deploy that. The bundle gains `commands/<tool>.md` — a slash command describing the call — plus an `.mcp.json` pointing at Arima. The CLI user types `/word-count` instead of knowing the MCP tool name.\n\nRoute 1 is for agents. Route 2 is for people.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t501-body",
+      "type": "CODE",
+      "mode": "python",
+      "source": "print(f\"hello, {name} - this ran inside Arima\")",
+      "output": "",
+      "executed": false,
+      "anchor": "greet"
+    },
+    {
+      "id": "t501-walkthrough",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Walk it through\n\n1. **Confirm the catalog.** In a terminal:\n\n   ```bash\n   curl -s -X POST \"http://localhost:8585/api/mcp/messages?sessionId=demo\" \\\n     -H \"Content-Type: application/json\" \\\n     -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}'\n   ```\n\n   Find `arima_tool_501_deploying_a_tool_to_the_harness` in the result.\n\n2. **Connect the harness.** Point your CLI at Arima's MCP endpoint:\n\n   ```json\n   { \"mcpServers\": { \"arima\": { \"type\": \"sse\",\n       \"url\": \"http://127.0.0.1:8585/api/mcp/sse\" } } }\n   ```\n\n   For Claude Code that is `.mcp.json` in the project, or `~/.claude.json` for every project.\n\n3. **Bundle it.** Agents tab → **+ New Plugin** → add this tool as a member → **Deploy** to `bundle` first and read what was written, then to `project` or `user` when it looks right.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "t501-scope",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Choosing a scope\n\n| Target | Lands in | Reach |\n|---|---|---|\n| `project` | the repo's `.claude/` | this checkout only |\n| `user` | `~/.claude/` | every project on this machine |\n| `bundle` | `data/plugins/` | nothing installed — just look at it |\n\nAlways deploy to `bundle` first when you are unsure. It writes the identical files somewhere harmless, so you can read them before anything is installed.\n\n**Everything is reversible.** The **Deployed** section of the Agents tab lists every write Arima has made, and **Undeploy** removes exactly those paths — never a file Arima did not create.\n\n## A caveat worth knowing\n\nA deployed tool only answers while **Arima is running**. The harness holds a pointer, not a copy. If a CLI reports the `arima` server as unavailable, start Arima (`arima start`) and retry — that is usually the whole problem.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

@@ -77,20 +77,12 @@ public class ClaudeAgentProvider implements AgentProvider {
 
     @Override
     public Path export(AgentSpec spec, Path repoRoot) throws Exception {
-        String slug = slugify(spec.name());
-        String content = frontmatter(spec, slug) + "\n" + spec.body().strip() + "\n";
-
-        Path file;
-        if (spec.kind() == AgentSpec.Kind.SKILL) {
-            Path dir = repoRoot.resolve(".claude").resolve("skills").resolve(slug);
-            Files.createDirectories(dir);
-            file = dir.resolve("SKILL.md");
-        } else {
-            Path dir = repoRoot.resolve(".claude").resolve("agents");
-            Files.createDirectories(dir);
-            file = dir.resolve(slug + ".md");
-        }
-        Files.writeString(file, content, StandardCharsets.UTF_8);
+        String slug = AgentSpec.slugify(spec.name());
+        Path file = spec.kind() == AgentSpec.Kind.SKILL
+                ? repoRoot.resolve(".claude").resolve("skills").resolve(slug).resolve("SKILL.md")
+                : repoRoot.resolve(".claude").resolve("agents").resolve(slug + ".md");
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, AgentDefinitionFormat.markdown(spec, slug), StandardCharsets.UTF_8);
         log.info("Exported {} '{}' -> {}", spec.kind(), spec.name(), file);
         return file;
     }
@@ -104,26 +96,5 @@ public class ClaudeAgentProvider implements AgentProvider {
         }
         sb.append("\n\n---\n\n**Task:** ").append(task == null ? "" : task.strip()).append("\n");
         return sb.toString();
-    }
-
-    private String frontmatter(AgentSpec spec, String slug) {
-        StringBuilder fm = new StringBuilder("---\n");
-        fm.append("name: ").append(slug).append('\n');
-        fm.append("description: ").append(oneLine(spec.description())).append('\n');
-        if (spec.kind() == AgentSpec.Kind.AGENT && spec.tools() != null && !spec.tools().isEmpty()) {
-            fm.append("tools: ").append(String.join(", ", spec.tools())).append('\n');
-        }
-        fm.append("---\n");
-        return fm.toString();
-    }
-
-    private String oneLine(String s) {
-        return s == null ? "" : s.replaceAll("\\s+", " ").trim();
-    }
-
-    private String slugify(String name) {
-        String s = (name == null ? "agent" : name).toLowerCase().trim()
-                .replaceAll("[^a-z0-9]+", "-").replaceAll("(^-+|-+$)", "");
-        return s.isBlank() ? "agent" : s;
     }
 }

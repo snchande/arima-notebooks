@@ -1,0 +1,58 @@
+{
+  "id": "skill-501",
+  "name": "Skill 501 · Deploying Skills to the Harness",
+  "description": "Advanced skill — where a skill lands for each agentic CLI, choosing project versus user scope, and how to verify it actually loaded.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Skills",
+    "language": "agent",
+    "level": 501,
+    "kind": "skill",
+    "agent": {
+      "provider": "claude",
+      "tools": []
+    }
+  },
+  "cells": [
+    {
+      "id": "s501-where",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Deploying Skills to the Harness\n\nA skill is a file, so deploying it is a copy — to the place the chosen CLI looks. Pick a **provider** in the banner and a **target**, and Arima writes:\n\n| Provider | Target `project` | Target `user` |\n|---|---|---|\n| Claude | `.claude/skills/<name>/SKILL.md` | `~/.claude/skills/<name>/SKILL.md` |\n| Copilot | `.github/skills/<name>/SKILL.md` | `~/.github/skills/<name>/SKILL.md` |\n| Antigravity | `.antigravity/skills/<name>/SKILL.md` | `~/.antigravity/skills/<name>/SKILL.md` |\n\n`<name>` is the notebook name kebab-cased. The file is frontmatter plus every markdown cell of the notebook, in order.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s501-scope",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Project or user?\n\n**`project`** — the skill belongs to this codebase. House style, this repo's review checklist, its release ritual. It is also the only scope you can commit to git, which means your team gets it on the next pull. Prefer this one.\n\n**`user`** — the skill is about *you*. How you like commit messages, your preferred explanation style. Follows you to every project, is invisible to everyone else.\n\n**`bundle`** — writes the identical file under `data/staged/` and installs nothing. Use it when you want to read the generated file before committing to either of the above.\n\nA skill deployed at both scopes is not an error, but the project copy is the one you will forget about. Pick one.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s501-verify",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Verifying it loaded\n\nDeploying does not mean loaded. Check:\n\n1. **The file is where you think.** Expand the entry in the Agents tab's **Deployed** section — it lists the exact paths written.\n2. **The frontmatter parsed.** Open the file. A `description` containing a stray colon or a newline can break the YAML; Arima collapses whitespace to one line to avoid exactly that.\n3. **It fires.** Restart the CLI (skills are read at startup), then say the thing from your trigger line. If nothing happens, the description is the suspect — go back to `skill-301`.\n\nA skill that exists but never fires looks identical to one that works until the day you need it.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s501-lifecycle",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Living with a deployed skill\n\n**Editing.** Edit the notebook, then deploy again. The file is overwritten in place.\n\n**Renaming.** The filename comes from the notebook name, so renaming writes a *new* file. Arima notices: the deploy record for that notebook is updated and the old file is removed, so you do not end up with two copies of the same skill fighting each other.\n\n**Removing.** **Undeploy** in the Deployed section deletes exactly the recorded paths and prunes the directories they emptied. It will not touch a skill Arima did not write, including one you hand-authored in `.claude/skills/`.\n\n**Sharing.** For a team, commit the `project` deploy. For anything bigger, bundle the skill into a plugin — `plugin-501`.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s501-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\n1. Deploy this notebook to `bundle` and open `data/staged/.claude/skills/skill-501-deploying-skills-to-the-harness/SKILL.md`. That is the whole artifact — frontmatter, then these cells.\n2. Deploy `skill-101` to `project`, restart your CLI, and ask it to write a commit message.\n3. Check the **Deployed** section, then **Undeploy** and confirm the file is gone and the empty directory with it.\n\nThat is the whole skill lifecycle. Next section: Connectors.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

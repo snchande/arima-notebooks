@@ -1,0 +1,58 @@
+{
+  "id": "skill-301",
+  "name": "Skill 301 · Descriptions That Trigger",
+  "description": "Intermediate skill — the description line is a matching rule, not a summary. How to write one that fires when it should and stays quiet when it should not.",
+  "metadata": {
+    "category": "tutorial",
+    "subcategory": "Skills",
+    "language": "agent",
+    "level": 301,
+    "kind": "skill",
+    "agent": {
+      "provider": "claude",
+      "tools": []
+    }
+  },
+  "cells": [
+    {
+      "id": "s301-why",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Descriptions That Trigger\n\nA skill that never fires is worse than no skill — you believe it is helping.\n\nThe `description` in the frontmatter is not a summary for humans. It is the **matching rule** the model uses to decide whether to pull this skill in. Everything about whether your skill gets used lives in that one line.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s301-shape",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## The shape that works\n\n> **What it does** + **when to use it** + **the words a user would actually say**.\n\nThree parts, one line. Compare:\n\n| | Description |\n|---|---|\n| **Never fires** | `Commit message helper.` |\n| **Fires wildly** | `Helps with git and development tasks.` |\n| **Fires right** | `Turns a description of a change into a Conventional Commits message. Use when the user says \"write a commit message\", \"commit this\", or asks how to phrase a commit.` |\n\nThe third one works because it names the **trigger phrases**. The model is pattern matching against what the user said; give it the patterns.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s301-rules",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Rules\n\n- **Say when, not just what.** `Use when...` earns its place in the line.\n- **Quote the user's words.** Write the phrases people actually type.\n- **Name the artifact.** \"a Conventional Commits message\" beats \"commit help\".\n- **Do not oversell.** \"Helps with development\" matches everything, which means the model stops trusting it.\n- **One skill, one job.** A description with \"and also\" in it is two skills.\n- **Mention the format if the format is the point.** If the skill exists to enforce a shape, the shape belongs in the trigger line.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s301-testing",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Testing a trigger\n\nYou cannot eyeball this. Test it:\n\n1. Deploy the skill to `project` (Agents tab → the skill's card → the download button → target `project`).\n2. Open the CLI in that repo.\n3. Say the thing a user would say — not the thing you wrote in the description, the thing a **user** would say.\n4. Did it fire? If not, the gap between your phrasing and theirs is the bug.\n\nWrite down three real phrasings before you write the description. Then make sure the description covers all three.\n\n**A negative test matters too.** Say something adjacent but different and check the skill stays out of it. A skill that fires on everything is noise.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "s301-try",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Try it\n\nTake `skill-101 · Commit Message` and rewrite its description three ways:\n\n- One deliberately too narrow (only the exact phrase \"conventional commit\").\n- One deliberately too broad (\"helps with git\").\n- One following the rule above.\n\nDeploy each, and in the CLI try: *\"commit this\"*, *\"what should the commit message be\"*, and *\"squash these commits\"* (which should **not** fire it).\n\nNext: `skill-401` on when a skill is the wrong answer.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

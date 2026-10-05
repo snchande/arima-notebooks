@@ -9,7 +9,7 @@
 When a user starts working in this repo — greets you, asks "what can I do / how do I start", or seems new — act as the **`arima` agent** ([`.claude/agents/barista.md`](.claude/agents/barista.md)) and deliver the common welcome from [`docs/WELCOME.md`](docs/WELCOME.md). Present the three paths and let them pick:
 
 1. **Open the UI** — offer to run `arima start` (or `arima open` if already running) → http://localhost:8585.
-2. **Drive Arima Notebooks over MCP** — Arima Notebooks exposes an MCP server at `/api/mcp/sse` + `/api/mcp/messages` with tools `barista_execute_code`, `barista_list_notebooks`, `barista_read_notebook`, `barista_run_pipeline`, `barista_search_cells`, `barista_load_module`, `barista_create_notebook`, `barista_append_cell`, `barista_list_agents`, `barista_run_agent`. Offer to help connect an MCP client.
+2. **Drive Arima Notebooks over MCP** — Arima Notebooks exposes an MCP server at `/api/mcp/sse` + `/api/mcp/messages` with tools `barista_execute_code`, `barista_list_notebooks`, `barista_read_notebook`, `barista_run_pipeline`, `barista_search_cells`, `barista_load_module`, `barista_create_notebook`, `barista_append_cell`, `barista_list_agents`, `barista_run_agent`, `barista_list_tools`, `barista_invoke_tool`, plus one `arima_<tool_name>` entry per tool the user has authored. Offer to help connect an MCP client.
 3. **Personalize & extend** — *your* differentiator: you can change Arima Notebooks itself (add a language, theme tweak, tutorial, bug fix) following the guardrails below, then package a PR.
 
 Always offer to open docs (`arima docs` or read the relevant file). **Key difference to state:** the plain `arima` CLI operates/automates Arima Notebooks (incl. MCP) but cannot change its code; an agentic CLI like you can also personalize and extend it. Same welcome is delivered by the `arima welcome` command for terminal users.
@@ -129,12 +129,19 @@ arima/
 │   │   ├── PythonExecutionService     #   One-shot python subprocess + interpreter detection
 │   │   ├── PyPiService                #   PyPI package management for Python (pip --target)
 │   │   ├── OrchestrationService       #   Pipeline DAG: topo-sort, cycle detection, deps
+│   │   ├── AgentService                #   Agents & skills: author, run, deploy
+│   │   ├── AgentProvider              #   One per agentic CLI — Claude, Copilot, Antigravity
+│   │   ├── ToolService                #   Tools: a notebook as a callable function (any of the 8)
+│   │   ├── ConnectorService / McpClient  # Connectors: external MCP servers Arima attaches to
+│   │   ├── PluginService              #   Plugins: bundle agents/skills/tools into a plugin dir
+│   │   ├── DeploymentService          #   Deploy targets (project/user/bundle) + reversible record
 │   │   ├── ClaudeService / GitHubCopilotService / CopilotCliService / GeminiService  # AI providers (Copilot→SDK; Gemini slot→Antigravity agy)
 │   │   ├── OAuthConfigService / UserService  # Auth
 │   │   └── SettingsService            #   Settings persistence
 │   └── controller/                    # REST + WebSocket — thin, one service call each:
 │       ├── NotebookController  ShellController  PackageController
 │       ├── NpmPackageController  NuGetController  LLMController
+│       ├── AgentController  ToolController  ConnectorController  PluginController  # Agent Factory
 │       ├── SettingsController  SystemController  UserController
 │       └── McpController               #   MCP server (/api/mcp/sse, /api/mcp/messages)
 ├── src/main/resources/

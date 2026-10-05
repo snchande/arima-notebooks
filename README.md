@@ -455,8 +455,32 @@ Arima Notebooks ships with **40 built-in tutorials** across all eight languages 
 | `agent-501` | Multi-Agent Review | Agents | Advanced |
 | `agent-601` | MCP-driven Agent | Agents | Advanced |
 | `skill-101` | Commit Message | Skills | Beginner |
+| `skill-201` | Anatomy of a Skill | Skills | Intermediate |
+| `skill-301` | Descriptions That Trigger | Skills | Intermediate |
+| `skill-401` | Skills, Agents and Tools Together | Skills | Advanced |
+| `skill-501` | Deploying Skills to the Harness | Skills | Advanced |
+| `tool-101` | Word Count | Tools | Beginner |
+| `tool-201` | Typed Parameters | Tools | Intermediate |
+| `tool-301` | Any of the Eight Languages | Tools | Intermediate |
+| `tool-401` | Giving a Tool to an Agent | Tools | Advanced |
+| `tool-501` | Deploying a Tool to the Harness | Tools | Advanced |
+| `connector-101` | Your First Connector | Connectors | Beginner |
+| `connector-201` | stdio in Depth | Connectors | Intermediate |
+| `connector-301` | SSE and the Approval Gate | Connectors | Intermediate |
+| `connector-401` | Connector Tools in an Agent | Connectors | Advanced |
+| `connector-501` | Deploying a Connector to the Harness | Connectors | Advanced |
+| `plugin-101` | Review Kit | Plugins | Beginner |
+| `plugin-201` | Choosing Members | Plugins | Intermediate |
+| `plugin-301` | Inside the Bundle | Plugins | Intermediate |
+| `plugin-401` | Versioning and Iterating | Plugins | Advanced |
+| `plugin-501` | Shipping to the Harness | Plugins | Advanced |
 
 Tutorials open in **read-only mode** — your personal notebooks are separate.
+
+The **Agents** track sits alongside the language tracks in *Settings -> Tutorials*, split into five
+sections -- Tools, Skills, Agents, Connectors, Plugins -- each running 101 to 501. Every
+section's 501 is its deployment lesson: how that artifact reaches Claude Code, GitHub Copilot or
+Antigravity rather than staying inside Arima.
 
 Any tutorial can be played as a **narrated walkthrough** — hands-free *autopilot* or self-paced *interactive* — and you can interrupt it to ask questions by voice or text.
 
