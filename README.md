@@ -455,6 +455,8 @@ Arima Notebooks ships with **40 built-in tutorials** across all eight languages 
 | `agent-501` | Multi-Agent Review | Agents | Advanced |
 | `agent-601` | MCP-driven Agent | Agents | Advanced |
 | `skill-101` | Commit Message | Skills | Beginner |
+| `tool-101` | Word Count | Tools | Beginner |
+| `plugin-101` | Review Kit | Plugins | Beginner |
 
 Tutorials open in **read-only mode** — your personal notebooks are separate.
 

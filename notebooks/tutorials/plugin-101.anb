@@ -1,0 +1,55 @@
+{
+  "id": "plugin-101",
+  "name": "Plugin 101 · Review Kit",
+  "description": "Beginner plugin — bundles a code-reviewer agent, a commit-message skill and the word-count tool into one installable Claude Code plugin.",
+  "metadata": {
+    "kind": "plugin",
+    "category": "tutorial",
+    "subcategory": "Agents & Skills",
+    "language": "agent",
+    "level": 101,
+    "plugin": {
+      "version": "1.0.0",
+      "author": "Arima Notebooks",
+      "members": [
+        "agent-201",
+        "skill-101",
+        "tool-101"
+      ]
+    }
+  },
+  "cells": [
+    {
+      "id": "p101-what",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "# Review Kit\n\nA **plugin** is how a definition leaves Arima and becomes part of a CLI. It bundles members — agents, skills and tools — into one directory your agentic CLI reads.\n\nThis one ships three, named in the banner above:\n\n| Member | Kind | Gives you |\n|---|---|---|\n| `agent-201` | 🤖 agent | a code reviewer |\n| `skill-101` | ⭐ skill | Conventional Commits messages |\n| `tool-101` | 🔧 tool | word/line/char counts |",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p101-build",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## What Deploy writes\n\nPick a target in the banner and press **⤄ Deploy**:\n\n```\nplugins/plugin-101-review-kit/\n  .claude-plugin/plugin.json   name, version, description, author\n  agents/<name>.md             each member agent, frontmatter + instructions\n  skills/<name>/SKILL.md       each member skill\n  commands/<name>.md           one per member tool\n  .mcp.json                    points back at Arima's MCP server\n  README.md                    these markdown cells\n```\n\nMember **tools are not copied**. They stay here, and the generated command calls them over Arima's MCP server — one source of truth, and editing the tool notebook changes the deployed behaviour with no redeploy.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p101-targets",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## The three targets\n\n| Target | Lands in | Use when |\n|---|---|---|\n| **project** | the repo root's `.claude/` | the bundle is for this checkout |\n| **user** | `~/.claude/` | you want it in every project on this machine |\n| **bundle** | `data/plugins/` | you just want to read what would be written |\n\nEvery deploy is recorded, so the **Deployed** section in the Agents tab can undo it — it removes exactly the files Arima wrote, and nothing else.",
+      "output": "",
+      "executed": false
+    },
+    {
+      "id": "p101-next",
+      "type": "MARKDOWN",
+      "mode": "jshell",
+      "source": "## Next\n\n- Create your own plugin (**+ New Plugin**), add one of your agents as a member, and deploy to `bundle` first to inspect the output.\n- Bump `version` in the banner and redeploy — the old files are replaced, and a member you removed is cleaned up rather than orphaned.\n- Deploy an agent on its own (the ⤄ button on its card) when you want just the one file instead of a bundle.",
+      "output": "",
+      "executed": false
+    }
+  ]
+}

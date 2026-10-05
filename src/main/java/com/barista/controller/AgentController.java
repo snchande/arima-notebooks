@@ -11,11 +11,14 @@ import java.util.Map;
 /**
  * REST endpoints for authoring, running, and exporting agents & skills.
  *
- *   GET  /api/agents/list     - list agent/skill definitions (user notebooks + built-in samples)
- *   POST /api/agents/create   - create a new agent/skill notebook (pre-seeded)
- *   POST /api/agents/run      - run the agent/skill against a task (streams via STOMP)
- *   POST /api/agents/export   - write the provider's native files
- *   GET  /api/agents/providers- provider availability
+ *   GET  /api/agents/list        - list agent/skill definitions (user notebooks + built-in samples)
+ *   POST /api/agents/create      - create a new agent/skill notebook (pre-seeded)
+ *   POST /api/agents/run         - run the agent/skill against a task (streams via STOMP)
+ *   POST /api/agents/deploy      - write the provider's native files into a target
+ *   POST /api/agents/export      - alias of deploy with target "project" (kept for callers)
+ *   GET  /api/agents/deployments - what Arima has deployed, across targets
+ *   POST /api/agents/undeploy    - remove a deploy, file by recorded file
+ *   GET  /api/agents/providers   - provider availability
  */
 @RestController
 @RequestMapping("/api/agents")
@@ -62,6 +65,25 @@ public class AgentController {
         }
     }
 
+    @PostMapping("/deploy")
+    public ResponseEntity<Map<String, Object>> deploy(@RequestBody Map<String, String> body) {
+        String notebookId = body.get("notebookId");
+        String provider   = body.getOrDefault("provider", "claude");
+        String target     = body.getOrDefault("target", "project");
+        if (notebookId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "notebookId required"));
+        }
+        try {
+            Map<String, Object> result = new java.util.LinkedHashMap<>(
+                    agentService.deploy(notebookId, provider, target));
+            result.put("success", true);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("error", e.getMessage() == null ? e.toString() : e.getMessage(),
+                    "success", false));
+        }
+    }
+
     @PostMapping("/export")
     public ResponseEntity<Map<String, Object>> export(@RequestBody Map<String, String> body) {
         String notebookId = body.get("notebookId");
@@ -76,5 +98,21 @@ public class AgentController {
             return ResponseEntity.ok(Map.of("error", e.getMessage() == null ? e.toString() : e.getMessage(),
                     "success", false));
         }
+    }
+
+    @GetMapping("/deployments")
+    public ResponseEntity<List<Map<String, Object>>> deployments() {
+        return ResponseEntity.ok(agentService.deployments());
+    }
+
+    @PostMapping("/undeploy")
+    public ResponseEntity<Map<String, Object>> undeploy(@RequestBody Map<String, String> body) {
+        String id     = body.get("id");
+        String target = body.getOrDefault("target", "project");
+        if (id == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "id required"));
+        }
+        int removed = agentService.undeploy(id, target);
+        return ResponseEntity.ok(Map.of("success", true, "removed", removed, "target", target));
     }
 }

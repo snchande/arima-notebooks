@@ -468,12 +468,14 @@
       <div class="tab-scroll">
         <div class="section-head agents-head">
           <div>
-            <h2>Agents &amp; Skills</h2>
-            <p>Browse, author, and run agent notebooks. Each agent <em>is</em> a notebook — its markdown cells are the system prompt. Open one to edit it, or run it right here.</p>
+            <h2>The Agent Factory</h2>
+            <p>Author <b>agents</b>, <b>skills</b>, <b>tools</b> and <b>plugins</b> — each one <em>is</em> a notebook. Markdown cells are the instructions; a tool's code cells are its body. Run them here, then deploy them to the files your agentic CLI reads.</p>
           </div>
           <div class="agents-head-actions">
             <button class="btn-primary" id="agents-new-agent">+ New Agent</button>
             <button class="btn-secondary" id="agents-new-skill">+ New Skill</button>
+            <button class="btn-secondary" id="agents-new-tool">+ New Tool</button>
+            <button class="btn-secondary" id="agents-new-plugin">+ New Plugin</button>
             <button class="btn-secondary" id="agents-refresh" title="Refresh list">↻</button>
           </div>
         </div>
@@ -488,6 +490,33 @@
         <div class="agents-section">
           <div class="agents-subhead">My agents &amp; skills</div>
           <div id="agents-grid-mine" class="agents-grid"></div>
+        </div>
+
+        <!-- Tools -->
+        <div class="agents-section">
+          <div class="agents-subhead">
+            Tools
+            <span class="agents-subnote">Callable functions written in any of the eight languages. Every tool is advertised to MCP clients as <code>arima_&lt;name&gt;</code>.</span>
+          </div>
+          <div id="tools-grid" class="agents-grid"></div>
+        </div>
+
+        <!-- Plugins -->
+        <div class="agents-section">
+          <div class="agents-subhead">
+            Plugins
+            <span class="agents-subnote">Bundle agents, skills and tools into one installable Claude Code plugin.</span>
+          </div>
+          <div id="plugins-grid" class="agents-grid"></div>
+        </div>
+
+        <!-- Deployments -->
+        <div class="agents-section">
+          <div class="agents-subhead">
+            Deployed
+            <span class="agents-subnote">What Arima has written outside the notebook store — and how to take it back.</span>
+          </div>
+          <div id="deployments-list" class="deployments-list"></div>
         </div>
 
         <!-- Samples -->
@@ -1812,6 +1841,8 @@ dotnet fsi --version  # verify F# Interactive</pre>
 <script src="/js/notebook.js"></script>
 <script src="/js/agent.js"></script>
 <script src="/js/agents-tab.js"></script>
+<script src="/js/tools-tab.js"></script>
+<script src="/js/plugins-tab.js"></script>
 <script src="/js/tutorial-player.js"></script>
 <script src="/js/tutorials-settings.js"></script>
 <script src="/js/home.js"></script>

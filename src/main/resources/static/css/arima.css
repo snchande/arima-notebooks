@@ -4197,6 +4197,9 @@ table.barista-df th { position: relative; padding-bottom: 14px; }
   border-top: 1px solid var(--border); margin-top: 2px; padding-top: 10px;
   display: flex; flex-direction: column; gap: 8px;
 }
+/* An author `display` beats the UA rule behind [hidden], so say it again here —
+   without this the run/call/deploy panels sit permanently open on every card. */
+.agent-card-run-box[hidden] { display: none; }
 .agent-card-task {
   width: 100%; box-sizing: border-box; resize: vertical;
   background: var(--surface-3); border: 1px solid var(--border); border-radius: 6px;
@@ -5483,3 +5486,107 @@ body.fre-on #fre-tip { display: block; }
 .acct-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .acct-item[data-act="signout"] { color: var(--red); }
 .acct-item[data-act="signout"]:hover { background: rgba(240,120,120,.1); }
+
+/* ── The Agent Factory: tools, plugins, deployments ──────────────────── */
+
+/* Kind badges beyond agent/skill. */
+.agent-kind.tool   { color: var(--green); background: rgba(107,207,143,.14); border-color: var(--green); }
+.agent-kind.plugin { color: var(--accent); background: var(--accent-dim); border-color: var(--accent); }
+.agent-kind.missing { color: var(--red); background: rgba(240,120,120,.12); border-color: var(--red); }
+
+.agents-subnote {
+  display: block; margin-top: 4px; font-family: var(--font-ui, inherit);
+  font-size: 11.5px; font-weight: 400; letter-spacing: 0; text-transform: none;
+  color: var(--text-3);
+}
+.agents-subnote code { font-family: var(--font-code); font-size: 11px; }
+
+/* Tool cards. */
+.tool-card-sig { font-family: var(--font-code); font-size: 11px; color: var(--text-2); word-break: break-all; }
+.tool-card-sig code { background: var(--surface-1); padding: 2px 5px; border-radius: 4px; }
+.tool-card-warn { color: var(--yellow); font-family: var(--font-code); font-size: 11px; }
+.agent-card-tool.muted { color: var(--text-3); font-style: italic; }
+.agent-card-tool.missing { color: var(--red); border-color: var(--red); }
+
+/* Plugin cards. */
+.plugin-card-ver { font-family: var(--font-code); font-size: 11px; color: var(--text-3); }
+.plugin-card-deployed { font-family: var(--font-code); font-size: 11px; color: var(--green); }
+
+/* The parameter table in a tool's banner. */
+.tool-params { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+.tool-params th {
+  text-align: left; font-family: var(--font-code); font-size: 10px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--text-3);
+  padding: 2px 6px 6px; border-bottom: 1px solid var(--border);
+}
+.tool-params td { padding: 4px 6px; vertical-align: middle; }
+.tool-params .tparam-empty td { color: var(--text-3); font-style: italic; padding: 10px 6px; }
+.tool-params input[type="text"], .tool-params input:not([type]), .tool-params select {
+  width: 100%; background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text-1); font-size: 12px; padding: 4px 6px;
+}
+.tool-params input:focus, .tool-params select:focus { outline: none; border-color: var(--purple); }
+.tool-params .tparam-req-cell { text-align: center; }
+.tool-params .tparam-del {
+  background: none; border: none; color: var(--text-3); cursor: pointer;
+  font-size: 15px; line-height: 1; padding: 0 4px;
+}
+.tool-params .tparam-del:hover { color: var(--red); }
+.tool-sig { font-family: var(--font-code); font-size: 11.5px; color: var(--text-2); margin-top: 6px; }
+.tool-sig code { background: var(--surface-1); padding: 2px 6px; border-radius: 4px; }
+
+/* The generated call form, in a tool's dock and on tool cards. */
+.tool-args { display: flex; flex-direction: column; gap: 7px; margin: 8px 0; }
+.tool-args-empty { color: var(--text-3); font-size: 12px; font-style: italic; }
+.tool-card-args { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.tool-arg-row { display: flex; align-items: center; gap: 10px; }
+.tool-arg-name {
+  flex: 0 0 34%; font-family: var(--font-code); font-size: 11.5px; color: var(--text-2);
+  display: flex; align-items: baseline; gap: 5px;
+}
+.tool-arg-req { color: var(--red); }
+.tool-arg-type { font-size: 10px; color: var(--text-3); }
+.tool-arg, .plugin-card-target, .agent-card-target, .plugin-version {
+  flex: 1; min-width: 0; background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text-1); font-size: 12px; padding: 5px 7px;
+  font-family: var(--font-code);
+}
+.tool-arg:focus, .plugin-card-target:focus, .agent-card-target:focus, .plugin-version:focus {
+  outline: none; border-color: var(--purple);
+}
+.plugin-version { flex: 0 0 90px; }
+
+/* A plugin's member list. */
+.plugin-members { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.plugin-members-label {
+  font-family: var(--font-code); font-size: 11px; color: var(--text-3); margin-right: 2px;
+}
+.agent-hint-inline { font-size: 12px; color: var(--text-3); font-style: italic; }
+
+/* The Deployed section. */
+.deployments-list { display: flex; flex-direction: column; gap: 8px; }
+.deployment-row {
+  display: flex; align-items: center; gap: 12px;
+  border: 1px solid var(--border); border-radius: 9px;
+  background: var(--surface-0); padding: 10px 12px;
+}
+.deployment-row.stale { border-color: var(--yellow); }
+.deployment-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.deployment-slug { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.deployment-prov { font-family: var(--font-code); font-size: 10.5px; color: var(--purple); }
+.deployment-stale { font-family: var(--font-code); font-size: 10.5px; color: var(--yellow); }
+.deployment-paths { font-family: var(--font-code); font-size: 11px; color: var(--text-3); word-break: break-all; }
+.deployment-paths code { background: var(--surface-1); padding: 1px 5px; border-radius: 4px; margin-right: 5px; }
+.deployment-meta {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+  font-family: var(--font-code); font-size: 11px; color: var(--text-3); flex-shrink: 0;
+}
+.deployment-target { color: var(--text-2); }
+.deployment-undeploy { flex-shrink: 0; padding: 5px 11px; font-size: 12px; }
+
+@media (max-width: 720px) {
+  .deployment-row { flex-wrap: wrap; }
+  .deployment-meta { align-items: flex-start; }
+  .tool-arg-row { flex-direction: column; align-items: stretch; gap: 4px; }
+  .tool-arg-name { flex: none; }
+}

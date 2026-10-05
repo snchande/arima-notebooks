@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.barista.model.Cell;
 import com.barista.model.ExecutionResult;
 import com.barista.model.Notebook;
+import com.barista.model.ToolSpec;
 import com.barista.service.AgentService;
 import com.barista.service.NotebookService;
 import com.barista.service.OrchestrationService;
 import com.barista.service.PackageService;
+import com.barista.service.ToolService;
 import com.barista.service.UserService;
 import com.barista.shell.JShellManager;
 import org.slf4j.Logger;
@@ -50,6 +52,9 @@ import java.util.stream.Collectors;
  *   barista_append_cell        — Append a new cell to an existing notebook and optionally execute it
  *   barista_list_agents        — List agent & skill definitions (user notebooks + built-in samples)
  *   barista_run_agent          — Run an agent/skill against a task and return its response
+ *   barista_list_tools         — List the tools authored as notebooks in Arima, with their schemas
+ *   barista_invoke_tool        — Call one by id, for clients that prefer a single dispatcher
+ *   arima_&lt;tool&gt;          — one entry per authored tool, carrying its own JSON Schema
  */
 @RestController
 @RequestMapping("/api/mcp")
@@ -69,6 +74,7 @@ public class McpController {
     private final PackageService packageService;
     private final UserService userService;
     private final AgentService agentService;
+    private final ToolService toolService;
     private final ObjectMapper objectMapper;
 
     public McpController(NotebookService notebookService,
@@ -77,6 +83,7 @@ public class McpController {
                           PackageService packageService,
                           UserService userService,
                           AgentService agentService,
+                          ToolService toolService,
                           ObjectMapper objectMapper) {
         this.notebookService = notebookService;
         this.jShellManager = jShellManager;
@@ -84,6 +91,7 @@ public class McpController {
         this.packageService = packageService;
         this.userService = userService;
         this.agentService = agentService;
+        this.toolService = toolService;
         this.objectMapper = objectMapper;
     }
 
@@ -243,7 +251,7 @@ public class McpController {
     }
 
     private Map<String, Object> handleToolsList() {
-        List<Map<String, Object>> tools = List.of(
+        List<Map<String, Object>> tools = new ArrayList<>(List.of(
             toolDef("barista_execute_code",
                 "Execute Java code in a Arima JShell session and return output",
                 Map.of(
@@ -350,9 +358,41 @@ public class McpController {
                     ),
                     "required", List.of("agentId", "task")
                 )
+            ),
+            toolDef("barista_list_tools",
+                "List the tools authored as notebooks in Arima, with the parameters each one takes. "
+                    + "Each is also advertised individually as arima_<tool_name>.",
+                Map.of("type", "object", "properties", Map.of())
+            ),
+            toolDef("barista_invoke_tool",
+                "Call an Arima tool by id with a map of arguments and return what it printed. Prefer "
+                    + "the tool's own arima_<name> entry, which carries its real parameter schema.",
+                Map.of(
+                    "type", "object",
+                    "properties", Map.of(
+                        "toolId", Map.of("type", "string", "description", "Tool notebook id, or its kebab-cased name"),
+                        "args",   Map.of("type", "object", "description", "Arguments, keyed by parameter name")
+                    ),
+                    "required", List.of("toolId")
+                )
             )
-        );
+        ));
+
+        // One entry per authored tool, carrying its own JSON Schema, so a client sees
+        // arima_fetch_quote(ticker, days) rather than a generic dispatcher.
+        for (ToolSpec tool : toolService.specs()) {
+            if (tool.body().isBlank()) continue;   // nothing to call yet
+            String description = (tool.description() == null || tool.description().isBlank())
+                    ? ("Arima tool '" + tool.name() + "' (" + tool.mode() + ")")
+                    : tool.description().strip();
+            tools.add(toolDef(mcpToolName(tool), description, tool.inputSchema()));
+        }
         return Map.of("tools", tools);
+    }
+
+    /** The MCP name for an authored tool: {@code arima_} plus its slug in snake_case. */
+    private static String mcpToolName(ToolSpec tool) {
+        return "arima_" + tool.slug().replace('-', '_');
     }
 
     @SuppressWarnings("unchecked")
@@ -377,7 +417,12 @@ public class McpController {
             case "barista_append_cell"    -> toolAppendCell(args);
             case "barista_list_agents"    -> toolListAgents();
             case "barista_run_agent"      -> toolRunAgent(args);
-            default -> throw new McpException(-32602, "Unknown tool: " + toolName);
+            case "barista_list_tools"     -> toolListTools();
+            case "barista_invoke_tool"    -> toolInvokeTool(args);
+            // Anything else may be one of the authored tools, advertised as arima_<name>.
+            default -> toolName.startsWith("arima_")
+                    ? toolInvokeAuthored(toolName, args)
+                    : unknownTool(toolName);
         };
 
         return Map.of(
@@ -752,6 +797,81 @@ public class McpController {
             throw new McpException(-32603, "Agent run failed: "
                     + (e.getMessage() == null ? e.toString() : e.getMessage()));
         }
+    }
+
+    private String toolListTools() {
+        List<ToolSpec> tools = toolService.specs();
+        if (tools.isEmpty()) {
+            return "No tools found. Author one in the Agents tab (+ New Tool) or "
+                    + "POST /api/tools/create — a tool is a notebook whose code cells are its body.";
+        }
+        StringBuilder sb = new StringBuilder("Tools authored in Arima:\n\n");
+        for (ToolSpec t : tools) {
+            sb.append("ID:      ").append(t.id()).append("\n");
+            sb.append("Name:    ").append(t.name()).append("\n");
+            sb.append("MCP:     ").append(mcpToolName(t)).append("\n");
+            sb.append("Mode:    ").append(t.mode()).append("\n");
+            if (t.description() != null && !t.description().isBlank()) {
+                sb.append("Desc:    ").append(t.description().strip()).append("\n");
+            }
+            if (t.params().isEmpty()) {
+                sb.append("Params:  (none)\n");
+            } else {
+                sb.append("Params:\n");
+                for (ToolSpec.Param p : t.params()) {
+                    sb.append("  - ").append(p.name()).append(" (").append(p.type())
+                      .append(p.required() ? ", required" : ", optional").append(")");
+                    if (p.description() != null && !p.description().isBlank()) {
+                        sb.append(" — ").append(p.description().strip());
+                    }
+                    sb.append("\n");
+                }
+            }
+            if (t.body().isBlank()) {
+                sb.append("Note:    no code cells yet — not callable\n");
+            }
+            sb.append("\n");
+        }
+        return sb.toString().stripTrailing();
+    }
+
+    @SuppressWarnings("unchecked")
+    private String toolInvokeTool(Map<String, Object> args) throws McpException {
+        String toolId = (String) args.get("toolId");
+        if (toolId == null || toolId.isBlank()) {
+            throw new McpException(-32602, "Parameter 'toolId' is required");
+        }
+        ToolSpec tool = toolService.spec(toolId)
+                .or(() -> toolService.specBySlug(toolId))
+                .orElseThrow(() -> new McpException(-32602, "Tool not found: " + toolId));
+        Map<String, Object> toolArgs = args.get("args") instanceof Map<?, ?> m
+                ? (Map<String, Object>) m : Map.of();
+        return invoke(tool, toolArgs);
+    }
+
+    /** Dispatch an {@code arima_<name>} call: the arguments are the tool's own parameters. */
+    private String toolInvokeAuthored(String mcpName, Map<String, Object> args) throws McpException {
+        ToolSpec tool = toolService.specs().stream()
+                .filter(t -> mcpToolName(t).equals(mcpName))
+                .findFirst()
+                .orElseThrow(() -> new McpException(-32602, "Unknown tool: " + mcpName));
+        return invoke(tool, args);
+    }
+
+    private String invoke(ToolSpec tool, Map<String, Object> args) throws McpException {
+        try {
+            ExecutionResult r = toolService.invoke(tool, args, "mcp-tool");
+            return toolService.renderResult(tool, r);
+        } catch (IllegalArgumentException e) {
+            throw new McpException(-32602, e.getMessage() == null ? e.toString() : e.getMessage());
+        } catch (Exception e) {
+            throw new McpException(-32603, "Tool invocation failed: "
+                    + (e.getMessage() == null ? e.toString() : e.getMessage()));
+        }
+    }
+
+    private String unknownTool(String toolName) throws McpException {
+        throw new McpException(-32602, "Unknown tool: " + toolName);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
